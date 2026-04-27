@@ -1,0 +1,339 @@
+﻿@using Core.Concretes.DTOs
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Otel Detayları";
+}
+
+@model HotelDetailDto
+
+<div class="container-fluid mt-4">
+    <!-- Top Navbar - Logout & Settings -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/hotel" class="btn btn-outline-secondary btn-sm">
+                    ← Geri Dön
+                </a>
+                <div class="d-flex gap-2">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <!-- Profil Menü -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                👤 @User.Identity.Name
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="profileDropdown">
+                                <li><a class="dropdown-item" href="/account/profile">⚙️ Profil</a></li>
+                                <li><a class="dropdown-item" href="/account/change-password">🔐 Şifre Değiştir</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="/account/logout" style="display: inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger">🚪 Çıkış Yap</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="/" class="btn btn-primary btn-sm">🔑 Giriş Yap</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model != null)
+    {
+        <!-- Hero Image -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="position-relative overflow-hidden rounded-3" style="height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
+                    {
+                        <img src="@Model.CoverImageUrl" alt="@Model.Name" class="w-100 h-100" style="object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center">
+                            <span class="text-white" style="font-size: 120px;">🏨</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Hotel Info -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <!-- Header -->
+                <div class="mb-4">
+                    <h1 class="display-4 fw-bold mb-2">@Model.Name</h1>
+                    <div class="d-flex gap-2 align-items-center mb-3">
+                        <!-- Rating -->
+                        <div>
+                            @for (int i = 0; i < (int)Model.AverageRating; i++)
+                            {
+                                <span class="text-warning" style="font-size: 1.2rem;">⭐</span>
+                            }
+                            @for (int i = (int)Model.AverageRating; i < 5; i++)
+                            {
+                                <span class="text-muted" style="font-size: 1.2rem;">☆</span>
+                            }
+                        </div>
+                        <span class="badge bg-info">✨ @Model.AverageRating.ToString("F1")/5</span>
+                        <span class="badge bg-secondary">💬 @Model.ReviewCount yorum</span>
+                    </div>
+
+                    <!-- Location -->
+                    <p class="text-muted fs-5">
+                        📍 @Model.City@(string.IsNullOrEmpty(Model.Country) ? "" : $", {Model.Country}")
+                    </p>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <h3 class="fw-bold">📝 Açıklama</h3>
+                    <p class="fs-5">@Model.Description</p>
+                </div>
+
+                <!-- Contact Info -->
+                @if (!string.IsNullOrEmpty(Model.PhoneNumber) || !string.IsNullOrEmpty(Model.Email))
+                {
+                    <div class="card border-0 bg-light p-4 mb-4 rounded-3">
+                        <h3 class="fw-bold mb-3">📞 İletişim Bilgileri</h3>
+                        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                        {
+                            <p class="mb-2">
+                                <strong>Telefon:</strong> <a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a>
+                            </p>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Email))
+                        {
+                            <p>
+                                <strong>Email:</strong> <a href="mailto:@Model.Email">@Model.Email</a>
+                            </p>
+                        }
+                    </div>
+                }
+
+                <!-- Check In/Out Times -->
+                @if (!string.IsNullOrEmpty(Model.CheckInTime) || !string.IsNullOrEmpty(Model.CheckOutTime))
+                {
+                    <div class="card border-0 bg-light p-4 mb-4 rounded-3">
+                        <h3 class="fw-bold mb-3">⏰ Giriş & Çıkış Saatleri</h3>
+                        <div class="row">
+                            @if (!string.IsNullOrEmpty(Model.CheckInTime))
+                            {
+                                <div class="col-md-6">
+                                    <p><strong>Giriş Saati:</strong> @Model.CheckInTime</p>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.CheckOutTime))
+                            {
+                                <div class="col-md-6">
+                                    <p><strong>Çıkış Saati:</strong> @Model.CheckOutTime</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Amenities -->
+                @if (Model.Amenities != null && Model.Amenities.Any())
+                {
+                    <div class="mb-4">
+                        <h3 class="fw-bold mb-3">🎁 Olanaklar</h3>
+                        <div class="row">
+                            @foreach (var amenity in Model.Amenities)
+                            {
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 bg-light p-3 rounded-2">
+                                        <p class="mb-0">
+                                            <strong>✓ @amenity.Name</strong>
+                                            @if (!string.IsNullOrEmpty(amenity.Description))
+                                            {
+                                                <small class="text-muted d-block">@amenity.Description</small>
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Reviews -->
+                @if (Model.Reviews != null && Model.Reviews.Any())
+                {
+                    <div class="mb-4">
+                        <h3 class="fw-bold mb-3">💬 Müşteri Yorumları</h3>
+                        @foreach (var review in Model.Reviews.Take(5))
+                        {
+                            <div class="card border-0 bg-light p-4 mb-3 rounded-2">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">@review.Title</h6>
+                                        <small class="text-muted">👤 @review.GuestName</small>
+                                    </div>
+                                    <div class="text-warning">
+                                        @for (int i = 0; i < review.Rating; i++)
+                                        {
+                                            <span>⭐</span>
+                                        }
+                                    </div>
+                                </div>
+                                <p class="mb-0">@review.Content</p>
+                                @if (review.CreatedAt != default)
+                                {
+                                    <small class="text-muted d-block mt-2">📅 @review.CreatedAt.ToString("dd.MM.yyyy")</small>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Sidebar - Booking -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-lg p-4 position-sticky" style="top: 20px;">
+                    <h3 class="fw-bold mb-4">🛏️ Rezervasyon</h3>
+
+                    <!-- Price -->
+                    <div class="mb-4 pb-4 border-bottom">
+                        <p class="text-muted small mb-2">Gecelik Fiyat</p>
+                        <h2 class="text-primary fw-bold">
+                            @if (Model.MinPrice > 0)
+                            {
+                                @Model.MinPrice.ToString("C")
+                            }
+                            else
+                            {
+                                <span>Bilgi Alınız</span>
+                            }
+                        </h2>
+                    </div>
+
+                    <!-- Booking Form -->
+                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
+                    {
+                        <form method="post" action="/hotel/book/@Model.Id">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">📅 Giriş Tarihi</label>
+                                <input type="date" name="checkInDate" class="form-control" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">📅 Çıkış Tarihi</label>
+                                <input type="date" name="checkOutDate" class="form-control" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">👥 Misafir Sayısı</label>
+                                <input type="number" name="numberOfGuests" class="form-control" min="1" max="10" value="1" required>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">💬 Özel İstek (Opsiyonel)</label>
+                                <textarea name="specialRequest" class="form-control" rows="3" placeholder="Örn: Deniz manzaralı oda istiyorum..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">
+                                🎫 Rezervasyon Yap
+                            </button>
+                        </form>
+                    }
+                    else if (!User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="alert alert-warning text-center">
+                            <p class="mb-2">Rezervasyon yapmak için giriş yapmalısınız</p>
+                            <a href="/" class="btn btn-primary btn-sm w-100">🔑 Giriş Yap</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info text-center">
+                            <p>Bu sayfaya erişim izniniz yoktur</p>
+                        </div>
+                    }
+
+                    <!-- Features -->
+                    <div class="mt-4 pt-4 border-top">
+                        <p class="small text-muted mb-3">🔒 Güvenli Rezervasyon</p>
+                        <p class="small text-muted mb-3">💳 Kolay Ödeme</p>
+                        <p class="small text-muted mb-3">✓ Ücretsiz İptal</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Hotel Not Found -->
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-danger text-center py-5">
+                    <h4>😢 Otel Bulunamadı</h4>
+                    <p>Aradığınız otel bulunamadı.</p>
+                    <a href="/hotel" class="btn btn-primary btn-sm">🏨 Otelleri Görüntüle</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .rounded-3 {
+        border-radius: 20px;
+    }
+
+    .rounded-2 {
+        border-radius: 15px;
+    }
+
+    h1, h2, h3 {
+        color: #2c3e50;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0a58ca, #084298);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    
+</style>
+
+<script>
+    @if (TempData["SuccessMessage"] != null)
+    {
+            <text>
+            document.addEventListener('DOMContentLoaded', function() {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                alertDiv.style.zIndex = '9999';
+                alertDiv.style.width = '90%';
+                alertDiv.style.maxWidth = '500px';
+                alertDiv.setAttribute('role', 'alert');
+                alertDiv.innerHTML = '@TempData["SuccessMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                document.body.insertBefore(alertDiv, document.body.firstChild);
+            });
+            </text>
+    }
+</script>

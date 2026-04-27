@@ -1,0 +1,129 @@
+﻿@using Core.Concretes.DTOs
+@model HotelDto
+
+@{
+    ViewData["Title"] = "Otel Sil";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">🗑️ Otel Silme Onayı</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5>⚠️ DİKKAT!</h5>
+                        <p>Bu işlem geri alınamaz. Lütfen dikkatli olun.</p>
+                    </div>
+
+                    <div class="hotel-info mb-4">
+                        <h4 class="mb-3">📋 Otel Bilgileri:</h4>
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <strong>Otel Adı:</strong>
+                            </div>
+                            <div class="col-md-8">
+                                @Model.Name
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <strong>Şehir:</strong>
+                            </div>
+                            <div class="col-md-8">
+                                @Model.City
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <strong>Ülke:</strong>
+                            </div>
+                            <div class="col-md-8">
+                                @Model.Country
+                            </div>
+                        </div>
+
+                        
+                        
+
+                       
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <strong>Puan:</strong>
+                            </div>
+                            <div class="col-md-8">
+                                <span class="badge bg-warning">⭐ @Model.Rating</span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <strong>Durum:</strong>
+                            </div>
+                            <div class="col-md-8">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Pasif</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger mb-4">
+                        <strong>Bu otel silinecektir:</strong> @Model.Name (@Model.City)
+                    </div>
+
+                    <form method="post" action="/admin/hotel/delete/@Model.Id">
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/admin/hotel" class="btn btn-secondary btn-lg">
+                                ← İptal
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                🗑️ Sil
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .hotel-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130);
+        }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5c636a);
+    }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5c636a, #4c5357);
+        }
+</style>

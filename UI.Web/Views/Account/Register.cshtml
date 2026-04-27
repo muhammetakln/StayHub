@@ -1,0 +1,181 @@
+﻿@using Core.Concretes.DTOs
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Kayıt Ol";
+}
+
+@model RegisterDto
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">📝 Kayıt Ol</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Validation Summary -->
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+                    <form method="post" action="/account/register">
+                        <!-- ✅ ANTIFORGERY TOKEN -->
+                        @Html.AntiForgeryToken()
+
+                        <!-- First Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">👤 Adı *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="FirstName"
+                                   placeholder="Adınızı girin"
+                                   required>
+                            <span asp-validation-for="FirstName" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">👥 Soyadı *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="LastName"
+                                   placeholder="Soyadınızı girin"
+                                   required>
+                            <span asp-validation-for="LastName" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📧 Email Adresi *</label>
+                            <input type="email"
+                                   class="form-control"
+                                   asp-for="Email"
+                                   placeholder="ornek@example.com"
+                                   required>
+                            <span asp-validation-for="Email" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📱 Telefon Numarası</label>
+                            <input type="tel"
+                                   class="form-control"
+                                   asp-for="PhoneNumber"
+                                   placeholder="05551234567">
+                            <span asp-validation-for="PhoneNumber" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Country -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🌍 Ülke</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="Country"
+                                   placeholder="Turkey"
+                                   value="Turkey">
+                        </div>
+
+                        <!-- Address -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📍 Adres</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="Address"
+                                   placeholder="Sokak, Cadde, Mahalle">
+                        </div>
+
+                        
+                        <!-- Identification Number -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🆔 Kimlik Numarası</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="IdentificationNumber"
+                                   placeholder="Kimlik numaranız">
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🔑 Şifre *</label>
+                            <input type="password"
+                                   class="form-control"
+                                   asp-for="Password"
+                                   placeholder="Güçlü bir şifre girin"
+                                   required>
+                            <small class="text-muted d-block mt-1">
+                                Şifre en az 8 karakter, bir büyük harf, bir sayı ve bir özel karakter içermelidir.
+                            </small>
+                            <span asp-validation-for="Password" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🔑 Şifre Tekrar *</label>
+                            <input type="password"
+                                   class="form-control"
+                                   asp-for="ConfirmPassword"
+                                   placeholder="Şifreyi tekrar girin"
+                                   required>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger d-block"></span>
+                        </div>
+
+                        <!-- Register Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✓ Kayıt Ol
+                            </button>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Login Link -->
+                        <div class="text-center">
+                            <p>
+                                Zaten hesabınız var mı?
+                                <a href="/account/login" class="text-decoration-none fw-bold">
+                                    Giriş Yap
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .form-control:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #198754, #157347);
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #157347, #11443d);
+        }
+
+    h3 {
+        font-weight: 600;
+    }
+
+    .form-label {
+        color: #2c3e50;
+    }
+
+    .text-danger {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    small {
+        font-size: 0.8rem;
+    }
+</style>

@@ -1,0 +1,361 @@
+﻿@using Core.Concretes.DTOs
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Oteller";
+}
+
+@model List<HotelDto>
+
+<div class="container-fluid mt-4">
+    <!-- Top Navbar - Logout & Settings -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-end gap-2 mb-3">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <!-- Profil Menü -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            👤 @User.Identity.Name
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="profileDropdown">
+                            <li><a class="dropdown-item" href="/account/profile">⚙️ Profil</a></li>
+                            <li><a class="dropdown-item" href="/account/change-password">🔐 Şifre Değiştir</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="/account/logout" style="display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item text-danger">🚪 Çıkış Yap</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a href="/" class="btn btn-primary btn-sm">🔑 Giriş Yap</a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 fw-bold">🏨 Oteller</h1>
+                    <p class="text-muted">
+                        @if (string.IsNullOrEmpty(ViewBag.SearchTerm) && string.IsNullOrEmpty(ViewBag.City))
+                        {
+                            <span>Tüm otelleri keşfedin</span>
+                        }
+                        else if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+                        {
+                            <span>"<strong>@ViewBag.SearchTerm</strong>" için arama sonuçları - <strong>@ViewBag.ResultCount</strong> otel bulundu</span>
+                        }
+                        else if (!string.IsNullOrEmpty(ViewBag.City))
+                        {
+                            <span><strong>@ViewBag.City</strong> şehrindeki oteller - <strong>@ViewBag.ResultCount</strong> otel bulundu</span>
+                        }
+                    </p>
+                </div>
+                <div>
+                    <a href="/hotel" class="btn btn-outline-primary">
+                        🔄 Sıfırla
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" action="/hotel" class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">🔍 Otel Adı veya Şehir</label>
+                            <input type="text"
+                                   name="searchTerm"
+                                   class="form-control"
+                                   placeholder="Otel adı, şehir, açıklama..."
+                                   value="@ViewBag.SearchTerm">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">📍 Şehir</label>
+                            <input type="text"
+                                   name="city"
+                                   class="form-control"
+                                   placeholder="Örn: İstanbul, Ankara..."
+                                   value="@ViewBag.City">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                🔍 Ara
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="/hotel/top-rated" class="btn btn-outline-warning btn-sm">
+                    ⭐ En Yüksek Puanlı
+                </a>
+                <a href="/hotel/special-offers" class="btn btn-outline-danger btn-sm">
+                    💎 Özel Teklifler
+                </a>
+                <a href="/hotel/by-city/Istanbul" class="btn btn-outline-info btn-sm">
+                    🌆 İstanbul Otelleri
+                </a>
+                <a href="/hotel/by-city/Ankara" class="btn btn-outline-info btn-sm">
+                    🏛️ Ankara Otelleri
+                </a>
+                <a href="/hotel/by-city/Izmir" class="btn btn-outline-info btn-sm">
+                    🌊 İzmir Otelleri
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results or Empty State -->
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="row">
+            @foreach (var hotel in Model)
+            {
+                <!-- Sadece aktif otelleri göster -->
+                @if (hotel.IsActive)
+                {
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-0 shadow-sm hotel-card">
+                            <!-- Hotel Cover Image -->
+                            <div class="position-relative overflow-hidden" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                @if (!string.IsNullOrEmpty(hotel.CoverImageUrl))
+                                {
+                                    <img src="@hotel.CoverImageUrl"
+                                         alt="@hotel.Name"
+                                         class="w-100 h-100 object-fit-cover"
+                                         style="object-fit: cover;">
+                                }
+                                else
+                                {
+                                    <div class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center">
+                                        <span class="text-white fs-1">🏨</span>
+                                    </div>
+                                }
+
+                                <!-- Hotel Type Badge -->
+                                @if (!string.IsNullOrEmpty(hotel.HotelType))
+                                {
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-primary">@hotel.HotelType</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="card-body d-flex flex-column">
+                                <!-- Hotel Name -->
+                                <h5 class="card-title fw-bold">@hotel.Name</h5>
+
+                                <!-- Location -->
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        📍 @hotel.City
+                                        @if (!string.IsNullOrEmpty(hotel.Country))
+                                        {
+                                            <span>, @hotel.Country</span>
+                                        }
+                                    </small>
+                                </div>
+
+                                <!-- Rating Stars -->
+                                <div class="mb-2">
+                                    @if (!string.IsNullOrEmpty(hotel.Rating) && int.TryParse(hotel.Rating, out var rating))
+                                    {
+                                        <div>
+                                            @for (int i = 0; i < rating; i++)
+                                            {
+                                                <span class="text-warning">⭐</span>
+                                            }
+                                            @for (int i = rating; i < 5; i++)
+                                            {
+                                                <span class="text-muted">☆</span>
+                                            }
+                                            <span class="small text-muted ms-2">(@rating/5)</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">⭐ Rating yok</small>
+                                    }
+                                </div>
+
+                                <!-- Average Rating & Review Count -->
+                                <div class="mb-2">
+                                    <span class="badge bg-info">
+                                        ✨ @hotel.AverageRating.ToString("F1")/5 puan
+                                    </span>
+                                    <span class="badge bg-secondary ms-1">
+                                        💬 @hotel.ReviewCount yorum
+                                    </span>
+                                </div>
+
+                                <!-- Description -->
+                                <p class="card-text text-muted small flex-grow-1">
+                                    @if (!string.IsNullOrEmpty(hotel.Description))
+                                    {
+                                        @Html.Raw(hotel.Description.Length > 80 ? hotel.Description.Substring(0, 80) + "..." : hotel.Description)
+                                    }
+                                    else
+                                    {
+                                        <span>Detaylı açıklama bulunmamaktadır.</span>
+                                    }
+                                </p>
+
+                                <!-- Price Section -->
+                                <div class="mb-3 pb-3 border-bottom bg-light p-2 rounded">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">💰 Başlangıç Fiyatı</small>
+                                        <strong class="text-primary fs-6">
+                                            @hotel.MinPrice.ToString("C")
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <!-- Details Button -->
+                                <a href="/hotel/details/@hotel.Id" class="btn btn-primary btn-sm w-100">
+                                    👁️ Detaylarını Gör
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Empty State -->
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center py-5" role="alert">
+                    <h4 class="alert-heading">😢 Otel Bulunamadı</h4>
+                    <p>Arama kriterlerinize uygun aktif otel bulunamadı. Lütfen farklı kriterler deneyiniz.</p>
+                    <hr>
+                    <a href="/hotel" class="btn btn-primary btn-sm">
+                        🏨 Tüm Otelleri Göster
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Info Section -->
+    <div class="row mt-5 pt-5 border-top">
+        <div class="col-md-3 text-center mb-4">
+            <div class="display-6">🔐</div>
+            <h6>Güvenli Rezervasyon</h6>
+            <p class="text-muted small">Şifreli ödeme sistemi</p>
+        </div>
+        <div class="col-md-3 text-center mb-4">
+            <div class="display-6">⭐</div>
+            <h6>Doğrulanmış Yorumlar</h6>
+            <p class="text-muted small">Gerçek müşteri görüşleri</p>
+        </div>
+        <div class="col-md-3 text-center mb-4">
+            <div class="display-6">💰</div>
+            <h6>En İyi Fiyatlar</h6>
+            <p class="text-muted small">Garantili uygun fiyatlar</p>
+        </div>
+        <div class="col-md-3 text-center mb-4">
+            <div class="display-6">🎧</div>
+            <h6>24/7 Destek</h6>
+            <p class="text-muted small">Sürekli müşteri hizmetleri</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hotel-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+        .hotel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+        }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0a58ca, #084298);
+        }
+
+    h1 {
+        color: #2c3e50;
+    }
+
+    .card {
+        border-radius: 10px;
+    }
+
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    .object-fit-cover {
+        object-fit: cover;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .dropdown-menu {
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+    }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: #0d6efd;
+        }
+</style>
+
+<script>
+    // TempData error message göster
+    @if (TempData["ErrorMessage"] != null)
+    {
+                <text>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                    alertDiv.style.zIndex = '9999';
+                    alertDiv.style.width = '90%';
+                    alertDiv.style.maxWidth = '500px';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = '@TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.body.insertBefore(alertDiv, document.body.firstChild);
+                });
+                </text>
+    }
+</script>

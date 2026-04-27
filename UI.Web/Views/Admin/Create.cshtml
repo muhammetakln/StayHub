@@ -1,0 +1,150 @@
+﻿@using Core.Concretes.DTOs
+@model CreateHotelDto
+
+@{
+    ViewData["Title"] = "Yeni Otel Ekle";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">➕ Yeni Otel Ekle</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/admin/hotel/create">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Otel Adı *</label>
+                            <input type="text" class="form-control" asp-for="Name" placeholder="Otel adını girin" required>
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Şehir *</label>
+                                    <input type="text" class="form-control" asp-for="City" placeholder="İstanbul" required>
+                                    <span asp-validation-for="City" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Bölge</label>
+                                    <input type="text" class="form-control" asp-for="Region" placeholder="Beşiktaş">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ülke *</label>
+                                    <input type="text" class="form-control" asp-for="Country" placeholder="Turkey" required>
+                                    <span asp-validation-for="Country" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Otel Tipi</label>
+                                    <input type="text" class="form-control" asp-for="HotelType" placeholder="Luxury, Budget, Business">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Adres *</label>
+                            <input type="text" class="form-control" asp-for="Address" placeholder="Sokak, Cadde, Mahalle" required>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Telefon *</label>
+                                    <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="5551234567" required>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Email *</label>
+                                    <input type="email" class="form-control" asp-for="Email" placeholder="hotel@example.com" required>
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Website</label>
+                                    <input type="url" class="form-control" asp-for="Website" placeholder="https://otel.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Puan (0-5)</label>
+                                    <input type="text" class="form-control" asp-for="Rating" placeholder="4.5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Açıklama</label>
+                            <textarea class="form-control" asp-for="Description" rows="3" placeholder="Otel hakkında bilgi yazın"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isActive" asp-for="IsActive" checked>
+                                <label class="form-check-label" for="isActive">
+                                    ✓ Aktif Duruma Ayarla
+                                </label>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/admin/hotel" class="btn btn-secondary btn-lg">
+                                ← İptal
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✓ Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .form-control:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #198754, #157347);
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #157347, #11443d);
+        }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5c636a);
+    }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5c636a, #4c5357);
+        }
+</style>

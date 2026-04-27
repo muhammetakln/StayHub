@@ -1,0 +1,213 @@
+﻿@using Core.Concretes.DTOs
+@model List<HotelDto>
+
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid mt-5">
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-4">🏢 Admin Dashboard</h1>
+            <p class="text-muted">Stayhub Otel Yönetim Paneli</p>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Toplam Otel</h5>
+                    <h2 class="mb-0">@(Model?.Count ?? 0)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">✅ Aktif Otel</h5>
+                    <h2 class="mb-0">@(Model?.Count(h => h.IsActive) ?? 0)</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">⭐ Ortalama Puan</h5>
+                    <h2 class="mb-0">
+                        @{
+                            var ratings = Model?.Where(h => !string.IsNullOrEmpty(h.Rating))
+                            .Select(h => decimal.Parse(h.Rating ?? "0"))
+                            .ToList();
+                            var avgRating = ratings?.Any() == true ? ratings.Average() : 0;
+                        }
+                        @avgRating.ToString("F1")
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">🚫 Pasif Otel</h5>
+                    <h2 class="mb-0">@(Model?.Count(h => !h.IsActive) ?? 0)</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">⚡ Hızlı İşlemler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group-wrap">
+                        <a href="/admin/hotel" class="btn btn-lg btn-outline-primary">
+                            <i class="bi bi-list"></i> Otelleri Görüntüle
+                        </a>
+                        <a href="/admin/hotel/create" class="btn btn-lg btn-outline-success">
+                            <i class="bi bi-plus-circle"></i> Yeni Otel Ekle
+                        </a>
+                        <a href="/Account/Logout" class="btn btn-lg btn-outline-danger">
+                            <i class="bi bi-box-arrow-right"></i> Çıkış Yap
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hotels Overview -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">🏨 Son Eklenen Oteller</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model != null && Model.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Otel Adı</th>
+                                        <th>Şehir</th>
+                                        <th>Puan</th>
+                                        <th>Tür</th>
+                                        <th>Durum</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var hotel in Model.OrderByDescending(h => h.Id).Take(10))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-primary">@hotel.Id</span></td>
+                                            <td><strong>@hotel.Name</strong></td>
+                                            <td>@hotel.City</td>
+                                            <td><span class="badge bg-warning">⭐ @hotel.Rating</span></td>
+                                            <td><span class="badge bg-info">@hotel.HotelType</span></td>
+                                            <td>
+                                                @if (hotel.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Aktif</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Pasif</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="/admin/hotel/details/@hotel.Id" class="btn btn-info">👁️</a>
+                                                    <a href="/admin/hotel/edit/@hotel.Id" class="btn btn-warning">✏️</a>
+                                                    <a href="/admin/hotel/delete/@hotel.Id" class="btn btn-danger">🗑️</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/admin/hotel" class="btn btn-primary">Tüm Otelleri Göster</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <p class="mb-0">Henüz otel kaydı yok. <a href="/admin/hotel/create">Yeni otel ekleyin</a></p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="alert alert-light text-center">
+                <small class="text-muted">
+                    Admin Dashboard | Stayhub Hotel Management System
+                    <br>
+                    Hoşgeldiniz, Admin! 👋
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h2 {
+            font-weight: bold;
+        }
+
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-group-wrap {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+        .btn-group-wrap .btn {
+            flex: 1;
+            min-width: 200px;
+        }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .display-4 {
+        color: #2c3e50;
+        font-weight: bold;
+    }
+
+    
+</style>

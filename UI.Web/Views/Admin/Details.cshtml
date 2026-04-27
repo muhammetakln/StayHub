@@ -1,0 +1,115 @@
+﻿@using Core.Concretes.DTOs
+@model HotelDetailDto
+
+@{
+    ViewData["Title"] = "Otel Detayı";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">👁️ Otel Detayı</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h2>@Model.Name</h2>
+                            <p class="text-muted">ID: @Model.Id</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success" style="font-size: 16px;">✓ Aktif</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger" style="font-size: 16px;">✗ Pasif</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="detail-box p-3 bg-light rounded mb-3">
+                                <h5 class="mb-2">📍 Konum</h5>
+                                <p class="mb-1"><strong>Şehir:</strong> @Model.City</p>
+
+                                <p class="mb-1"><strong>Ülke:</strong> @Model.Country</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-box p-3 bg-light rounded mb-3">
+                                <h5 class="mb-2">⭐ Bilgiler</h5>
+                                <p class="mb-1"><strong>Puan:</strong> <span class="badge bg-warning">@Model.Rating</span></p>
+                                <p class="mb-1"><strong>Tür:</strong> <span class="badge bg-info">@Model.HotelType</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <hr class="my-4">
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin/hotel" class="btn btn-secondary btn-lg">
+                            ← Geri Dön
+                        </a>
+                        <a href="/admin/hotel/edit/@Model.Id" class="btn btn-warning btn-lg">
+                            ✏️ Düzenle
+                        </a>
+                        <a href="/admin/hotel/delete/@Model.Id" class="btn btn-danger btn-lg">
+                            🗑️ Sil
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .detail-box {
+        border-left: 4px solid #0d6efd;
+    }
+
+    h2 {
+        color: #2c3e50;
+        font-weight: bold;
+    }
+
+    h5 {
+        color: #34495e;
+        font-weight: 600;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ff9800);
+    }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ff9800, #fb8c00);
+        }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130);
+        }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #6c757d, #5c636a);
+    }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #5c636a, #4c5357);
+        }
+</style>
