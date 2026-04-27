@@ -9,10 +9,16 @@ using Utils.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ═══════════════════════════════════════════════════════════════
+// SERVICES
+// ═══════════════════════════════════════════════════════════════
+
 builder.Services.AddControllersWithViews();
 
+// ✅ IOC - Tüm Services (Database, Identity, AutoMapper, BusinessServices)
 builder.Services.AddGuestServices(builder.Configuration);
 
+// CORS Policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -23,6 +29,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Logging
 builder.Services.AddLogging(configure =>
 {
     configure.ClearProviders();
@@ -30,8 +37,15 @@ builder.Services.AddLogging(configure =>
     configure.AddDebug();
 });
 
+// ═══════════════════════════════════════════════════════════════
+// BUILD APP
+// ═══════════════════════════════════════════════════════════════
+
 var app = builder.Build();
 
+// ═══════════════════════════════════════════════════════════════
+// AUTO MIGRATION WITH SEEDER
+// ═══════════════════════════════════════════════════════════════
 
 try
 {
@@ -41,14 +55,17 @@ try
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Guest>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
+        // 1. Migration
         Console.WriteLine("📊 Migrating database...");
         dbContext.Database.Migrate();
         Console.WriteLine("✓ Database migration completed");
 
+        // 2. Seed Roles and Admin User
         Console.WriteLine("👥 Seeding roles and admin user...");
         await RoleSeeder.SeedRolesAsync(userManager, roleManager, dbContext);
         Console.WriteLine("✓ Roles and admin user seeded");
 
+        // 3. Seed Hotels
         Console.WriteLine("🏨 Seeding hotels...");
         HotelSeeder.SeedHotels(dbContext);
         Console.WriteLine("✓ Hotels seeded");
@@ -60,8 +77,14 @@ catch (Exception ex)
     Console.WriteLine($"✗ Stack trace: {ex.StackTrace}");
 }
 
+// ═══════════════════════════════════════════════════════════════
+// MIDDLEWARE
+// ═══════════════════════════════════════════════════════════════
+
+// ✅ GLOBAL EXCEPTION HANDLING MIDDLEWARE
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
+// Exception Handler
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -80,41 +103,51 @@ app.UseRouting();
 // CORS
 app.UseCors("AllowAll");
 
-// ✅ SECURITY HEADERS MIDDLEWARE
-app.Use(async (context, next) =>
+// ✅ SECURITY HEADERS - DEVELOPMENT'DA KAPALI
+if (!app.Environment.IsDevelopment())
 {
-    // Content Security Policy
-    context.Response.Headers.Add("Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
+    app.Use(async (context, next) =>
+    {
+        // Content Security Policy
+        context.Response.Headers.Add("Content-Security-Policy",
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data: https:; " +
+            "connect-src 'self' https:;");
 
-    // X-Content-Type-Options - MIME sniffing engelle
-    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+        // X-Content-Type-Options - MIME sniffing engelle
+        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
 
-    // X-Frame-Options - Clickjacking engelle
-    context.Response.Headers.Add("X-Frame-Options", "DENY");
+        // X-Frame-Options - Clickjacking engelle
+        context.Response.Headers.Add("X-Frame-Options", "DENY");
 
-    // X-XSS-Protection
-    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+        // X-XSS-Protection
+        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
 
-    // Strict-Transport-Security
-    context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        // Strict-Transport-Security
+        context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
-    // Referrer-Policy
-    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+        // Referrer-Policy
+        context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
 
-    await next();
-});
+        await next();
+    });
+}
 
-
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ═══════════════════════════════════════════════════════════════
+// CONTROLLER ROUTES
+// ═══════════════════════════════════════════════════════════════
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-
+// Health Check
 app.MapGet("/health", () => new
 {
     status = "healthy",
@@ -125,9 +158,12 @@ app.MapGet("/health", () => new
         database = "✓ Connected",
         authentication = "✓ Enabled",
         cors = "✓ Enabled",
-        security = "✓ Enabled"
+        security = app.Environment.IsDevelopment() ? "⚠️ Disabled (Development)" : "✓ Enabled"
     }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// RUN
+// ═══════════════════════════════════════════════════════════════
 
 app.Run();

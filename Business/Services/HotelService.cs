@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
+using Core.Concretes.DTOs.Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Data.Contexts;
 using Microsoft.EntityFrameworkCore;
@@ -132,7 +133,6 @@ namespace Business.Services
             }
         }
 
-       
         public async Task<HotelDetailDto> GetHotelByIdAsync(int id)
         {
             try
@@ -141,8 +141,8 @@ namespace Business.Services
                 var hotel = await _context.Hotels
                     .AsNoTracking()
                     .Include(h => h.Rooms)
-                    .Include(h => h.Amenities)      // ✅ EKLENDI
-                    .Include(h => h.Reviews)        // ✅ EKLENDI
+                    .Include(h => h.Amenities)
+                    .Include(h => h.Reviews)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -160,7 +160,6 @@ namespace Business.Services
                 throw;
             }
         }
-        
 
         public async Task<List<HotelDto>> GetHotelsAsync()
         {
@@ -169,6 +168,7 @@ namespace Business.Services
                 _logger.LogInformation("Tüm oteller getiriliyor");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Reviews)
                     .Where(h => !h.IsDeleted && h.IsActive)
                     .ToListAsync();
 
@@ -189,6 +189,7 @@ namespace Business.Services
                 _logger.LogInformation($"Şehirdeki oteller getiriliyor: {city}");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Reviews)  // ✅ EKLE
                     .Where(h => !h.IsDeleted && h.IsActive && h.City == city)
                     .OrderByDescending(h => h.Rating)
                     .ToListAsync();
@@ -202,7 +203,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ FIXED: Database'de filtreleme yap
         public async Task<List<HotelDto>> GetHotelsByRatingAsync(decimal minRating)
         {
             try
@@ -211,8 +211,9 @@ namespace Business.Services
 
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Reviews)  // ✅ EKLE
                     .Where(h => !h.IsDeleted && h.IsActive &&
-                           decimal.Parse(h.Rating ?? "0") >= minRating)  // ← DATABASE'DE
+                           decimal.Parse(h.Rating ?? "0") >= minRating)
                     .OrderByDescending(h => decimal.Parse(h.Rating ?? "0"))
                     .ToListAsync();
 
@@ -246,6 +247,7 @@ namespace Business.Services
                 _logger.LogInformation($"Otel aranıyor: {searchTerm}");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Reviews)  // ✅ EKLE
                     .Where(h => !h.IsDeleted && h.IsActive &&
                     (h.Name.Contains(searchTerm) ||
                     h.City.Contains(searchTerm) ||
