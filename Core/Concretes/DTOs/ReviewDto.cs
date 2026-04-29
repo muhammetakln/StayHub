@@ -7,11 +7,12 @@ namespace Core.Concretes.DTOs
     {
         [Display(Name = "ID")]
         public int Id { get; set; }
-        
+        public string Title { get; set; }=string.Empty;
+        public string Content { get; set; }=string.Empty;
 
         [Required]
         [Display(Name = "Misafir Adı")]
-        public string Name { get; set; } = null!;
+        public string GuestName { get; set; } = "Misafir";
 
         [Display(Name = "Puan")]
         public int Rating { get; set; }

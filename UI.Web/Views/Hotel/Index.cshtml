@@ -13,6 +13,11 @@
             <div class="d-flex justify-content-end gap-2 mb-3">
                 @if (User.Identity?.IsAuthenticated == true)
                 {
+                    <!-- ✅ Rezervasyonlarım Butonu -->
+                    <a href="/reservation/list" class="btn btn-info btn-sm">
+                        📋 Rezervasyonlarım
+                    </a>
+
                     <!-- Profil Menü -->
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -345,17 +350,17 @@
     // TempData error message göster
     @if (TempData["ErrorMessage"] != null)
     {
-                <text>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-                    alertDiv.style.zIndex = '9999';
-                    alertDiv.style.width = '90%';
-                    alertDiv.style.maxWidth = '500px';
-                    alertDiv.setAttribute('role', 'alert');
-                    alertDiv.innerHTML = '@TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                    document.body.insertBefore(alertDiv, document.body.firstChild);
-                });
-                </text>
+                    <text>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                        alertDiv.style.zIndex = '9999';
+                        alertDiv.style.width = '90%';
+                        alertDiv.style.maxWidth = '500px';
+                        alertDiv.setAttribute('role', 'alert');
+                        alertDiv.innerHTML = '@TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        document.body.insertBefore(alertDiv, document.body.firstChild);
+                    });
+                    </text>
     }
 </script>

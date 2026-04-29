@@ -1,5 +1,5 @@
 ﻿@using Core.Concretes.DTOs
-@using Core.Concretes.DTOs.Core.Concretes.DTOs
+
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Otel Detayları";
@@ -38,7 +38,7 @@
                     }
                     else
                     {
-                        <a href="/" class="btn btn-primary btn-sm">🔑 Giriş Yap</a>
+                        <a href="/account/login" class="btn btn-primary btn-sm">🔑 Giriş Yap</a>
                     }
                 </div>
             </div>
@@ -224,7 +224,7 @@
                     <!-- Booking Form -->
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
                     {
-                        <form method="post" action="/hotel/book/@Model.Id">
+                        <form method="post" action="/reservation/create/@Model.Id">
                             @Html.AntiForgeryToken()
 
                             <div class="mb-3">
@@ -238,6 +238,12 @@
                             </div>
 
                             <div class="mb-3">
+                                <!-- ✅ FIX: RoomId hidden input (required by CreateReservationDto) -->
+                                <input type="hidden" name="roomId" value="1">
+
+                                <!-- ✅ FIX: TotalPrice hidden input (required by CreateReservationDto) -->
+                                <input type="hidden" name="totalPrice" value="@Model.MinPrice">
+
                                 <label class="form-label fw-bold">👥 Misafir Sayısı</label>
                                 <input type="number" name="numberOfGuests" class="form-control" min="1" max="10" value="1" required>
                             </div>
@@ -250,13 +256,16 @@
                             <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">
                                 🎫 Rezervasyon Yap
                             </button>
+                            <!-- ✅ Hidden inputs (CreateReservationDto için) -->
+                            <input type="hidden" name="roomId" value="1">
+                            <input type="hidden" name="totalPrice" value="@Model.MinPrice">
                         </form>
                     }
                     else if (!User.Identity?.IsAuthenticated == true)
                     {
                         <div class="alert alert-warning text-center">
                             <p class="mb-2">Rezervasyon yapmak için giriş yapmalısınız</p>
-                            <a href="/" class="btn btn-primary btn-sm w-100">🔑 Giriş Yap</a>
+                            <a href="/account/login" class="btn btn-primary btn-sm w-100">🔑 Giriş Yap</a>
                         </div>
                     }
                     else
@@ -323,7 +332,6 @@
         color: #ffc107 !important;
     }
 
-   
 </style>
 
 <script>
@@ -343,17 +351,17 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-            <text>
-            document.addEventListener('DOMContentLoaded', function() {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-                alertDiv.style.zIndex = '9999';
-                alertDiv.style.width = '90%';
-                alertDiv.style.maxWidth = '500px';
-                alertDiv.setAttribute('role', 'alert');
-                alertDiv.innerHTML = '@TempData["SuccessMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                document.body.insertBefore(alertDiv, document.body.firstChild);
-            });
-            </text>
+                <text>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                    alertDiv.style.zIndex = '9999';
+                    alertDiv.style.width = '90%';
+                    alertDiv.style.maxWidth = '500px';
+                    alertDiv.setAttribute('role', 'alert');
+                    alertDiv.innerHTML = '@TempData["SuccessMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.body.insertBefore(alertDiv, document.body.firstChild);
+                });
+                </text>
     }
 </script>

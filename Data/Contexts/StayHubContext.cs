@@ -83,7 +83,6 @@ namespace Data.Contexts
                     .HasDefaultValueSql("CURRENT_TIMESTAMP")
                     .IsRequired();
 
-                // Relations
                 entity.HasMany(g => g.Reservations)
                     .WithOne(r => r.Guest)
                     .HasForeignKey(r => r.GuestId)
@@ -121,8 +120,6 @@ namespace Data.Contexts
                     .HasMaxLength(200)
                     .IsRequired();
 
-                entity.Property(h => h.Rating)
-                    .HasPrecision(3, 2);
 
                 entity.Property(h => h.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -218,23 +215,54 @@ namespace Data.Contexts
             {
                 entity.HasKey(p => p.Id);
 
+                // Yabancı Anahtar
+                entity.HasOne(p => p.Reservation)
+                    .WithMany()
+                    .HasForeignKey(p => p.ReservationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Payment Reference
+                entity.Property(p => p.PaymentReference)
+                    .HasMaxLength(100)
+                    .IsRequired();
+
+                // Amount - Para Miktarı
                 entity.Property(p => p.Amount)
                     .HasPrecision(10, 2)
                     .IsRequired();
 
+                // Payment Method
                 entity.Property(p => p.PaymentMethod)
                     .HasMaxLength(50)
                     .IsRequired();
 
                 entity.Property(p => p.Status)
-                    .HasMaxLength(50)
+                    .HasConversion<string>()  // Enum → String (veritabanında)
+                    .HasMaxLength(20)  // Enum adı kısa olur
                     .IsRequired();
 
+                // Transaction ID
                 entity.Property(p => p.TransactionId)
                     .HasMaxLength(100);
 
+                // Notes
+                entity.Property(p => p.Notes)
+                    .HasMaxLength(500);
+
+                // Payment Date
                 entity.Property(p => p.PaymentDate)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Soft Delete
+                entity.Property(p => p.IsDeleted)
+                    .HasDefaultValue(false);
+
+                // Timestamps
+                entity.Property(p => p.CreatedAt)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(p => p.UpdatedAt)
+                    .IsRequired(false);
             });
 
             // ─────────────────────────────────────────────────────────

@@ -1,0 +1,281 @@
+﻿@using Core.Concretes.DTOs
+@model ReservationDetailDto
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Rezervasyon Detayları";
+}
+
+<div class="container mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-5 fw-bold">🎫 Rezervasyon Detayları</h1>
+                    <p class="text-muted">
+                        Rezervasyon ID: <strong>#@Model.Id</strong>
+                    </p>
+                </div>
+                <div>
+                    <a href="/reservation/list" class="btn btn-outline-secondary btn-sm">
+                        ← Geri Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            ✅ @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ❌ @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Otel Bilgileri -->
+            <div class="card border-0 shadow-sm mb-4 rounded-3">
+                <div class="card-header bg-primary text-white fw-bold">
+                    🏨 Otel Bilgileri
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Otel Adı:</strong>
+                                <br>
+                                <span class="fs-5">@Model.HotelName</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Adres:</strong>
+                                <br>
+                                <span>@Model.HotelAddress</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-0">
+                                <strong>📞 Telefon:</strong>
+                                <br>
+                                <a href="tel:@Model.HotelPhone">@Model.HotelPhone</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oda Bilgileri -->
+            <div class="card border-0 shadow-sm mb-4 rounded-3">
+                <div class="card-header bg-info text-white fw-bold">
+                    🚪 Oda Bilgileri
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Oda Numarası:</strong>
+                                <br>
+                                <span class="fs-5">@Model.RoomNumber</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Oda Tipi:</strong>
+                                <br>
+                                <span>@Model.RoomType</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarih ve Zaman -->
+            <div class="card border-0 shadow-sm mb-4 rounded-3">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    📅 Ziyaret Tarihleri
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Giriş Tarihi (Check-in):</strong>
+                                <br>
+                                <span class="fs-5">@Model.CheckInDate.ToString("dd MMMM yyyy")</span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <strong>Çıkış Tarihi (Check-out):</strong>
+                                <br>
+                                <span class="fs-5">@Model.CheckOutDate.ToString("dd MMMM yyyy")</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="alert alert-light mb-0">
+                        <p class="mb-0">
+                            <strong>🌙 Gece Sayısı:</strong> @Model.NightCount gece
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Özel İstekler -->
+            @if (!string.IsNullOrEmpty(Model.SpecialRequests))
+            {
+                <div class="card border-0 shadow-sm mb-4 rounded-3 border-start border-3 border-primary">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-2">💬 Özel İstekler</h6>
+                        <p class="mb-0">@Model.SpecialRequests</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Ek Hizmetler -->
+            @if (Model.AddOnServices != null && Model.AddOnServices.Any())
+            {
+                <div class="card border-0 shadow-sm mb-4 rounded-3">
+                    <div class="card-header bg-success text-white fw-bold">
+                        🎁 Ek Hizmetler
+                    </div>
+                    <div class="card-body">
+                        @foreach (var service in Model.AddOnServices)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                <span>✓ @service.Name</span>
+                                <span class="text-success fw-bold">@service.Price.ToString("C")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar - Fiyat Özeti -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg p-4 position-sticky rounded-3" style="top: 20px;">
+                <h5 class="fw-bold mb-4">💰 Fiyat Özeti</h5>
+
+                <!-- Ara Toplam -->
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Gecelik Fiyat:</span>
+                        <strong>@Model.PricePerNight.ToString("C")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">×@Model.NightCount gece</span>
+                        <strong class="text-primary">@Model.SubTotal.ToString("C")</strong>
+                    </div>
+                </div>
+
+                <!-- Vergi -->
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Vergi:</span>
+                        <strong>@Model.Tax.ToString("C")</strong>
+                    </div>
+                </div>
+
+                <!-- Ek Hizmet Toplamı -->
+                @if (Model.AddOnTotal > 0)
+                {
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Ek Hizmetler:</span>
+                            <strong>@Model.AddOnTotal.ToString("C")</strong>
+                        </div>
+                    </div>
+                }
+
+                <!-- Genel Toplam -->
+                <div class="mb-4 p-3 bg-light rounded-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold">Genel Toplam:</h6>
+                        <h5 class="mb-0 text-primary fw-bold">@Model.GrandTotal.ToString("C")</h5>
+                    </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="mb-3">
+                    @if (Model.Status == "Confirmed")
+                    {
+                        <span class="badge bg-success w-100 p-2 fs-6">✅ Onaylandı</span>
+                    }
+                    else if (Model.Status == "Pending")
+                    {
+                        <span class="badge bg-warning text-dark w-100 p-2 fs-6">⏳ Beklemede</span>
+                    }
+                    else if (Model.Status == "Cancelled")
+                    {
+                        <span class="badge bg-danger w-100 p-2 fs-6">❌ İptal Edildi</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary w-100 p-2 fs-6">ℹ️ @Model.Status</span>
+                    }
+                </div>
+
+                <!-- Actions -->
+                @if (Model.Status != "Cancelled")
+                {
+                    <form method="post" action="/reservation/cancel/@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-sm w-100" onclick="return confirm('Rezervasyonu iptal etmek istediğinize emin misiniz?')">
+                            ❌ Rezervasyonu İptal Et
+                        </button>
+                    </form>
+                }
+
+                <!-- Back to List -->
+                <a href="/reservation/list" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+                    📋 Tüm Rezervasyonlar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    h1 {
+        color: #2c3e50;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .card-header {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .rounded-3 {
+        border-radius: 20px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0a58ca, #084298);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+
+</style>

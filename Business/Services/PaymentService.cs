@@ -15,20 +15,27 @@ namespace Business.Services
         private readonly StayHubContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<PaymentService> _logger;
+        // ✅ ADAPTÖRLER BURAYA ENJEKTE EDİLİYOR
+        private readonly IEnumerable<IPaymentAdapter> _paymentAdapters;
 
-        public PaymentService(StayHubContext context, IMapper mapper, ILogger<PaymentService> logger)
+        public PaymentService(
+            StayHubContext context,
+            IMapper mapper,
+            ILogger<PaymentService> logger,
+            IEnumerable<IPaymentAdapter> paymentAdapters) // ✅ Constructor güncellendi
         {
             _context = context;
             _mapper = mapper;
             _logger = logger;
+            _paymentAdapters = paymentAdapters;
         }
 
-      
+        // ✅ Ödeme Oluştur ve Bankadan Çek
         public async Task<IResult> CreatePaymentAsync(int reservationId, PaymentProcessDto dto)
         {
             try
             {
-                _logger.LogInformation($"[PAYMENT] Ödeme oluşturuluyor: Reservation={reservationId}");
+                _logger.LogInformation($"[PAYMENT] Ödeme işlemi başlatılıyor: Reservation={reservationId}");
 
                 var reservation = await _context.Reservations
                     .FirstOrDefaultAsync(r => r.Id == reservationId && !r.IsDeleted);
@@ -45,32 +52,58 @@ namespace Business.Services
                     return Result.Failure("Geçersiz kart numarası");
                 }
 
+                // 🌟 1. ADIM: STRATEJİ BELİRLE (Hangi banka / altyapı kullanılacak?)
+                // Eğer formdan provider gelmiyorsa varsayılan olarak "Iyzico" kullanıyoruz
+                string providerName = "Iyzico";
+                var adapter = _paymentAdapters.FirstOrDefault(a => a.ProviderName == providerName);
+
+                if (adapter == null)
+                {
+                    _logger.LogError($"[PAYMENT] Sistemde '{providerName}' isimli ödeme altyapısı bulunamadı!");
+                    return Result.Failure("Ödeme altyapısı şu anda hizmet veremiyor.");
+                }
+
+                // 🌟 2. ADIM: BANKADAN PARAYI ÇEK
+                var paymentResult = await adapter.ProcessPaymentAsync(dto);
+
+                if (!paymentResult.IsSuccess)
+                {
+                    _logger.LogWarning($"[PAYMENT] Ödeme reddedildi. Hata: {paymentResult.ErrorMessage}");
+                    return Result.Failure($"Ödeme işlemi banka tarafından reddedildi: {paymentResult.ErrorMessage}");
+                }
+
+                // 🌟 3. ADIM: BAŞARILI İŞLEMİ VERİTABANINA KAYDET
                 var payment = new Payment
                 {
                     ReservationId = reservationId,
-                    PaymentReference = dto.OrderNumber,
+                    PaymentReference = dto.OrderNumber ?? paymentResult.TransactionId,
                     Amount = dto.Amount,
-                    PaymentMethod = "Credit Card",
-                    Status = RoomStatus.Pending,
-                    TransactionId = Guid.NewGuid().ToString(),
+                    PaymentMethod = providerName, // Hangi altyapıyla çekildiğini kaydediyoruz (Örn: Iyzico)
+                    Status = PaymentStatus.Completed, // ✅ Para çekildiği için anında Completed yapıyoruz
+                    TransactionId = paymentResult.TransactionId, // Bankadan dönen dekont ID'si
                     Notes = dto.Description,
                     PaymentDate = DateTime.UtcNow
                 };
 
                 await _context.Payments.AddAsync(payment);
+
+                // Opsiyonel: Ödeme başarılı olduğu için Rezervasyon durumunu da "Onaylandı" yapalım
+                reservation.Status = ReservationStatus.Confirmed;
+                _context.Reservations.Update(reservation);
+
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"[PAYMENT] Ödeme oluşturuldu: ID={payment.Id}");
-                return Result.Success("Ödeme başarıyla oluşturuldu");
+                _logger.LogInformation($"[PAYMENT] Ödeme başarıyla çekildi ve kaydedildi: ID={payment.Id}");
+                return Result.Success("Ödeme başarıyla tamamlandı!");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[PAYMENT] CreatePaymentAsync hatası");
-                return Result.Failure("Ödeme oluşturulurken hata oluştu");
+                return Result.ServerError("Ödeme oluşturulurken sistemsel bir hata oluştu.");
             }
         }
 
-      
+        // ✅ Rezervasyona Göre Ödeme Al
         public async Task<PaymentDetailDto?> GetPaymentByReservationIdAsync(int reservationId)
         {
             try
@@ -96,7 +129,7 @@ namespace Business.Services
             }
         }
 
-      
+        // ✅ Ödeme Durumu Güncelle
         public async Task<IResult> UpdatePaymentStatusAsync(int id, string status)
         {
             try
@@ -110,14 +143,13 @@ namespace Business.Services
                     return Result.Failure("Ödeme bulunamadı");
                 }
 
-                
-                if (!Enum.TryParse<RoomStatus>(status, out var roomStatus))
+                if (!Enum.TryParse<PaymentStatus>(status, out var paymentStatus))
                 {
                     _logger.LogWarning($"[PAYMENT] Geçersiz durum: {status}");
                     return Result.Failure("Geçersiz ödeme durumu");
                 }
 
-                payment.Status = roomStatus; 
+                payment.Status = paymentStatus;
                 payment.UpdatedAt = DateTime.UtcNow;
 
                 _context.Payments.Update(payment);
@@ -133,7 +165,7 @@ namespace Business.Services
             }
         }
 
-     
+        // ✅ İade İşle
         public async Task<IResult> ProcessRefundAsync(int paymentId)
         {
             try
@@ -147,13 +179,15 @@ namespace Business.Services
                     return Result.Failure("Ödeme bulunamadı");
                 }
 
-                if (payment.Status != RoomStatus.Confirmed && payment.Status != RoomStatus.Pending)
+                if (payment.Status != PaymentStatus.Completed && payment.Status != PaymentStatus.Pending)
                 {
                     _logger.LogWarning($"[PAYMENT] İade yapılamaz");
                     return Result.Failure("Sadece tamamlanan ödemeler iade edilebilir");
                 }
 
-                payment.Status = RoomStatus.Cancelled; 
+                // Not: Gerçek hayatta burada da Adapter çağrılır -> adapter.RefundPaymentAsync(payment.TransactionId)
+
+                payment.Status = PaymentStatus.Refunded;
                 payment.UpdatedAt = DateTime.UtcNow;
 
                 _context.Payments.Update(payment);

@@ -70,8 +70,11 @@ namespace Data
             }
             finally
             {
-                await _transaction.DisposeAsync();
-                _transaction = null;
+                if (_transaction != null)
+                {
+                    await _transaction.DisposeAsync();
+                    _transaction = null;
+                }
             }
         }
 
@@ -84,8 +87,11 @@ namespace Data
             }
             finally
             {
-                await _transaction.DisposeAsync();
-                _transaction = null;
+                if (_transaction != null)
+                {
+                    await _transaction.DisposeAsync();
+                    _transaction = null;
+                }
             }
         }
 
@@ -111,7 +117,14 @@ namespace Data
             }
         }
 
-        // ========== METHOD 5: CloseConnectionAsync ==========
+        // ✅ DÜZELTME: Interface'iniz ile birebir aynı yapıldı (Task<int> yerine Task dönüyor)
+        // ========== METHOD 5: SaveChangesAsync ==========
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        // ========== METHOD 6: CloseConnectionAsync ==========
         public async Task CloseConnectionAsync()
         {
             if (_context.Database.GetDbConnection().State == ConnectionState.Open)
@@ -120,7 +133,7 @@ namespace Data
             }
         }
 
-        // ========== METHOD 6: DisposeAsync ==========
+        // ========== METHOD 7: DisposeAsync ==========
         public async ValueTask DisposeAsync()
         {
             try

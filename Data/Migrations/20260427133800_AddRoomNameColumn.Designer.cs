@@ -3,6 +3,7 @@ using System;
 using Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Data.Migrations
 {
     [DbContext(typeof(StayHubContext))]
-    partial class StayHubContextModelSnapshot : ModelSnapshot
+    [Migration("20260427133800_AddRoomNameColumn")]
+    partial class AddRoomNameColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.25");
@@ -310,17 +313,12 @@ namespace Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("PaymentDate")
@@ -335,23 +333,21 @@ namespace Data.Migrations
 
                     b.Property<string>("PaymentReference")
                         .IsRequired()
-                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ReservationId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("ReservationId1")
+                    b.Property<int>("Status")
+                        .HasMaxLength(50)
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("TransactionId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("TransactionStatus")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -359,8 +355,6 @@ namespace Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ReservationId");
-
-                    b.HasIndex("ReservationId1");
 
                     b.ToTable("Payments");
                 });
@@ -794,14 +788,10 @@ namespace Data.Migrations
             modelBuilder.Entity("Core.Concretes.Entities.Payment", b =>
                 {
                     b.HasOne("Core.Concretes.Entities.Reservation", "Reservation")
-                        .WithMany()
+                        .WithMany("Payments")
                         .HasForeignKey("ReservationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Core.Concretes.Entities.Reservation", null)
-                        .WithMany("Payments")
-                        .HasForeignKey("ReservationId1");
 
                     b.Navigation("Reservation");
                 });

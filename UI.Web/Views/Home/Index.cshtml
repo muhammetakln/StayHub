@@ -1,328 +1,95 @@
 ﻿@{
-    ViewData["Title"] = "StayHub - Giriş & Kayıt";
+    ViewData["Title"] = "StayHub - Hoş Geldiniz";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-top: -16px;">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-5">
-                <!-- Logo & Başlık -->
-                <div class="text-center mb-5 text-white">
-                    <h1 class="display-4 fw-bold mb-2">🏨 StayHub</h1>
-                    <p class="lead">En İyi Otel Deneyimi</p>
+            <div class="col-lg-5 col-md-8 text-center">
+
+                <div class="mb-5 text-white">
+                    <h1 class="display-3 fw-bold mb-3">🏨 StayHub</h1>
+                    <p class="lead fs-4">En İyi Otel Deneyimi İçin Bize Katılın</p>
                 </div>
 
-                <!-- Sekmeli Giriş -->
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                    <!-- Sekme Başlıkları -->
-                    <div class="nav nav-tabs nav-fill border-0 bg-light" role="tablist">
-                        <button class="nav-link active fw-bold text-dark" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">
-                            🔑 Giriş Yap
-                        </button>
-                        <button class="nav-link fw-bold text-dark" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">
-                            📝 Kaydol
-                        </button>
+                <div class="card border-0 shadow-lg rounded-4 p-5 bg-white">
+
+                    <h4 class="mb-4 text-dark fw-bold">Hesabınız var mı?</h4>
+                    <a href="/account/login" class="btn btn-primary btn-lg rounded-3 fw-bold shadow-sm mb-2">
+                        🔑 Giriş Yap
+                    </a>
+
+                    <div class="d-flex align-items-center my-4">
+                        <hr class="flex-grow-1">
+                        <span class="mx-3 text-muted">veya</span>
+                        <hr class="flex-grow-1">
                     </div>
 
-                    <!-- Sekme İçeriği -->
-                    <div class="tab-content">
-                        <!-- GİRİŞ SEKMESI -->
-                        <div class="tab-pane fade show active" id="login" role="tabpanel">
-                            <div class="card-body p-4">
-                                <h4 class="mb-4 text-center">Hesabınıza Giriş Yapın</h4>
+                    <h5 class="mb-3 text-dark fw-bold">Henüz üye değil misiniz?</h5>
+                    <a href="/account/register" class="btn btn-success btn-lg rounded-3 fw-bold shadow-sm">
+                        📝 Hemen Kaydol
+                    </a>
 
-                                <form method="post" action="/account/login" id="loginForm">
-                                    @Html.AntiForgeryToken()
-
-                                    <!-- Email -->
-                                    <div class="mb-3">
-                                        <label for="loginEmail" class="form-label fw-bold">📧 Email Adresi</label>
-                                        <input type="email"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="loginEmail"
-                                               name="email"
-                                               placeholder="ornek@example.com"
-                                               required>
-                                    </div>
-
-                                    <!-- Giriş Türü -->
-                                    <div class="mb-3">
-                                        <label for="loginUserType" class="form-label fw-bold">👤 Giriş Türü</label>
-                                        <select class="form-select form-select-lg rounded-3"
-                                                id="loginUserType"
-                                                name="userType"
-                                                required>
-                                            <option value="">-- Seçiniz --</option>
-                                            <option value="Guest">👤 Konuk (Guest)</option>
-                                            <option value="Admin">⚙️ Admin</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Şifre -->
-                                    <div class="mb-3">
-                                        <label for="loginPassword" class="form-label fw-bold">🔐 Şifre</label>
-                                        <input type="password"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="loginPassword"
-                                               name="password"
-                                               placeholder="Şifrenizi girin"
-                                               required>
-                                    </div>
-
-                                    <!-- Beni Hatırla - FİXED -->
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox"
-                                               class="form-check-input"
-                                               id="rememberMe"
-                                               name="rememberMe"
-                                               value="true">
-                                        <label class="form-check-label" for="rememberMe">
-                                            Beni hatırla
-                                        </label>
-                                    </div>
-
-                                    <!-- Giriş Butonu -->
-                                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3 fw-bold mb-3">
-                                        🔑 Giriş Yap
-                                    </button>
-
-                                    <!-- Şifremi Unuttum -->
-                                    <div class="text-center">
-                                        <a href="/account/forgot-password" class="text-decoration-none small">
-                                            🔓 Şifremi Unuttum
-                                        </a>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- KAYIT SEKMESI -->
-                        <div class="tab-pane fade" id="register" role="tabpanel">
-                            <div class="card-body p-4">
-                                <h4 class="mb-4 text-center">Yeni Hesap Oluşturun</h4>
-
-                                <form method="post" action="/account/register" id="registerForm">
-                                    @Html.AntiForgeryToken()
-
-                                    <!-- Ad -->
-                                    <div class="mb-3">
-                                        <label for="firstName" class="form-label fw-bold">👤 Ad</label>
-                                        <input type="text"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="firstName"
-                                               name="firstName"
-                                               placeholder="Adınız"
-                                               required>
-                                        <small class="text-muted">2-50 karakter</small>
-                                    </div>
-
-                                    <!-- Soyad -->
-                                    <div class="mb-3">
-                                        <label for="lastName" class="form-label fw-bold">👤 Soyad</label>
-                                        <input type="text"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="lastName"
-                                               name="lastName"
-                                               placeholder="Soyadınız"
-                                               required>
-                                        <small class="text-muted">2-50 karakter</small>
-                                    </div>
-
-                                    <!-- Email -->
-                                    <div class="mb-3">
-                                        <label for="registerEmail" class="form-label fw-bold">📧 Email Adresi</label>
-                                        <input type="email"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="registerEmail"
-                                               name="email"
-                                               placeholder="ornek@example.com"
-                                               required>
-                                    </div>
-
-                                    <!-- Telefon -->
-                                    <div class="mb-3">
-                                        <label for="phoneNumber" class="form-label fw-bold">📱 Telefon Numarası</label>
-                                        <input type="tel"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="phoneNumber"
-                                               name="phoneNumber"
-                                               placeholder="+90 5XX XXX XXXX"
-                                               required>
-                                    </div>
-
-                                    <!-- Kimlik Numarası -->
-                                    <div class="mb-3">
-                                        <label for="identificationNumber" class="form-label fw-bold">🆔 Kimlik Numarası</label>
-                                        <input type="text"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="identificationNumber"
-                                               name="identificationNumber"
-                                               placeholder="11 haneli"
-                                               maxlength="11"
-                                               required>
-                                        <small class="text-muted">11 haneli</small>
-                                    </div>
-
-                                    <!-- Ülke -->
-                                    <div class="mb-3">
-                                        <label for="country" class="form-label fw-bold">🌍 Ülke</label>
-                                        <input type="text"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="country"
-                                               name="country"
-                                               placeholder="Türkiye"
-                                               required>
-                                    </div>
-
-                                    <!-- Adres -->
-                                    <div class="mb-3">
-                                        <label for="address" class="form-label fw-bold">📍 Adres</label>
-                                        <textarea class="form-control form-control-lg rounded-3"
-                                                  id="address"
-                                                  name="address"
-                                                  placeholder="Adresiniz"
-                                                  rows="2"
-                                                  required></textarea>
-                                        <small class="text-muted">5-200 karakter</small>
-                                    </div>
-
-                                    <!-- Şifre -->
-                                    <div class="mb-3">
-                                        <label for="registerPassword" class="form-label fw-bold">🔐 Şifre</label>
-                                        <input type="password"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="registerPassword"
-                                               name="password"
-                                               placeholder="Minimum 8 karakter"
-                                               required>
-                                        <small class="text-muted d-block">
-                                            Küçük harf, büyük harf, sayı ve özel karakter gerekli
-                                        </small>
-                                    </div>
-
-                                    <!-- Şifre Onayla -->
-                                    <div class="mb-3">
-                                        <label for="confirmPassword" class="form-label fw-bold">🔐 Şifre Onayla</label>
-                                        <input type="password"
-                                               class="form-control form-control-lg rounded-3"
-                                               id="confirmPassword"
-                                               name="confirmPassword"
-                                               placeholder="Şifreyi tekrar girin"
-                                               required>
-                                    </div>
-
-                                    <!-- Şartları Kabul - FİXED -->
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox"
-                                               class="form-check-input"
-                                               id="agreeTerms"
-                                               name="agreeTerms"
-                                               value="true"
-                                               required>
-                                        <label class="form-check-label" for="agreeTerms">
-                                            <a href="/privacy" class="text-decoration-none">Şartları ve Koşulları</a> kabul ediyorum
-                                        </label>
-                                    </div>
-
-                                    <!-- Kayıt Butonu -->
-                                    <button type="submit" class="btn btn-success btn-lg w-100 rounded-3 fw-bold">
-                                        📝 Kaydol
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                    <div class="mt-4 pt-3 border-top">
+                        <a href="/hotel" class="text-decoration-none text-muted">
+                            Giriş yapmadan otelleri incele →
+                        </a>
                     </div>
                 </div>
 
-                <!-- Alt Bilgi -->
                 <div class="text-center mt-4 text-white">
                     <p class="small">© 2026 StayHub. Tüm Hakları Saklıdır.</p>
                 </div>
+
             </div>
         </div>
     </div>
 </div>
 
 <style>
+    /* Tasarım İyileştirmeleri */
     .min-vh-100 {
         min-height: 100vh;
     }
 
     .card {
         border-radius: 20px;
-        overflow: hidden;
-    }
-
-    .nav-tabs {
-        background-color: #f8f9fa;
-        border: none;
-    }
-
-    .nav-link {
-        border: none;
-        color: #495057 !important;
-        padding: 1rem;
-        font-size: 1.1rem;
-    }
-
-        .nav-link:hover {
-            background-color: #e9ecef;
-        }
-
-        .nav-link.active {
-            background-color: white;
-            border-bottom: 3px solid #0d6efd;
-        }
-
-    .form-control, .form-select {
-        border-radius: 12px;
-        border: 1px solid #dee2e6;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
-    }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-        }
-
-    .form-label {
-        color: #2c3e50;
-        margin-bottom: 0.5rem;
     }
 
     .btn-primary {
         background: linear-gradient(135deg, #0d6efd, #0a58ca);
         border: none;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
     }
 
         .btn-primary:hover {
             background: linear-gradient(135deg, #0a58ca, #084298);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4) !important;
         }
 
     .btn-success {
         background: linear-gradient(135deg, #198754, #157347);
         border: none;
-        padding: 0.75rem 1rem;
-        font-size: 1rem;
+        padding: 1rem;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
     }
 
         .btn-success:hover {
             background: linear-gradient(135deg, #157347, #145a32);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(25, 135, 84, 0.4) !important;
         }
 
-    .text-white a {
-        color: #fff !important;
-    }
-
     .rounded-3 {
-        border-radius: 12px;
+        border-radius: 12px !important;
     }
 
     .rounded-4 {
-        border-radius: 20px;
+        border-radius: 20px !important;
     }
 </style>

@@ -21,5 +21,6 @@ namespace Core.Abstracts
         Task<IResult> CommitAsync();
         Task RollbackAsync();
         Task CloseConnectionAsync();
+        Task SaveChangesAsync();
     }
 }

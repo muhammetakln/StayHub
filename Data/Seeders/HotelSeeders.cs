@@ -27,7 +27,7 @@ namespace Data.Seeders
                     Email = "hilton@istanbul.com",
                     Website = "https://hilton.com",
                     Description = "Luxury hotel in Istanbul with stunning views",
-                    Rating = "4.5",
+                   
                     HotelType = "Luxury",
                     IsActive = true,
                     IsDeleted = false,
@@ -44,7 +44,7 @@ namespace Data.Seeders
                     Email = "marriott@ankara.com",
                     Website = "https://marriott.com",
                     Description = "Business hotel in Ankara for corporate travelers",
-                    Rating = "4.0",
+                    
                     HotelType = "Business",
                     IsActive = true,
                     IsDeleted = false,
@@ -61,7 +61,7 @@ namespace Data.Seeders
                     Email = "budget@izmir.com",
                     Website = "https://budgetinn.com",
                     Description = "Affordable and comfortable budget hotel in Izmir",
-                    Rating = "3.5",
+                   
                     HotelType = "Budget",
                     IsActive = true,
                     IsDeleted = false,
@@ -78,7 +78,7 @@ namespace Data.Seeders
                     Email = "resort@antalya.com",
                     Website = "https://antalyaresort.com",
                     Description = "All-inclusive beach resort in Antalya",
-                    Rating = "4.7",
+                   
                     HotelType = "Resort",
                     IsActive = true,
                     IsDeleted = false,
@@ -95,7 +95,7 @@ namespace Data.Seeders
                     Email = "boutique@cappadocia.com",
                     Website = "https://cappadociaboutique.com",
                     Description = "Unique boutique hotel in historical Cappadocia",
-                    Rating = "4.8",
+                   
                     HotelType = "Boutique",
                     IsActive = true,
                     IsDeleted = false,

@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
-using Core.Concretes.DTOs.Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Data.Contexts;
 using Microsoft.EntityFrameworkCore;
@@ -91,13 +90,15 @@ namespace Business.Services
                 if (dto.MinRating.HasValue)
                 {
                     var minRating = decimal.Parse(dto.MinRating.ToString());
-                    query = query.Where(h => decimal.Parse(h.Rating ?? "0") >= minRating);
+                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
+                    query = query.Where(h => (decimal)h.AverageRating >= minRating);
                 }
 
                 if (dto.MaxRating.HasValue)
                 {
                     var maxRating = decimal.Parse(dto.MaxRating.ToString());
-                    query = query.Where(h => decimal.Parse(h.Rating ?? "0") <= maxRating);
+                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
+                    query = query.Where(h => (decimal)h.AverageRating <= maxRating);
                 }
 
                 if (!string.IsNullOrEmpty(dto.HotelType))
@@ -108,9 +109,10 @@ namespace Business.Services
 
                 if (sortBy == "rating")
                 {
+                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
                     query = sortOrder == "desc"
-                        ? query.OrderByDescending(h => decimal.Parse(h.Rating ?? "0"))
-                        : query.OrderBy(h => decimal.Parse(h.Rating ?? "0"));
+                        ? query.OrderByDescending(h => h.AverageRating)
+                        : query.OrderBy(h => h.AverageRating);
                 }
                 else
                 {
@@ -189,9 +191,10 @@ namespace Business.Services
                 _logger.LogInformation($"Şehirdeki oteller getiriliyor: {city}");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
-                    .Include(h => h.Reviews)  // ✅ EKLE
+                    .Include(h => h.Reviews)
                     .Where(h => !h.IsDeleted && h.IsActive && h.City == city)
-                    .OrderByDescending(h => h.Rating)
+                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
+                    .OrderByDescending(h => h.AverageRating)
                     .ToListAsync();
 
                 return _mapper.Map<List<HotelDto>>(hotels);
@@ -211,10 +214,10 @@ namespace Business.Services
 
                 var hotels = await _context.Hotels
                     .AsNoTracking()
-                    .Include(h => h.Reviews)  // ✅ EKLE
+                    .Include(h => h.Reviews)
                     .Where(h => !h.IsDeleted && h.IsActive &&
-                           decimal.Parse(h.Rating ?? "0") >= minRating)
-                    .OrderByDescending(h => decimal.Parse(h.Rating ?? "0"))
+                           (decimal)h.AverageRating >= minRating) // ✅ DÜZELTME: AverageRating kullanıldı
+                    .OrderByDescending(h => h.AverageRating)      // ✅ DÜZELTME: AverageRating kullanıldı
                     .ToListAsync();
 
                 return _mapper.Map<List<HotelDto>>(hotels);
@@ -247,7 +250,7 @@ namespace Business.Services
                 _logger.LogInformation($"Otel aranıyor: {searchTerm}");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
-                    .Include(h => h.Reviews)  // ✅ EKLE
+                    .Include(h => h.Reviews)
                     .Where(h => !h.IsDeleted && h.IsActive &&
                     (h.Name.Contains(searchTerm) ||
                     h.City.Contains(searchTerm) ||

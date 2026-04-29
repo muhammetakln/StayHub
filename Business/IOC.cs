@@ -1,4 +1,6 @@
-﻿using Business.Mappings;
+﻿using Business.Adapters;
+using Business.Mappings;
+using Business.Profiles;
 using Business.Services;
 using Core.Abstracts;
 using Core.Abstracts.Interfaces;
@@ -10,7 +12,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Business
 {
@@ -48,6 +49,8 @@ namespace Business
             services.AddScoped<IReservationService, ReservationService>();
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IPaymentAdapter, IyzicoPaymentAdapter>();
+            services.AddScoped<IPaymentAdapter, StripePaymentAdapter>();
             return services;
 
 

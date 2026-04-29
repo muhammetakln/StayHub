@@ -147,4 +147,26 @@ namespace Core.Concretes.DTOs
         [Range(0.01, 1000000, ErrorMessage = "Geçerli bir miktar giriniz")]
         public decimal? RefundAmount { get; set; }
     }
+    public class PaymentRequestDto
+    {
+        // Kredi Kartı Bilgileri (Veritabanına ASLA kaydedilmez, sadece RAM'de yaşar)
+        public string CardHolderName { get; set; } = string.Empty;
+        public string CardNumber { get; set; } = string.Empty;
+        public string ExpireMonth { get; set; } = string.Empty;
+        public string ExpireYear { get; set; } = string.Empty;
+        public string Cvc { get; set; } = string.Empty;
+
+        // Sipariş Bilgileri
+        public decimal TotalPrice { get; set; }
+        public string Currency { get; set; } = "TRY";
+        public string BuyerEmail { get; set; } = string.Empty;
+        public string BuyerIp { get; set; } = string.Empty;
+
+    }
+    public class PaymentResultDto
+    {
+        public bool IsSuccess { get; set; }
+        public string TransactionId { get; set; } = string.Empty; // Bankanın verdiği dekont/işlem numarası
+        public string ErrorMessage { get; set; } = string.Empty;
+    }
 }
