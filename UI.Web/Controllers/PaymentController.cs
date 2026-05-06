@@ -2,6 +2,7 @@
 using Core.Abstracts.Interfaces;
 using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
+using Core.Concretes.Entities;
 using Core.Concretes.Enum;
 using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
@@ -49,7 +50,6 @@ namespace UI.Web.Controllers
                     return RedirectToAction("List", "Reservation");
                 }
 
-                // Payment formu için DTO oluştur
                 var paymentDto = new PaymentProcessDto
                 {
                     OrderNumber = $"ORD-{reservationId}-{DateTime.Now.Ticks}",
@@ -57,9 +57,7 @@ namespace UI.Web.Controllers
                     Currency = "TRY"
                 };
 
-                // ViewBag'e rezervasyon bilgisi ekle
                 ViewBag.ReservationId = reservationId;
-                ViewBag.HotelName = "Hotel";  // TODO: Service'den çek
                 ViewBag.Amount = reservation.TotalPrice;
                 ViewBag.CheckInDate = reservation.CheckInDate;
                 ViewBag.CheckOutDate = reservation.CheckOutDate;
@@ -80,56 +78,43 @@ namespace UI.Web.Controllers
         {
             try
             {
-                _logger.LogInformation($"Ödeme işleniyor: Reservation={reservationId}, Bank={dto.PaymentMethod}");
-
-                // ✅ Validation hatalarını kontrol et
                 if (!ModelState.IsValid)
                 {
-                    var errors = ModelState.Values.SelectMany(v => v.Errors);
-                    foreach (var error in errors)
-                    {
-                        _logger.LogWarning($"[VALIDATION ERROR] {error.ErrorMessage}");
-                    }
-
-                    _logger.LogWarning("Model validation başarısız");
                     TempData["ErrorMessage"] = "Lütfen tüm alanları doğru doldurunuz";
                     return RedirectToAction("Process", new { reservationId });
                 }
 
-                // ✅ Ödemeyi işle
                 var result = await _paymentService.CreatePaymentAsync(reservationId, dto);
 
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning($"Ödeme başarısız: {result.Message}");
                     TempData["ErrorMessage"] = result.Message;
                     return RedirectToAction("Process", new { reservationId });
                 }
-
-                // ✅ Başarılı ödeme → Success sayfasına git
-                _logger.LogInformation($"✅ Ödeme başarılı: Reservation={reservationId}");
-                TempData["SuccessMessage"] = "✅ Ödeme yapıldı! Rezervasyonunuz onaylandı.";
 
                 return RedirectToAction("Success", new { reservationId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Ödeme işleme hatası: {reservationId}");
-                TempData["ErrorMessage"] = "Ödeme işlenirken hata oluştu. Lütfen tekrar deneyin.";
+                TempData["ErrorMessage"] = "Ödeme işlenirken hata oluştu.";
                 return RedirectToAction("Process", new { reservationId });
             }
         }
 
-        // ✅ GET: /payment/success/{reservationId} - Başarı Sayfası
+        // ✅ GET: /payment/success/{reservationId} - Başarı ve Fatura Maili
         [HttpGet("success/{reservationId}")]
         public async Task<IActionResult> Success(int reservationId)
         {
             try
             {
-                _logger.LogInformation($"Success sayfası açılıyor: Reservation={reservationId}");
+                _logger.LogInformation($"Success süreci başlatıldı: Reservation={reservationId}");
 
-                // ✅ Entity'yi direkt DB'den çek
+                // ✅ 1. Rezervasyonu tüm ilişkileriyle birlikte çek (Mail için gerekli)
                 var reservation = await _context.Reservations
+                    .Include(r => r.Guest)
+                    .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Hotel)
                     .FirstOrDefaultAsync(r => r.Id == reservationId && !r.IsDeleted);
 
                 if (reservation == null)
@@ -138,46 +123,45 @@ namespace UI.Web.Controllers
                     return RedirectToAction("List", "Reservation");
                 }
 
-                // ✅ Status'u Confirmed olarak güncelle
-                reservation.Status = ReservationStatus.Confirmed;
-                reservation.UpdatedAt = DateTime.UtcNow;
+                // ✅ 2. Eğer daha önce onaylanmadıysa onaylanmış yap ve kaydet
+                if (reservation.Status != ReservationStatus.Confirmed)
+                {
+                    reservation.Status = ReservationStatus.Confirmed;
+                    reservation.UpdatedAt = DateTime.UtcNow;
+                    _context.Reservations.Update(reservation);
+                    await _context.SaveChangesAsync();
 
-                _context.Reservations.Update(reservation);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation($"✅ Reservation status güncellendi: Confirmed");
+                    // ✅ 3. KRİTİK: Fatura Mailini Sadece İlk Onayda Gönder
+                    // ReservationService içindeki public yaptığımız metodu çağırıyoruz
+                    await _reservationService.SendInvoiceEmail(reservation.Guest, reservation, reservation.Room);
+                    _logger.LogInformation($"✅ Fatura maili tetiklendi.");
+                }
 
-                // Payment bilgisini al
                 var payment = await _paymentService.GetPaymentByReservationIdAsync(reservationId);
 
                 ViewBag.ReservationId = reservationId;
                 ViewBag.Amount = reservation.TotalPrice;
-                ViewBag.TransactionId = payment?.TransactionId ?? "TXN-MOCK-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
-                ViewBag.HotelName = "Hotel"; // TODO: Service'den çek
+                ViewBag.TransactionId = payment?.TransactionId ?? "TXN-AUTO-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
+                ViewBag.HotelName = reservation.Room?.Hotel?.Name ?? "StayHub Hotel";
                 ViewBag.CheckInDate = reservation.CheckInDate;
                 ViewBag.CheckOutDate = reservation.CheckOutDate;
-
-                _logger.LogInformation($"✅ Success sayfası render ediliyor");
 
                 return View();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Success sayfası hatası: {reservationId}");
+                _logger.LogError(ex, $"Success sayfası/Fatura hatası: {reservationId}");
                 return RedirectToAction("List", "Reservation");
             }
         }
 
-        // ✅ GET: /payment/status/{reservationId} - Ödeme Durumu
         [HttpGet("status/{reservationId}")]
         public async Task<IActionResult> Status(int reservationId)
         {
             try
             {
                 var payment = await _paymentService.GetPaymentByReservationIdAsync(reservationId);
-                if (payment == null)
-                {
-                    return Json(new { status = "Not Found", message = "Ödeme bulunamadı" });
-                }
+                if (payment == null) return Json(new { status = "Not Found" });
 
                 return Json(new
                 {

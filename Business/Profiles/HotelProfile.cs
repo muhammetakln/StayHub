@@ -2,23 +2,23 @@
 using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 
-namespace Business.Profiles
+public class HotelProfile : Profile
 {
-    public class HotelProfile : Profile
+    public HotelProfile()
     {
-        public HotelProfile()
-        {
-            CreateMap<Hotel, HotelDto>();
+        // Türler aynı (TimeOnly -> TimeOnly) olduğu için .ForMember yazmaya GEREK YOKTUR.
+        // AutoMapper isimler aynıysa otomatik eşleme yapar.
 
-            CreateMap<Hotel, HotelDetailDto>()
-                .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.AverageRating.ToString("F1")));
+        CreateMap<Hotel, HotelDto>();
+        CreateMap<Hotel, HotelDetailDto>();
 
-            CreateMap<CreateHotelDto, Hotel>();
-            CreateMap<UpdateHotelDto, Hotel>();
-            CreateMap<AddOnService, AddOnServiceDto>();
-            CreateMap<Review, ReviewDto>();
-            CreateMap<Amenity, AmenityDto>();
-            CreateMap<Room, RoomDto>();
-        }
+        CreateMap<CreateHotelDto, Hotel>();
+        CreateMap<UpdateHotelDto, Hotel>();
+
+        // Diğer eşlemeler aynı kalabilir
+        CreateMap<AddOnService, AddOnServiceDto>();
+        CreateMap<Review, ReviewDto>();
+        CreateMap<Amenity, AmenityDto>();
+        CreateMap<Room, RoomDto>();
     }
 }

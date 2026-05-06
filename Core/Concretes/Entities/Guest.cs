@@ -66,18 +66,10 @@ namespace Core.Concretes.Entities
         /// </summary>
         public bool IsDeleted { get; set; } = false;
 
-        // ═══════════════════════════════════════════════════════════════
-        // Navigation Properties
-        // ═══════════════════════════════════════════════════════════════
-
-        /// <summary>
-        /// Guest'in rezervasyonları
-        /// </summary>
+        public int? HotelId { get; set; } 
+        public virtual Hotel? Hotel { get; set; }
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
 
-        /// <summary>
-        /// Guest'in yorumları
-        /// </summary>
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

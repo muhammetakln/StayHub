@@ -21,6 +21,10 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Oda Numarası")]
         public string RoomNumber { get; set; } = null!;
 
+        // ✅ Servisteki 'RoomName' hatasını çözmek için eklendi
+        [Display(Name = "Oda Türü")]
+        public string? RoomName { get; set; }
+
         [Display(Name = "Check-in")]
         [DataType(DataType.DateTime)]
         public DateTime CheckInDate { get; set; }
@@ -34,6 +38,11 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Toplam Fiyat")]
         public decimal TotalPrice { get; set; }
+
+        public RoomDto? Room { get; set; }
+
+        [Display(Name = "Ekstra Hizmetler")]
+        public List<AddOnServiceDto> SelectedServices { get; set; } = new();
     }
 
     public class ReservationDetailDto

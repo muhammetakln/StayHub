@@ -9,9 +9,9 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Kullanıcı Adı veya Email")]
         public string Email { get; set; } = null!;
-        [Required(ErrorMessage ="Kullamıcı tipini seçiniz ")]
-        [Display(Name ="Giriş Türü")]
-        public string UserType { get; set; } = null!;
+        [Required(ErrorMessage = "Kullamıcı tipini seçiniz ")]
+        [Display(Name = "Giriş Türü")]
+        public string UserType { get; set; } = "Guest";
 
         [Required(ErrorMessage = "Şifre gereklidir")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Şifre en az 6 karakterden oluşmalıdır")]

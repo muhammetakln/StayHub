@@ -66,7 +66,7 @@
         </div>
 
         <div class="row g-4">
-            <!-- Sol Panel: Bilgiler ve Yorumlar -->
+            <!-- Sol Panel -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm p-4 mb-4 rounded-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -78,9 +78,10 @@
                     <p class="text-secondary lh-lg" style="font-size: 1.1rem;">@Model.Description</p>
                 </div>
 
-                <!-- Yorumlar Bölümü -->
+                <!-- Yorumlar Bölümü (Hata Düzeltildi) -->
                 <div class="card border-0 shadow-sm p-4 rounded-4">
-                    <h3 class="fw-bold mb-4">💬 Misafir Deneyimleri (@(Model.Reviews?.Count() ?? 0))</h3>
+                    <h3 class="fw-bold mb-4">💬 Misafir Deneyimleri (@(Model.Reviews != null ? Model.Reviews.Count() : 0))</h3>
+
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
                     {
                         <div class="bg-light p-4 rounded-3 mb-5 border-start border-4 border-primary">
@@ -139,7 +140,7 @@
 
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
                     {
-                        <form method="post" action="/reservation/create/@Model.Id">
+                        <form method="post" action="/reservation/create/@Model.Id" id="reservationForm">
                             @Html.AntiForgeryToken()
 
                             <div class="mb-3">
@@ -174,7 +175,7 @@
                                 <input type="number" name="NumberOf" id="NumberOf" class="form-control" min="1" max="10" value="1" required onchange="updatePrice()">
                             </div>
 
-                            <!-- ✅ EK HİZMETLER (DINAMIK) -->
+                            <!-- ✅ EK HİZMETLER -->
                             <div class="mb-4 bg-light p-3 rounded-3 border">
                                 <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-gift"></i> Ekstra Hizmetler</h6>
                                 <div id="addOnServicesContainer">
@@ -211,7 +212,8 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill py-3 shadow">🚀 Rezervasyonu Tamamla</button>
+                                <!-- ✅ BUTON KİLİTLEME EKLENDİ -->
+                                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg fw-bold rounded-pill py-3 shadow" disabled>🚀 Rezervasyonu Tamamla</button>
                                 <a href="/hotel" class="btn btn-link btn-sm text-secondary">Ana Sayfaya Dön</a>
                             </div>
                         </form>
@@ -237,15 +239,6 @@
     .rounded-4 {
         border-radius: 1.5rem !important;
     }
-
-    .shadow-lg {
-        box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
-    }
-
-    .hover-shadow:hover {
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-        transition: 0.3s;
-    }
 </style>
 
 <script>
@@ -256,45 +249,44 @@
         const guestInput = document.getElementById("NumberOf");
         const priceDisplay = document.getElementById("totalPriceDisplay");
         const hiddenPrice = document.getElementById("hiddenTotalPrice");
+        const submitBtn = document.getElementById("submitBtn"); // Buton kontrolü
 
-        // ✅ Ek hizmetlerin toplamını hesapla
         const addons = document.querySelectorAll(".addon-checkbox:checked");
         let addonTotal = 0;
         addons.forEach(checkbox => {
             addonTotal += parseFloat(checkbox.getAttribute("data-price") || 0);
         });
 
-        // Oda ve tarih seçilmediyse sıfırla
+        // Oda ve tarih seçilmediyse butonu kilitle ve çık
         if (roomSelect.selectedIndex === 0 || !checkIn || !checkOut) {
             priceDisplay.innerText = "0,00 ₺";
             if(hiddenPrice) hiddenPrice.value = 0;
+            if(submitBtn) submitBtn.disabled = true; //
             return;
         }
 
         const roomPrice = parseFloat(roomSelect.options[roomSelect.selectedIndex].getAttribute("data-price") || 0);
         const guestCount = parseInt(guestInput.value) || 1;
 
-        // Gece sayısını milisaniye farkı üzerinden hesapla
         const d1 = new Date(checkIn);
         const d2 = new Date(checkOut);
         const nights = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
 
         if (nights > 0) {
-            // Temel Fiyat: (Gece Sayısı * Oda Fiyatı) + (Ekstra Misafir Başı 150 TL) + Ek Hizmetler
             const baseTotal = nights * roomPrice;
             const extraCharge = guestCount > 1 ? (guestCount - 1) * 150 : 0;
             const finalTotal = baseTotal + extraCharge + addonTotal;
 
-            // TL Formatında gösterim
             priceDisplay.innerText = finalTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
             if(hiddenPrice) hiddenPrice.value = finalTotal;
+            if(submitBtn) submitBtn.disabled = false; // Her şey doğruysa butonu aç
         } else {
             priceDisplay.innerText = "Hatalı Tarih!";
             if(hiddenPrice) hiddenPrice.value = 0;
+            if(submitBtn) submitBtn.disabled = true; // Hatalı tarihte butonu kilitle[cite: 1]
         }
     }
 
-    // Sayfa yüklendiğinde tarih kısıtlaması (Bugünden öncesi seçilemesin)
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('CheckInDate').setAttribute('min', today);

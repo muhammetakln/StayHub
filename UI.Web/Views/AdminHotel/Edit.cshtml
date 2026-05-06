@@ -5,88 +5,110 @@
     ViewData["Title"] = "Otel Düzenle";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <div class="col-md-10 offset-md-1">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h3 class="mb-0">✏️ Otel Düzenle</h3>
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-warning text-dark p-4 rounded-top-4">
+                    <h3 class="mb-0 fw-bold">✏️ Otel Düzenle</h3>
+                    <small class="text-muted">Lütfen otel bilgilerini eksiksiz doldurunuz.</small>
                 </div>
-                <div class="card-body">
-                    <form method="post" action="/admin/hotel/edit/@ViewBag.HotelId">
-                        <div class="mb-3">
+                <div class="card-body p-4 p-lg-5">
+
+                    @* Form action kısmını controller'daki route yapısına uygun hale getirdik *@
+                    <form method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-4">
                             <label class="form-label fw-bold">Otel Adı *</label>
-                            <input type="text" class="form-control" asp-for="Name" placeholder="Otel adını girin" required>
-                            <span asp-validation-for="Name" class="text-danger"></span>
+                            <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="Otel adını girin" required>
+                            <span asp-validation-for="Name" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <label class="form-label fw-bold">Şehir *</label>
-                                    
+                                    <input type="text" class="form-control" asp-for="City" placeholder="Örn: Kayseri" required>
+                                    <span asp-validation-for="City" class="text-danger small"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Ülke *</label>
+                                    <input type="text" class="form-control" asp-for="Country" placeholder="Örn: Türkiye" required>
+                                    <span asp-validation-for="Country" class="text-danger small"></span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                
-                            </div>
-                            <div class="col-md-6">
-                               
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label fw-bold">Adres *</label>
                             <input type="text" class="form-control" asp-for="Address" placeholder="Sokak, Cadde, Mahalle" required>
-                            <span asp-validation-for="Address" class="text-danger"></span>
+                            <span asp-validation-for="Address" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <label class="form-label fw-bold">Telefon *</label>
                                     <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="5551234567" required>
-                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-4">
                                     <label class="form-label fw-bold">Email *</label>
                                     <input type="email" class="form-control" asp-for="Email" placeholder="hotel@example.com" required>
-                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6">
-                                >
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Giriş Saati *</label>
+                                    <input type="time" class="form-control" asp-for="CheckInTime" required>
+                                    <span asp-validation-for="CheckInTime" class="text-danger small"></span>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Çıkış Saati *</label>
+                                    <input type="time" class="form-control" asp-for="CheckOutTime" required>
+                                    <span asp-validation-for="CheckOutTime" class="text-danger small"></span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Açıklama</label>
-                            <textarea class="form-control" asp-for="Description" rows="3" placeholder="Otel hakkında bilgi yazın"></textarea>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Kapak Görseli URL</label>
+                            <input type="text" class="form-control" asp-for="CoverImageUrl" placeholder="https://...">
+                            <span asp-validation-for="CoverImageUrl" class="text-danger small"></span>
                         </div>
 
-                       
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Açıklama</label>
+                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Otel hakkında detaylı bilgi yazın"></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="IsActive" id="flexSwitchCheckDefault">
+                                <label class="form-check-label fw-bold" for="flexSwitchCheckDefault">Otel Aktif Mi?</label>
+                            </div>
+                        </div>
+
                         <hr class="my-4">
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="/admin/hotel" class="btn btn-secondary btn-lg">
+                        <div class="d-grid gap-3 d-md-flex justify-content-md-end">
+                            <a href="/admin/hotel" class="btn btn-light btn-lg px-5 border rounded-pill">
                                 ← İptal
                             </a>
-                            <button type="submit" class="btn btn-warning btn-lg">
-                                ✓ Güncelle
+                            <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold rounded-pill text-dark shadow-sm">
+                                ✓ Bilgileri Güncelle
                             </button>
                         </div>
                     </form>
@@ -97,29 +119,37 @@
 </div>
 
 <style>
-    .card {
-        border: none;
-        border-radius: 10px;
+    body {
+        background-color: #f8f9fa;
     }
 
-    .form-control:focus {
-        border-color: #ffc107;
-        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+    .card {
+        border-radius: 20px !important;
     }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        border: 1px solid #ced4da;
+    }
+
+        .form-control:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.15);
+        }
 
     .btn-warning {
         background: linear-gradient(135deg, #ffc107, #ff9800);
+        border: none;
     }
 
         .btn-warning:hover {
             background: linear-gradient(135deg, #ff9800, #fb8c00);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
         }
 
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d, #5c636a);
+    .rounded-4 {
+        border-radius: 1.5rem !important;
     }
-
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #5c636a, #4c5357);
-        }
 </style>

@@ -1,116 +1,147 @@
 ﻿@using Core.Concretes.DTOs
-
 @model HotelDetailDto
 
 @{
     ViewData["Title"] = "Otel Detayı";
 }
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <div class="col-md-10 offset-md-1">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h3 class="mb-0">👁️ Otel Detayı</h3>
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                @* Üst Bölüm: Kapak Görseli ve Başlık *@
+                <div class="position-relative" style="height: 250px; background: url('@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "/images/default-hotel.jpg" : Model.CoverImageUrl)') center/cover no-repeat;">
+                    <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(transparent, rgba(0,0,0,0.8));">
+                        <div class="d-flex justify-content-between align-items-end text-white">
+                            <div>
+                                <h1 class="fw-bold mb-0">@Model.Name</h1>
+                                <p class="mb-0 opacity-75"><i class="bi bi-geo-alt"></i> @Model.City, @Model.Country</p>
+                            </div>
+                            <div class="text-end">
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm">✓ Aktif Yönetim</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">✗ Pasif Mod</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <h2>@Model.Name</h2>
-                            <p class="text-muted">ID: @Model.Id</p>
+
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row g-4">
+                        @* Sol Sütun: Temel Bilgiler *@
+                        <div class="col-md-7">
+                            <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-info-circle"></i> Genel Açıklama</h5>
+                            <p class="text-secondary leading-relaxed">
+                                @(string.IsNullOrEmpty(Model.Description) ? "Bu otel için henüz bir açıklama girilmemiş." : Model.Description)
+                            </p>
+
+                            <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4 text-primary"><i class="bi bi-telephone"></i> İletişim & Adres</h5>
+                            <div class="bg-light p-3 rounded-3">
+                                <p class="mb-2"><strong>📍 Tam Adres:</strong> @Model.Address</p>
+                                <p class="mb-2"><strong>📞 Telefon:</strong> @Model.PhoneNumber</p>
+                                <p class="mb-0"><strong>✉️ Email:</strong> @Model.Email</p>
+                            </div>
                         </div>
-                        <div class="col-md-4 text-end">
-                            @if (Model.IsActive)
-                            {
-                                <span class="badge bg-success" style="font-size: 16px;">✓ Aktif</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger" style="font-size: 16px;">✗ Pasif</span>
-                            }
+
+                        @* Sağ Sütun: İstatistikler ve Saatler *@
+                        <div class="col-md-5">
+                            <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-clock"></i> Operasyonel Bilgiler</h5>
+                            <div class="list-group list-group-flush shadow-sm rounded-3 overflow-hidden">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Puan / Rating</span>
+                                    <span class="badge bg-warning text-dark fw-bold">⭐ @Model.Rating / 5</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Otel Türü</span>
+                                    <span class="badge bg-info text-dark">@Model.HotelType</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Check-in Saati</span>
+                                    <span class="fw-bold text-success">@Model.CheckInTime</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Check-out Saati</span>
+                                    <span class="fw-bold text-danger">@Model.CheckOutTime</span>
+                                </div>
+                            </div>
+
+                            @* Hızlı Erişim Butonları *@
+                            <div class="mt-4">
+                                <a href="/admin/room?hotelId=@Model.Id" class="btn btn-outline-primary w-100 mb-2 py-2">
+                                    <i class="bi bi-door-open"></i> Odaları Yönet
+                                </a>
+                                <a href="/admin/reservation?hotelId=@Model.Id" class="btn btn-outline-dark w-100 py-2">
+                                    <i class="bi bi-calendar-check"></i> Rezervasyonları Gör
+                                </a>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="detail-box p-3 bg-light rounded mb-3">
-                                <h5 class="mb-2">📍 Konum</h5>
-                                <p class="mb-1"><strong>Şehir:</strong> @Model.City</p>
+                    <hr class="my-5">
 
-                                <p class="mb-1"><strong>Ülke:</strong> @Model.Country</p>
-                            </div>
+                    @* Alt Bölüm: İşlem Butonları *@
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <a href="/admin/hotel" class="btn btn-secondary px-4 py-2 rounded-pill">
+                            <i class="bi bi-arrow-left"></i> Listeye Dön
+                        </a>
+                        <div class="d-flex gap-2">
+                            <a href="/admin/hotel/edit/@Model.Id" class="btn btn-warning px-4 py-2 rounded-pill fw-bold text-dark shadow-sm">
+                                <i class="bi bi-pencil"></i> Düzenle
+                            </a>
+                            <a href="/admin/hotel/delete/@Model.Id" class="btn btn-danger px-4 py-2 rounded-pill fw-bold shadow-sm" onclick="return confirm('Bu oteli silmek istediğinize emin misiniz?')">
+                                <i class="bi bi-trash"></i> Oteli Sil
+                            </a>
                         </div>
-                        <div class="col-md-6">
-                            <div class="detail-box p-3 bg-light rounded mb-3">
-                                <h5 class="mb-2">⭐ Bilgiler</h5>
-                                <p class="mb-1"><strong>Puan:</strong> <span class="badge bg-warning">@Model.Rating</span></p>
-                                <p class="mb-1"><strong>Tür:</strong> <span class="badge bg-info">@Model.HotelType</span></p>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    <hr class="my-4">
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="/admin/hotel" class="btn btn-secondary btn-lg">
-                            ← Geri Dön
-                        </a>
-                        <a href="/admin/hotel/edit/@Model.Id" class="btn btn-warning btn-lg">
-                            ✏️ Düzenle
-                        </a>
-                        <a href="/admin/hotel/delete/@Model.Id" class="btn btn-danger btn-lg">
-                            🗑️ Sil
-                        </a>
                     </div>
                 </div>
             </div>
+
+            <p class="text-center mt-4 text-muted small">Kayıt ID: #@Model.Id | Son Güncelleme: @DateTime.Now.ToShortDateString()</p>
         </div>
     </div>
 </div>
 
 <style>
     .card {
-        border: none;
-        border-radius: 10px;
+        border-radius: 20px !important;
     }
 
-    .detail-box {
-        border-left: 4px solid #0d6efd;
+    .rounded-4 {
+        border-radius: 20px !important;
     }
 
-    h2 {
-        color: #2c3e50;
-        font-weight: bold;
-    }
-
-    h5 {
-        color: #34495e;
-        font-weight: 600;
-    }
-
+    /* Buton Tasarımları */
     .btn-warning {
         background: linear-gradient(135deg, #ffc107, #ff9800);
+        border: none;
     }
 
         .btn-warning:hover {
             background: linear-gradient(135deg, #ff9800, #fb8c00);
+            transform: translateY(-2px);
         }
 
     .btn-danger {
         background: linear-gradient(135deg, #dc3545, #c82333);
+        border: none;
     }
 
         .btn-danger:hover {
             background: linear-gradient(135deg, #c82333, #bd2130);
+            transform: translateY(-2px);
         }
 
     .btn-secondary {
-        background: linear-gradient(135deg, #6c757d, #5c636a);
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
     }
 
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #5c636a, #4c5357);
-        }
+    .leading-relaxed {
+        line-height: 1.6;
+    }
 </style>

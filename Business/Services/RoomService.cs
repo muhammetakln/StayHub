@@ -27,14 +27,12 @@ namespace Business.Services
             _logger = logger;
         }
 
-        // ✅ ODA OLUŞTUR
         public async Task<IResult> CreateRoomByIdAsync(int hotelId, CreateRoomDto dto)
         {
             try
             {
                 _logger.LogInformation($"[ROOM] Oda oluşturuluyor: Hotel={hotelId}, Name={dto.Name}");
 
-                // Otel var mı?
                 var hotelExists = await _context.Hotels.AnyAsync(h => h.Id == hotelId && !h.IsDeleted);
                 if (!hotelExists)
                 {
@@ -42,7 +40,6 @@ namespace Business.Services
                     return Result.Failure("Otel bulunamadı");
                 }
 
-                // CreateRoomDto'da RoomNumber olmadığı için manuel oluştur
                 var roomNumber = $"ROOM-{hotelId}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
 
                 var room = new Room
@@ -54,10 +51,10 @@ namespace Business.Services
                     Capacity = dto.Capacity,
                     Size = dto.Size,
                     Price = dto.Price,
-                    PricePerNight = dto.Price, // Price = PricePerNight
+                    PricePerNight = dto.Price, 
                     Status = RoomStatus.Available,
                     IsActive = dto.IsActive,
-                    FloorNumber = 1, // Default floor
+                    FloorNumber = 1, 
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -74,7 +71,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ ODA GÜNCELLE
         public async Task<IResult> UpdateRoomAsync(int roomId, UpdateRoomDto dto)
         {
             try
@@ -111,7 +107,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ ODA SİL
         public async Task<IResult> DeleteRoomAsync(int roomId)
         {
             try
@@ -125,7 +120,6 @@ namespace Business.Services
                     return Result.Failure("Oda bulunamadı");
                 }
 
-                // Aktif rezervasyon var mı?
                 var activeReservation = await _context.Reservations
                     .AnyAsync(r =>
                         r.RoomId == roomId &&
