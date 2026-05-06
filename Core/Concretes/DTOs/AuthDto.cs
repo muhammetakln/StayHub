@@ -2,14 +2,12 @@
 
 namespace Core.Concretes.DTOs
 {
-    /// <summary>
-    /// Login için kullanılan DTO
-    /// </summary>
+    
     public class LoginDto
     {
-        [Required(ErrorMessage = "Email adresi gereklidir")]
-        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
-        [Display(Name = "Email Adresi")]
+        [Required(ErrorMessage = "Kullanıcı adı veya Email alanı zorunludur.")]
+
+        [Display(Name = "Kullanıcı Adı veya Email")]
         public string Email { get; set; } = null!;
         [Required(ErrorMessage ="Kullamıcı tipini seçiniz ")]
         [Display(Name ="Giriş Türü")]
@@ -25,9 +23,7 @@ namespace Core.Concretes.DTOs
         public bool RememberMe { get; set; } = false;
     }
 
-    /// <summary>
-    /// Kayıt için kullanılan DTO
-    /// </summary>
+    
     public class RegisterDto
     {
         [Required(ErrorMessage = "Ad gereklidir")]
@@ -51,10 +47,7 @@ namespace Core.Concretes.DTOs
         [StringLength(20)]
         public string PhoneNumber { get; set; } = null!;
 
-        [Required(ErrorMessage = "Kimlik numarası gereklidir")]
-        [StringLength(11, MinimumLength = 11, ErrorMessage = "Kimlik numarası 11 haneli olmalıdır")]
-        [Display(Name = "Kimlik Numarası")]
-        public string IdentificationNumber { get; set; } = null!;
+       
 
         [Required(ErrorMessage = "Ülke seçimi gereklidir")]
         [StringLength(50, MinimumLength = 2, ErrorMessage = "Ülke adı geçerli olmalıdır")]
@@ -81,9 +74,6 @@ namespace Core.Concretes.DTOs
         public string ConfirmPassword { get; set; } = null!;
     }
 
-    /// <summary>
-    /// Profil bilgilerini göstermek için kullanılan DTO
-    /// </summary>
     public class AuthDto
     {
         [Display(Name = "ID")]
@@ -152,18 +142,7 @@ namespace Core.Concretes.DTOs
         public string Address { get; set; } = null!;
     }
 
-    /// <summary>
-    /// Şifre değiştirmek için kullanılan DTO (İsteğe bağlı)
-    /// </summary>
-    
-
-    /// <summary>
-    /// Şifre sıfırlama için kullanılan DTO
-    /// </summary>
-    
-    /// <summary>
-    /// Login yanıtı için kullanılan DTO
-    /// </summary>
+   
     public class LoginResponseDto
     {
         [Display(Name = "Başarı Durumu")]
@@ -185,9 +164,7 @@ namespace Core.Concretes.DTOs
         public string? ErrorDetails { get; set; }
     }
 
-    /// <summary>
-    /// Register yanıtı için kullanılan DTO
-    /// </summary>
+   
     public class RegisterResponseDto
     {
         [Display(Name = "Başarı Durumu")]

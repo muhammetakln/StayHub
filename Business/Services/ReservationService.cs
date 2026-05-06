@@ -7,6 +7,8 @@ using Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Utils.Responses;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Globalization;
 
 namespace Business.Services
 {
@@ -15,194 +17,153 @@ namespace Business.Services
         private readonly StayHubContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservationService> _logger;
+        private readonly IEmailSender _emailSender;
 
-        public ReservationService(StayHubContext context, IMapper mapper, ILogger<ReservationService> logger)
+        public ReservationService(StayHubContext context, IMapper mapper, ILogger<ReservationService> logger, IEmailSender emailSender)
         {
             _context = context;
             _mapper = mapper;
             _logger = logger;
+            _emailSender = emailSender;
         }
 
-        
         public async Task<List<ReservationDto>> CreateReservationAsync(int guestId, CreateReservationDto dto)
         {
             try
             {
-                _logger.LogInformation($"[RESERVATION] Rezervasyon oluşturuluyor: Guest={guestId}, Room={dto.RoomId}");
+                // 1. Temel Kontroller
+                var guest = await _context.Users.FindAsync(guestId) ?? throw new Exception("Misafir bulunamadı");
+                var room = await _context.Rooms.Include(r => r.Hotel)
+                    .FirstOrDefaultAsync(r => r.Id == dto.RoomId && !r.IsDeleted && r.IsActive)
+                    ?? throw new Exception("Oda bulunamadı");
 
-                // Misafir var mı?
-                var guestExists = await _context.Users.AnyAsync(g => g.Id == guestId);
-                if (!guestExists)
-                {
-                    _logger.LogWarning($"[RESERVATION] Misafir bulunamadı: {guestId}");
-                    throw new Exception("Misafir bulunamadı");
-                }
+                if (dto.NumberOf > room.Capacity) throw new Exception($"Maksimum {room.Capacity} kişi kalabilir.");
+                if (dto.CheckInDate >= dto.CheckOutDate) throw new Exception("Tarihler geçersiz.");
 
-               
-                var room = await _context.Rooms
-                    .FirstOrDefaultAsync(r => r.Id == dto.RoomId && !r.IsDeleted && r.IsActive);
+                // 2. Doluluk Kontrolü
+                var isOccupied = await _context.Reservations.AnyAsync(r =>
+                    r.RoomId == dto.RoomId && !r.IsDeleted && r.Status != ReservationStatus.Cancelled &&
+                    r.CheckInDate < dto.CheckOutDate && r.CheckOutDate > dto.CheckInDate);
+                if (isOccupied) throw new Exception("Oda bu tarihlerde dolu.");
 
-                if (room == null)
-                {
-                    _logger.LogWarning($"[RESERVATION] Oda bulunamadı: {dto.RoomId}");
-                    throw new Exception("Oda bulunamadı");
-                }
-
-            
-                if (dto.CheckInDate >= dto.CheckOutDate)
-                {
-                    _logger.LogWarning($"[RESERVATION] Geçersiz tarihler");
-                    throw new Exception("Giriş tarihi çıkış tarihinden önce olmalıdır");
-                }
-
-               
-                var conflictingReservation = await _context.Reservations
-                    .AnyAsync(r =>
-                        r.RoomId == dto.RoomId &&
-                        !r.IsDeleted &&
-                        r.Status != ReservationStatus.Cancelled &&
-                        r.CheckInDate < dto.CheckOutDate &&
-                        r.CheckOutDate > dto.CheckInDate);
-
-                if (conflictingReservation)
-                {
-                    _logger.LogWarning($"[RESERVATION] Oda bu tarihte müsait değil");
-                    throw new Exception("Oda bu tarihte müsait değil");
-                }
-
-                
-                var numberOfNights = (int)(dto.CheckOutDate - dto.CheckInDate).TotalDays;
-                var totalPrice = numberOfNights * room.PricePerNight;
+                // 3. Fiyat ve Rezervasyon Kaydı
+                int nights = (int)(dto.CheckOutDate - dto.CheckInDate).TotalDays;
+                decimal totalPrice = (room.Price * nights) + (dto.NumberOf > 1 ? (dto.NumberOf - 1) * 150 : 0);
 
                 var reservation = new Reservation
                 {
-                    ReservationNumber = GenerateReservationNumber(),
+                    ReservationNumber = $"RES-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
                     GuestId = guestId,
                     RoomId = dto.RoomId,
                     CheckInDate = dto.CheckInDate,
                     CheckOutDate = dto.CheckOutDate,
-                  
-                    NumberOfNights = numberOfNights,
-                    PricePerNights = room.PricePerNight,
+                    NumberOf = dto.NumberOf,
+                    NumberOfNights = nights,
+                    PricePerNights = room.Price,
                     TotalPrice = totalPrice,
                     Status = ReservationStatus.Pending,
-                    
                     CreatedAt = DateTime.UtcNow
                 };
 
                 await _context.Reservations.AddAsync(reservation);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"[RESERVATION] Rezervasyon oluşturuldu: ID={reservation.Id}, Ref={reservation.ReservationNumber}");
+                // ✅ 4. EK HİZMETLER (HATA DÜZELTİLDİ)
+                if (dto.SelectedServiceIds?.Any() == true)
+                {
+                    foreach (var sId in dto.SelectedServiceIds)
+                    {
+                        var service = await _context.AddOnServices.FindAsync(sId);
+                        if (service == null) continue;
 
-             
+                        // Her iki tarafta decimal olduğu için doğrudan topluyoruz
+                        reservation.TotalPrice += service.Price;
+
+                        await _context.ReservationAddOnServices.AddAsync(new ReservationAddOnService
+                        {
+                            ReservationId = reservation.Id,
+                            AddOnServiceId = sId,
+                            Quantity = 1,
+                            // ✅ HATA BURADAYDI: Entity sınıflarında her iki taraf da decimal olduğu için 
+                            // doğrudan atama yapıyoruz. ToString() veya Parse'a gerek yok.
+                            Price = service.Price,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                _ = SendInvoiceEmail(guest, reservation, room);
+
                 return await GetReservationsByIdAsync(guestId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[RESERVATION] CreateReservationAsync hatası");
+                _logger.LogError(ex, "Rezervasyon Hatası");
                 throw;
             }
         }
 
-     
-        public async Task<List<ReservationDto>> GetReservationsByIdAsync(int guestId)
+        private async Task SendInvoiceEmail(Guest guest, Reservation res, Room room)
         {
             try
             {
-                _logger.LogInformation($"[RESERVATION] Rezervasyonlar alınıyor: Guest={guestId}");
-
-                var reservations = await _context.Reservations
-                    .AsNoTracking()
-                    .Where(r => r.GuestId == guestId && !r.IsDeleted)
-                    .Include(r => r.Room)
-                    .OrderByDescending(r => r.CreatedAt)
+                var addons = await _context.ReservationAddOnServices
+                    .Include(a => a.AddOnService)
+                    .Where(a => a.ReservationId == res.Id)
                     .ToListAsync();
 
-                _logger.LogInformation($"[RESERVATION] {reservations.Count} rezervasyon bulundu");
-                return _mapper.Map<List<ReservationDto>>(reservations);
+                string addonRows = string.Join("", addons.Select(a =>
+                    $"<tr><td style='padding:5px;'>{a.AddOnService?.Name}</td><td align='right' style='padding:5px;'>{a.Price:N2} TL</td></tr>"));
+
+                string paymentNote = "<div style='color:#e67e22; border:1px solid #e67e22; padding:10px; border-radius:5px; margin-top:20px;'>" +
+                                     "<b>⚠️ ÖDEME BİLGİSİ:</b> Rezervasyonunuzun kesinleşmesi için ödemenizi giriş esnasında <b>resepsiyonda</b> yapabilirsiniz.</div>";
+
+                string body = $@"
+                <div style='font-family:sans-serif; border:1px solid #eee; padding:20px; max-width:550px; margin:auto;'>
+                    <h2 style='color:#2c3e50; text-align:center;'>StayHub Rezervasyon Onay Belgesi</h2>
+                    <hr>
+                    <p>Sn. <b>{guest.FirstName} {guest.LastName}</b>,</p>
+                    <table width='100%'>
+                        <tr><td><b>Rezervasyon No:</b></td><td>{res.ReservationNumber}</td></tr>
+                        <tr><td><b>Oda:</b></td><td>{room.RoomNumber}</td></tr>
+                        <tr><td><b>Tarih:</b></td><td>{res.CheckInDate:dd.MM.yyyy} - {res.CheckOutDate:dd.MM.yyyy}</td></tr>
+                        {addonRows}
+                    </table>
+                    <h3 style='color:#27ae60; text-align:right;'>Toplam: {res.TotalPrice:N2} TL</h3>
+                    {paymentNote}
+                </div>";
+
+                await _emailSender.SendEmailAsync(guest.Email!, "StayHub Rezervasyon Onayı", body);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[RESERVATION] GetReservationsByIdAsync hatası");
-                return new List<ReservationDto>();
-            }
+            catch (Exception ex) { _logger.LogError(ex, "Fatura Mail Hatası"); }
         }
 
-        
-        public async Task<ReservationDto?> GetReservationByIdAsync(int id)
-        {
-            try
-            {
-                _logger.LogInformation($"[RESERVATION] Rezervasyon alınıyor: ID={id}");
+        public async Task<List<ReservationDto>> GetReservationsByIdAsync(int guestId) =>
+            _mapper.Map<List<ReservationDto>>(await _context.Reservations.AsNoTracking().Include(r => r.Room)
+                .Where(r => r.GuestId == guestId && !r.IsDeleted).OrderByDescending(r => r.CreatedAt).ToListAsync());
 
-                var reservation = await _context.Reservations
-                    .AsNoTracking()
-                    .Include(r => r.Room)
-                    .Include(r => r.Payments)
-                    .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
+        public async Task<ReservationDto?> GetReservationByIdAsync(int id) =>
+            _mapper.Map<ReservationDto>(await _context.Reservations.AsNoTracking().Include(r => r.Room).Include(r => r.Payments)
+                .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted));
 
-                if (reservation == null)
-                {
-                    _logger.LogWarning($"[RESERVATION] Rezervasyon bulunamadı: {id}");
-                    return null;
-                }
-
-                return _mapper.Map<ReservationDto>(reservation);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[RESERVATION] GetReservationByIdAsync hatası");
-                return null;
-            }
-        }
-
-       
         public async Task<IResult> CancelReservationAsync(int id)
         {
-            try
-            {
-                _logger.LogInformation($"[RESERVATION] Rezervasyon iptal ediliyor: ID={id}");
+            var res = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
+            if (res == null || res.Status == ReservationStatus.Cancelled || DateTime.UtcNow > res.CheckInDate)
+                return Result.Failure("İşlem yapılamaz.");
 
-                var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
-                if (reservation == null)
-                {
-                    _logger.LogWarning($"[RESERVATION] Rezervasyon bulunamadı: {id}");
-                    return Result.Failure("Rezervasyon bulunamadı");
-                }
-
-                if (reservation.Status == ReservationStatus.Cancelled)
-                {
-                    _logger.LogWarning($"[RESERVATION] Rezervasyon zaten iptal: {id}");
-                    return Result.Failure("Rezervasyon zaten iptal edilmiştir");
-                }
-
-                if (DateTime.UtcNow > reservation.CheckInDate)
-                {
-                    _logger.LogWarning($"[RESERVATION] Check-in geçmiş, iptal edilemiyor: {id}");
-                    return Result.Failure("Check-in zamanı geçtiği için iptal edilemiyor");
-                }
-
-                reservation.Status = ReservationStatus.Cancelled;
-                reservation.CancelledAt = DateTime.UtcNow;
-                reservation.UpdatedAt = DateTime.UtcNow;
-
-                _context.Reservations.Update(reservation);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"[RESERVATION] Rezervasyon iptal edildi: ID={id}");
-                return Result.Success("Rezervasyon başarıyla iptal edildi");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[RESERVATION] CancelReservationAsync hatası");
-                return Result.Failure("Rezervasyon iptal edilirken hata oluştu");
-            }
+            res.Status = ReservationStatus.Cancelled;
+            res.CancelledAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return Result.Success("Rezervasyon iptal edildi.");
         }
 
-        private string GenerateReservationNumber()
+        public async Task<IResult> UpdateReservationAsync(Reservation res)
         {
-            return $"RES-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+            _context.Reservations.Update(res);
+            await _context.SaveChangesAsync();
+            return Result.Success("Güncellendi.");
         }
     }
 }

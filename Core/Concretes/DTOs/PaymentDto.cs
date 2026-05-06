@@ -84,6 +84,10 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Para Birimi")]
         public string Currency { get; set; } = "TRY";
 
+        // ✅ YENİ: PaymentMethod ekle
+        [Display(Name = "Banka")]
+        public string PaymentMethod { get; set; } = "garanti";
+
         [Required(ErrorMessage = "Kart numarası gereklidir")]
         [StringLength(19, MinimumLength = 13, ErrorMessage = "Geçerli bir kart numarası giriniz")]
         [RegularExpression(@"^\d{13,19}$", ErrorMessage = "Kart numarası sadece rakamlardan oluşmalıdır")]

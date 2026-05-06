@@ -167,4 +167,5 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Oda ID")]
         public int RoomId { get; set; }
     }
+   
 }

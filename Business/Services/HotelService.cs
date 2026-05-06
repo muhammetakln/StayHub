@@ -30,8 +30,10 @@ namespace Business.Services
                 hotel.CreatedAt = DateTime.UtcNow;
                 hotel.IsActive = true;
                 hotel.IsDeleted = false;
+
                 await _context.Hotels.AddAsync(hotel);
                 await _context.SaveChangesAsync();
+
                 _logger.LogInformation($"Otel oluşturuldu. ID: {hotel.Id}");
                 return hotel.Id;
             }
@@ -57,6 +59,7 @@ namespace Business.Services
                 hotel.UpdatedAt = DateTime.UtcNow;
                 _context.Hotels.Update(hotel);
                 await _context.SaveChangesAsync();
+
                 _logger.LogInformation($"Otel silindi: {id}");
             }
             catch (Exception ex)
@@ -66,59 +69,58 @@ namespace Business.Services
             }
         }
 
-        public async Task<List<HotelDto>> FilterHotelsAsync(HotelFilterDto dto)
+        public async Task<List<HotelDto>> FilterHotelsAsync(HotelSearchFilterDto dto)
         {
             try
             {
                 _logger.LogInformation("Oteller filtreleniyor");
+
                 var query = _context.Hotels
                     .AsNoTracking()
-                    .Where(h => !h.IsDeleted && (dto.IsActive == null || h.IsActive == dto.IsActive));
+                    .Include(h => h.Rooms)
+                    .Include(h => h.Reviews)
+                    .Include(h => h.AddOnServices) 
+                    .Where(h => !h.IsDeleted);
 
-                if (!string.IsNullOrEmpty(dto.Name))
-                    query = query.Where(h => h.Name.Contains(dto.Name));
+                if (!string.IsNullOrEmpty(dto.SearchKeyword))
+                {
+                    query = query.Where(h => h.Name.Contains(dto.SearchKeyword) ||
+                                             h.City.Contains(dto.SearchKeyword) ||
+                                             h.Country.Contains(dto.SearchKeyword));
+                }
 
                 if (!string.IsNullOrEmpty(dto.City))
                     query = query.Where(h => h.City == dto.City);
 
-                if (!string.IsNullOrEmpty(dto.Region))
-                    query = query.Where(h => h.Region == dto.Region);
-
                 if (!string.IsNullOrEmpty(dto.Country))
                     query = query.Where(h => h.Country == dto.Country);
 
-                if (dto.MinRating.HasValue)
+                if (dto.MinStarRating.HasValue)
+                    query = query.Where(h => h.StarRating >= dto.MinStarRating.Value);
+
+                if (dto.MinPrice.HasValue)
                 {
-                    var minRating = decimal.Parse(dto.MinRating.ToString());
-                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
-                    query = query.Where(h => (decimal)h.AverageRating >= minRating);
+                    query = query.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) >= dto.MinPrice.Value);
                 }
 
-                if (dto.MaxRating.HasValue)
+                if (dto.MaxPrice.HasValue)
                 {
-                    var maxRating = decimal.Parse(dto.MaxRating.ToString());
-                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
-                    query = query.Where(h => (decimal)h.AverageRating <= maxRating);
+                    query = query.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) <= dto.MaxPrice.Value);
                 }
-
-                if (!string.IsNullOrEmpty(dto.HotelType))
-                    query = query.Where(h => h.HotelType == dto.HotelType);
 
                 var sortBy = dto.SortBy?.ToLower() ?? "name";
-                var sortOrder = dto.SortOrder?.ToLower() ?? "asc";
 
-                if (sortBy == "rating")
+                if (sortBy == "rating_desc")
                 {
-                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
-                    query = sortOrder == "desc"
-                        ? query.OrderByDescending(h => h.AverageRating)
-                        : query.OrderBy(h => h.AverageRating);
+                    query = query.OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0);
+                }
+                else if (sortBy == "price_asc")
+                {
+                    query = query.OrderBy(h => h.Rooms.Min(r => (decimal?)r.Price) ?? 0);
                 }
                 else
                 {
-                    query = sortOrder == "desc"
-                        ? query.OrderByDescending(h => h.Name)
-                        : query.OrderBy(h => h.Name);
+                    query = query.OrderBy(h => h.Name);
                 }
 
                 var hotels = await query
@@ -145,6 +147,7 @@ namespace Business.Services
                     .Include(h => h.Rooms)
                     .Include(h => h.Amenities)
                     .Include(h => h.Reviews)
+                    .Include(h => h.AddOnServices) // ✅ EKLENDİ: Otel detay sayfasında ek hizmetlerin görünmesi için kritik[cite: 1]
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -170,7 +173,9 @@ namespace Business.Services
                 _logger.LogInformation("Tüm oteller getiriliyor");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
+                    .Include(h => h.AddOnServices) // ✅ EKLENDİ: Genel listede ek hizmetleri çekiyoruz[cite: 1]
                     .Where(h => !h.IsDeleted && h.IsActive)
                     .ToListAsync();
 
@@ -191,10 +196,11 @@ namespace Business.Services
                 _logger.LogInformation($"Şehirdeki oteller getiriliyor: {city}");
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
+                    .Include(h => h.AddOnServices) // ✅ EKLENDİ[cite: 1]
                     .Where(h => !h.IsDeleted && h.IsActive && h.City == city)
-                    // ✅ DÜZELTME: Entity'de Rating silindiği için AverageRating kullanılıyor
-                    .OrderByDescending(h => h.AverageRating)
+                    .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
 
                 return _mapper.Map<List<HotelDto>>(hotels);
@@ -214,10 +220,12 @@ namespace Business.Services
 
                 var hotels = await _context.Hotels
                     .AsNoTracking()
+                    .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
+                    .Include(h => h.AddOnServices) // ✅ EKLENDİ[cite: 1]
                     .Where(h => !h.IsDeleted && h.IsActive &&
-                           (decimal)h.AverageRating >= minRating) // ✅ DÜZELTME: AverageRating kullanıldı
-                    .OrderByDescending(h => h.AverageRating)      // ✅ DÜZELTME: AverageRating kullanıldı
+                           (h.Reviews.Average(r => (double?)r.Rating) ?? 0) >= (double)minRating)
+                    .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
 
                 return _mapper.Map<List<HotelDto>>(hotels);
@@ -245,25 +253,8 @@ namespace Business.Services
 
         public async Task<List<HotelDto>> SearchHotelsAsync(string searchTerm)
         {
-            try
-            {
-                _logger.LogInformation($"Otel aranıyor: {searchTerm}");
-                var hotels = await _context.Hotels
-                    .AsNoTracking()
-                    .Include(h => h.Reviews)
-                    .Where(h => !h.IsDeleted && h.IsActive &&
-                    (h.Name.Contains(searchTerm) ||
-                    h.City.Contains(searchTerm) ||
-                    h.Address.Contains(searchTerm)))
-                    .ToListAsync();
-
-                return _mapper.Map<List<HotelDto>>(hotels);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Otel araması başarısız: {searchTerm}");
-                throw;
-            }
+            var filter = new HotelSearchFilterDto { SearchKeyword = searchTerm };
+            return await FilterHotelsAsync(filter);
         }
 
         public async Task UpdateHotelAsync(int id, UpdateHotelDto dto)

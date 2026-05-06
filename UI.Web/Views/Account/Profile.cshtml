@@ -1,0 +1,105 @@
+﻿@using UI.Web.Models
+@model ProfileViewModel
+
+@{
+    ViewData["Title"] = "Profil Ayarları";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- ✅ Üst Kısma Geri Dön Butonu Eklendi -->
+            <div class="mb-3">
+                <a href="/hotel" class="btn btn-outline-secondary btn-sm">
+                    ← Otellere Geri Dön
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-primary text-white p-3">
+                    <h4 class="mb-0">⚙️ Profil Bilgilerimi Güncelle</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Profile" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row">
+                            <!-- Kullanıcı Adı -->
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="UserName" class="form-label fw-bold"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@@</span>
+                                    <input asp-for="UserName" class="form-control" placeholder="Benzersiz bir kullanıcı adı seçin" />
+                                </div>
+                                <span asp-validation-for="UserName" class="text-danger small"></span>
+                                <div class="form-text">Bu isim, e-posta adresiniz yerine sistemde görünecek takma adınızdır.</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="FirstName" class="form-label fw-bold"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="LastName" class="form-label fw-bold"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-4">
+                                <label asp-for="Email" class="form-label fw-bold"></label>
+                                <input asp-for="Email" class="form-control" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3 text-secondary">🔒 Şifre Değiştir (Opsiyonel)</h5>
+
+                        <div class="mb-3">
+                            <label asp-for="CurrentPassword" class="form-label"></label>
+                            <input asp-for="CurrentPassword" class="form-control" placeholder="Mevcut şifrenizi giriniz" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="NewPassword" class="form-label"></label>
+                                <input asp-for="NewPassword" class="form-control" />
+                                <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label"></label>
+                                <input asp-for="ConfirmPassword" class="form-control" />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Değişiklikleri Kaydet</button>
+                            <!-- ✅ Alt Kısma İptal ve Ana Sayfa Butonları Eklendi -->
+                            <a href="/hotel" class="btn btn-outline-secondary">🏠 Ana Sayfaya Dön (İptal Et)</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

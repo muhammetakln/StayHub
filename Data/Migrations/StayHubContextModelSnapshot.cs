@@ -306,7 +306,6 @@ namespace Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Amount")
-                        .HasPrecision(10, 2)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -341,9 +340,6 @@ namespace Data.Migrations
                     b.Property<int>("ReservationId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("ReservationId1")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -359,8 +355,6 @@ namespace Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ReservationId");
-
-                    b.HasIndex("ReservationId1");
 
                     b.ToTable("Payments");
                 });
@@ -794,14 +788,10 @@ namespace Data.Migrations
             modelBuilder.Entity("Core.Concretes.Entities.Payment", b =>
                 {
                     b.HasOne("Core.Concretes.Entities.Reservation", "Reservation")
-                        .WithMany()
-                        .HasForeignKey("ReservationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Core.Concretes.Entities.Reservation", null)
                         .WithMany("Payments")
-                        .HasForeignKey("ReservationId1");
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Reservation");
                 });

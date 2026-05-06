@@ -1,11 +1,14 @@
 ﻿using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
+using Core.Concretes.Entities; // ✅ Review nesnesi için eklendi
+using Data.Contexts; // ✅ StayHubContext için eklendi
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims; // ✅ Kullanıcı ID'sini almak için eklendi
 using System.Threading.Tasks;
 
 namespace UI.Web.Controllers
@@ -22,6 +25,7 @@ namespace UI.Web.Controllers
             _logger = logger;
         }
 
+        // ✅ DÜZELTME: Bütün otelleri belleğe çekmek yerine doğrudan FilterHotelsAsync ile veritabanında arama yapılır.
         [HttpGet("")]
         [AllowAnonymous]
         public async Task<IActionResult> Index(string? searchTerm = null, string? city = null)
@@ -29,22 +33,17 @@ namespace UI.Web.Controllers
             try
             {
                 _logger.LogInformation("Hotel Index açılıyor");
-                var hotels = await _hotelService.GetHotelsAsync();
 
-                // Güvenli filtreleme (Null Check eklendi)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
+                // Arama parametrelerini oluştur
+                var filter = new HotelSearchFilterDto
                 {
-                    hotels = hotels
-                        .Where(h => (h.Name != null && h.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                    (h.City != null && h.City.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                                    (h.Description != null && h.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
-                        .ToList();
-                }
+                    SearchKeyword = searchTerm,
+                    City = city,
+                    PageSize = 50 // Maksimum 50 otel gösterilsin
+                };
 
-                if (!string.IsNullOrWhiteSpace(city))
-                {
-                    hotels = hotels.Where(h => h.City != null && h.City.Equals(city, StringComparison.OrdinalIgnoreCase)).ToList();
-                }
+                // Doğrudan veritabanı seviyesinde filtrelenmiş veriyi al
+                var hotels = await _hotelService.FilterHotelsAsync(filter);
 
                 ViewBag.SearchTerm = searchTerm;
                 ViewBag.City = city;
@@ -60,7 +59,6 @@ namespace UI.Web.Controllers
             }
         }
 
-        // ✅ DÜZELTME: 404 hatasını önlemek için "id" opsiyonel yapıldı (id?)
         [HttpGet("details/{id?}")]
         [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
@@ -185,19 +183,21 @@ namespace UI.Web.Controllers
             }
         }
 
+        // ✅ DÜZELTME: Eski HotelFilterDto özelliklerini kullanmaya çalışan atamalar temizlendi.
         [HttpGet("search")]
-        [Authorize(Roles = "Guest")]
-        public async Task<IActionResult> Search(HotelSearchDto dto)
+        [AllowAnonymous] // Herkes arama yapabilsin
+        public async Task<IActionResult> Search(HotelSearchFilterDto dto)
         {
             try
             {
                 _logger.LogInformation("Gelişmiş arama yapılıyor");
-                var hotels = await _hotelService.FilterHotelsAsync(new HotelFilterDto
-                {
-                    Name = dto.City,
-                    City = dto.City,
-                    IsActive = true
-                });
+
+                // Formdan (View'dan) gelen dto'yu doğrudan kullanarak filtreleme yapıyoruz
+                var hotels = await _hotelService.FilterHotelsAsync(dto);
+
+                ViewBag.SearchTerm = dto.SearchKeyword;
+                ViewBag.City = dto.City;
+                ViewBag.ResultCount = hotels?.Count ?? 0;
 
                 return View("Index", hotels ?? new List<HotelDto>());
             }
@@ -207,6 +207,54 @@ namespace UI.Web.Controllers
                 TempData["ErrorMessage"] = "Arama yapılırken hata oluştu";
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+        // ✅ YENİ EKLENDİ: Yorum Yapma Metodu
+        [HttpPost("add-review")]
+        [Authorize(Roles = "Guest")] // Sadece giriş yapmış misafirler
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddReview([FromServices] StayHubContext context, int hotelId, int rating, string title, string comment)
+        {
+            try
+            {
+                // Kullanıcının ID'sini alıyoruz
+                var guestIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(guestIdStr) || !int.TryParse(guestIdStr, out int guestId))
+                {
+                    TempData["ErrorMessage"] = "Yorum yapmak için giriş yapmalısınız.";
+                    return RedirectToAction("Details", new { id = hotelId });
+                }
+
+                // Yeni yorum nesnesini oluşturuyoruz
+                var review = new Review
+                {
+                    HotelId = hotelId,
+                    GuestId = guestId,
+                    Rating = rating,
+                    Title = title,
+                    Comment = comment,
+                    CreatedAt = DateTime.Now,
+                    IsPublished = true,
+                    IsDeleted = false,
+                    HelpfulCount = 0,
+                    UnhelpfulCount = 0,
+                    IsReplied = false
+                };
+
+                // Veritabanına kaydet
+                context.Reviews.Add(review);
+                await context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Yorumunuz başarıyla eklendi, teşekkür ederiz!";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Yorum eklenirken hata oluştu.");
+                TempData["ErrorMessage"] = "Yorumunuz eklenirken beklenmedik bir hata oluştu.";
+            }
+
+            // İşlem bitince kullanıcıyı tekrar otel detay sayfasına gönder
+            return RedirectToAction("Details", new { id = hotelId });
         }
     }
 }

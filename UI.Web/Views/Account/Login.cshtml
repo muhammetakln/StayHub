@@ -6,112 +6,92 @@
 
 @model LoginDto
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <div class="col-md-6 offset-md-3">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">🔐 Giriş Yap</h3>
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">
+                    <h3 class="mb-0 fw-bold text-center">🔐 Giriş Yap</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4 p-sm-5">
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                            <strong>✨ Bilgi:</strong> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
                     <!-- Validation Summary -->
-                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger rounded-3 shadow-sm">
+                            <div asp-validation-summary="All" class="text-danger mb-0"></div>
+                        </div>
+                    }
 
                     <form method="post" action="/account/login">
-                        <!-- ✅ ANTIFORGERY TOKEN -->
                         @Html.AntiForgeryToken()
 
                         <!-- User Type Selection -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">👥 Giriş Türü Seçin *</label>
-                            <div class="btn-group w-100" role="group">
-                                <input type="radio"
-                                       class="btn-check"
-                                       name="UserType"
-                                       id="guestOption"
-                                       value="Guest"
-                                       checked
-                                       asp-for="UserType">
-                                <label class="btn btn-outline-primary w-50" for="guestOption">
-                                    🏨 Müşteri
-                                </label>
+                            <label class="form-label fw-bold" style="color: #2c3e50;">👥 Giriş Türü Seçin *</label>
+                            <div class="btn-group w-100 shadow-sm" role="group">
+                                <input type="radio" class="btn-check" name="UserType" id="guestOption" value="Guest" checked asp-for="UserType">
+                                <label class="btn btn-outline-primary w-50 fw-semibold py-2" for="guestOption">🏨 Müşteri</label>
 
-                                <input type="radio"
-                                       class="btn-check"
-                                       name="UserType"
-                                       id="adminOption"
-                                       value="Admin"
-                                       asp-for="UserType">
-                                <label class="btn btn-outline-danger w-50" for="adminOption">
-                                    👨‍💼 Admin
-                                </label>
+                                <input type="radio" class="btn-check" name="UserType" id="adminOption" value="Admin" asp-for="UserType">
+                                <label class="btn btn-outline-danger w-50 fw-semibold py-2" for="adminOption">👨‍💼 Admin</label>
                             </div>
-                            <span asp-validation-for="UserType" class="text-danger d-block mt-2"></span>
                         </div>
 
-                        <hr class="my-3">
-
-                        <!-- Email -->
+                        <!-- ✅ Email or Username (Label ve Placeholder güncellendi) -->
                         <div class="mb-3">
-                            <label class="form-label fw-bold">📧 Email Adresi *</label>
-                            <input type="email"
-                                   class="form-control"
+                            <label class="form-label fw-bold" style="color: #2c3e50;">👤 Kullanıcı Adı veya Email *</label>
+                            <input type="text"
+                                   class="form-control bg-light"
                                    asp-for="Email"
-                                   placeholder="ornek@example.com"
+                                   placeholder="Kullanıcı adınızı veya e-postanızı girin"
                                    required>
-                            <span asp-validation-for="Email" class="text-danger d-block"></span>
+                            <span asp-validation-for="Email" class="text-danger d-block small mt-1"></span>
                         </div>
 
                         <!-- Password -->
                         <div class="mb-3">
-                            <label class="form-label fw-bold">🔑 Şifre *</label>
+                            <label class="form-label fw-bold" style="color: #2c3e50;">🔑 Şifre *</label>
                             <input type="password"
-                                   class="form-control"
+                                   class="form-control bg-light"
                                    asp-for="Password"
                                    placeholder="Şifrenizi girin"
                                    required>
-                            <span asp-validation-for="Password" class="text-danger d-block"></span>
+                            <span asp-validation-for="Password" class="text-danger d-block small mt-1"></span>
                         </div>
 
-                        <!-- Remember Me -->
-                        <div class="mb-3">
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
                             <div class="form-check">
-                                <input class="form-check-input"
-                                       type="checkbox"
-                                       id="rememberMe"
-                                       asp-for="RememberMe">
-                                <label class="form-check-label" for="rememberMe">
-                                    Beni Hatırla
-                                </label>
+                                <input class="form-check-input" type="checkbox" id="rememberMe" asp-for="RememberMe">
+                                <label class="form-check-label text-muted user-select-none" for="rememberMe">Beni Hatırla</label>
                             </div>
+                            <a href="/account/forgot-password" class="text-decoration-none fw-semibold" style="color: #764ba2;">Şifremi Unuttum?</a>
                         </div>
 
                         <!-- Login Button -->
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                        <div class="d-grid gap-2 mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill shadow-sm">
                                 🔓 Giriş Yap
                             </button>
                         </div>
 
-                        <hr class="my-4">
+                        <hr class="my-4 text-muted">
 
-                        <!-- Register Link (Only for Guests) -->
+                        <!-- Register Link -->
                         <div class="text-center" id="guestRegisterLink">
-                            <p>
+                            <p class="mb-0 text-muted">
                                 Hesabınız yok mu?
-                                <a href="/account/register" class="text-decoration-none fw-bold">
-                                    Kaydol
-                                </a>
+                                <a href="/account/register" class="text-decoration-none fw-bold ms-1" style="color: #0a58ca;">Hemen Kaydol</a>
                             </p>
-                        </div>
-
-                        <!-- Test Credentials -->
-                        <div class="alert alert-info mt-3" role="alert">
-                            <h6 class="alert-heading">📝 Test Hesapları:</h6>
-                            <small>
-                                <strong>Admin:</strong> admin@stayhub.com / Admin@123<br>
-                                <strong>Müşteri:</strong> guest@stayhub.com / Guest@123
-                            </small>
                         </div>
                     </form>
                 </div>
@@ -121,50 +101,29 @@
 </div>
 
 <style>
-    .card {
-        border: none;
-        border-radius: 10px;
+    .form-control {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
     }
 
-    .form-control:focus,
-    .btn-check:focus + .btn {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
+        .form-control:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
+            background-color: #fff !important;
+        }
 
     .btn-primary {
-        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        border: none;
+        transition: all 0.3s ease;
     }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #0a58ca, #084298);
+            background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3) !important;
         }
-
-    .btn-group {
-        display: flex;
-        gap: 0;
-    }
-
-    .btn-outline-primary {
-        border-width: 2px;
-    }
-
-    .btn-outline-danger {
-        border-width: 2px;
-    }
-
-    h3 {
-        font-weight: 600;
-    }
-
-    .form-label {
-        color: #2c3e50;
-    }
-
-    .text-danger {
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
 </style>
 
 <script>
@@ -175,8 +134,12 @@
 
         function updateRegisterLink() {
             if (guestOption.checked) {
+                guestRegisterLink.style.opacity = '1';
+                guestRegisterLink.style.height = 'auto';
                 guestRegisterLink.style.display = 'block';
             } else {
+                guestRegisterLink.style.opacity = '0';
+                guestRegisterLink.style.height = '0';
                 guestRegisterLink.style.display = 'none';
             }
         }

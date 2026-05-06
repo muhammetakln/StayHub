@@ -28,9 +28,7 @@ namespace Data.Contexts
         public DbSet<RoomImage> RoomImages { get; set; }
         public DbSet<AddOnService> AddOnServices { get; set; }
 
-        // ═══════════════════════════════════════════════════════════════
-        // OnConfiguring
-        // ═══════════════════════════════════════════════════════════════
+       
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -41,17 +39,13 @@ namespace Data.Contexts
             base.OnConfiguring(optionsBuilder);
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // OnModelCreating - Configurations
-        // ═══════════════════════════════════════════════════════════════
+       
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // ─────────────────────────────────────────────────────────
-            // GUEST (User) Configuration
-            // ─────────────────────────────────────────────────────────
+           
             modelBuilder.Entity<Guest>(entity =>
             {
                 entity.ToTable("AspNetUsers");
@@ -94,9 +88,7 @@ namespace Data.Contexts
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // HOTEL Configuration
-            // ─────────────────────────────────────────────────────────
+           
             modelBuilder.Entity<Hotel>(entity =>
             {
                 entity.HasKey(h => h.Id);
@@ -124,7 +116,6 @@ namespace Data.Contexts
                 entity.Property(h => h.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Relations
                 entity.HasMany(h => h.Rooms)
                     .WithOne(r => r.Hotel)
                     .HasForeignKey(r => r.HotelId)
@@ -136,9 +127,7 @@ namespace Data.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // ROOM Configuration
-            // ─────────────────────────────────────────────────────────
+            
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasKey(r => r.Id);
@@ -160,7 +149,6 @@ namespace Data.Contexts
                 entity.Property(r => r.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Relations
                 entity.HasMany(r => r.Reservations)
                     .WithOne(res => res.Room)
                     .HasForeignKey(res => res.RoomId)
@@ -172,9 +160,7 @@ namespace Data.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // RESERVATION Configuration
-            // ─────────────────────────────────────────────────────────
+            
             modelBuilder.Entity<Reservation>(entity =>
             {
                 entity.HasKey(r => r.Id);
@@ -196,7 +182,6 @@ namespace Data.Contexts
                 entity.Property(r => r.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Relations
                 entity.HasMany(r => r.AddOnServices)
                     .WithOne(ras => ras.Reservation)
                     .HasForeignKey(ras => ras.ReservationId)
@@ -208,66 +193,53 @@ namespace Data.Contexts
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // PAYMENT Configuration
-            // ─────────────────────────────────────────────────────────
+           
             modelBuilder.Entity<Payment>(entity =>
             {
+                // Primary Key
                 entity.HasKey(p => p.Id);
 
-                // Yabancı Anahtar
                 entity.HasOne(p => p.Reservation)
-                    .WithMany()
-                    .HasForeignKey(p => p.ReservationId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                // Payment Reference
+                      .WithMany(r => r.Payments) 
+                      .HasForeignKey(p => p.ReservationId)
+                      .OnDelete(DeleteBehavior.Restrict); 
                 entity.Property(p => p.PaymentReference)
-                    .HasMaxLength(100)
-                    .IsRequired();
+                      .HasMaxLength(100)
+                      .IsRequired();
 
-                // Amount - Para Miktarı
                 entity.Property(p => p.Amount)
-                    .HasPrecision(10, 2)
-                    .IsRequired();
+                     
+                      .IsRequired();
 
-                // Payment Method
                 entity.Property(p => p.PaymentMethod)
-                    .HasMaxLength(50)
-                    .IsRequired();
+                      .HasMaxLength(50)
+                      .IsRequired();
 
                 entity.Property(p => p.Status)
-                    .HasConversion<string>()  // Enum → String (veritabanında)
-                    .HasMaxLength(20)  // Enum adı kısa olur
-                    .IsRequired();
+                      .HasConversion<string>()  
+                      .HasMaxLength(20)
+                      .IsRequired();
 
-                // Transaction ID
                 entity.Property(p => p.TransactionId)
-                    .HasMaxLength(100);
+                      .HasMaxLength(100);
 
-                // Notes
                 entity.Property(p => p.Notes)
-                    .HasMaxLength(500);
+                      .HasMaxLength(500);
 
-                // Payment Date
                 entity.Property(p => p.PaymentDate)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Soft Delete
                 entity.Property(p => p.IsDeleted)
-                    .HasDefaultValue(false);
+                      .HasDefaultValue(false);
 
-                // Timestamps
                 entity.Property(p => p.CreatedAt)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                      .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(p => p.UpdatedAt)
-                    .IsRequired(false);
+                      .IsRequired(false);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // REVIEW Configuration
-            // ─────────────────────────────────────────────────────────
+          
             modelBuilder.Entity<Review>(entity =>
             {
                 entity.HasKey(r => r.Id);
@@ -282,9 +254,6 @@ namespace Data.Contexts
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // ─────────────────────────────────────────────────────────
-            // ROOM IMAGE Configuration
-            // ─────────────────────────────────────────────────────────
             modelBuilder.Entity<RoomImage>(entity =>
             {
                 entity.HasKey(ri => ri.Id);
@@ -297,9 +266,7 @@ namespace Data.Contexts
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
-            // ─────────────────────────────────────────────────────────
-            // ADD ON SERVICE Configuration
-            // ─────────────────────────────────────────────────────────
+            
             modelBuilder.Entity<AddOnService>(entity =>
             {
                 entity.HasKey(a => a.Id);
@@ -318,16 +285,13 @@ namespace Data.Contexts
                 entity.Property(a => a.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                // Relations
                 entity.HasMany(a => a.ReservationAddOnServices)
                     .WithOne(ras => ras.AddOnService)
                     .HasForeignKey(ras => ras.AddOnServiceId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ─────────────────────────────────────────────────────────
-            // RESERVATION ADD ON SERVICE (Many-to-Many) Configuration
-            // ─────────────────────────────────────────────────────────
+           
             modelBuilder.Entity<ReservationAddOnService>(entity =>
             {
                 entity.HasKey(ras => new { ras.ReservationId, ras.AddOnServiceId });
@@ -340,9 +304,7 @@ namespace Data.Contexts
                     .IsRequired();
             });
 
-            // ─────────────────────────────────────────────────────────
-            // AMENITY Configuration
-            // ─────────────────────────────────────────────────────────
+            
             modelBuilder.Entity<Amenity>(entity =>
             {
                 entity.HasKey(a => a.Id);

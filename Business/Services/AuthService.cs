@@ -49,7 +49,6 @@ namespace Business.Services
                     Email = dto.Email,
                     FirstName = dto.FirstName,
                     LastName = dto.LastName,
-                    IdentificationNumber = dto.IdentificationNumber,
                     PhoneNumber = dto.PhoneNumber,
                     Country = dto.Country,
                     Address = dto.Address,

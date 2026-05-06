@@ -1,5 +1,6 @@
 ﻿using Core.Concretes.DTOs;
 
+
 namespace Core.Abstracts.IServices
 {
     public interface IHotelService
@@ -12,7 +13,7 @@ namespace Core.Abstracts.IServices
         Task<List<HotelDto>> SearchHotelsAsync(string searchTerm);
         Task<List<HotelDto>> GetHotelsByCityAsync(string city);
         Task<List<HotelDto>> GetHotelsByRatingAsync( decimal minRating );
-        Task<List<HotelDto>> FilterHotelsAsync(HotelFilterDto dto);
+        Task<List<HotelDto>> FilterHotelsAsync(HotelSearchFilterDto dto);
         Task<bool> IsHotelExistsAsync(int id);
     }
 }

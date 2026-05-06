@@ -1,0 +1,224 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Ödeme Yapıldı";
+
+    // ✅ Gece sayısını hesapla
+    var nights = 0;
+    if (ViewBag.CheckOutDate != null && ViewBag.CheckInDate != null)
+    {
+        nights = (int)((DateTime)ViewBag.CheckOutDate - (DateTime)ViewBag.CheckInDate).TotalDays;
+    }
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+
+            <!-- Success Header -->
+            <div class="text-center mb-5">
+                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                    <span style="font-size: 50px; color: #28a745;">✓</span>
+                </div>
+                <h1 class="display-5 fw-bold" style="color: #2c3e50;">
+                    Ödeme Başarılı!
+                </h1>
+                <p class="lead text-muted">Rezervasyonunuz sorunsuz bir şekilde onaylanmıştır.</p>
+            </div>
+
+            <!-- Success Alert -->
+            <div class="alert alert-success alert-dismissible fade show mb-4 rounded-4 shadow-sm border-0 bg-success bg-opacity-10" role="alert">
+                <div class="d-flex align-items-center">
+                    <span class="fs-3 me-3">🎉</span>
+                    <div>
+                        <h5 class="alert-heading fw-bold mb-1" style="color: #155724;">Tebrikler!</h5>
+                        <p class="mb-0" style="color: #155724;">
+                            Ödemeniz başarıyla işlenmiştir. Lütfen aşağıdaki fatura detaylarını referans olarak kaydediniz.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- FATURA (Invoice) Card -->
+            <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden" id="invoice">
+                <!-- Fatura Üst Şerit (Gradient) -->
+                <div class="bg-primary text-white p-2" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;"></div>
+
+                <div class="card-body p-sm-5 p-4">
+                    <!-- Invoice Header -->
+                    <div class="row mb-5 pb-4 border-bottom align-items-center">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <h3 class="fw-bold" style="color: #2c3e50;">🏨 StayHub</h3>
+                            <p class="text-muted mb-0">Premium Otel Rezervasyon Sistemi</p>
+                            <p class="text-muted small mb-0">Türkiye</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <h4 class="fw-bold mb-1" style="color: #28a745;">FATURA</h4>
+                            <p class="text-muted mb-0 fs-5"># @ViewBag.ReservationId</p>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Details -->
+                    <div class="row mb-5 g-4">
+                        <div class="col-md-6">
+                            <div class="bg-light p-4 rounded-3 h-100 border">
+                                <h6 class="fw-bold mb-3" style="color: #34495e;">📋 İşlem Bilgileri</h6>
+                                <p class="mb-2">
+                                    <span class="text-muted d-inline-block" style="width: 120px;">Rezervasyon No:</span>
+                                    <strong class="text-dark">RES-@ViewBag.ReservationId</strong>
+                                </p>
+                                <p class="mb-0">
+                                    <span class="text-muted d-inline-block" style="width: 120px;">İşlem Tarihi:</span>
+                                    <strong class="text-dark">@DateTime.Now.ToString("dd MMMM yyyy HH:mm")</strong>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-4 rounded-3 h-100 border">
+                                <h6 class="fw-bold mb-3" style="color: #34495e;">💳 Ödeme Durumu</h6>
+                                <p class="mb-2">
+                                    <span class="text-muted d-inline-block" style="width: 120px;">İşlem Numarası:</span>
+                                    <strong class="text-dark">@ViewBag.TransactionId</strong>
+                                </p>
+                                <p class="mb-0">
+                                    <span class="text-muted d-inline-block" style="width: 120px;">Durum:</span>
+                                    <span class="badge bg-success px-2 py-1 fs-6 rounded-pill">✅ Tamamlandı</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dates -->
+                    <h6 class="fw-bold mb-3 px-2" style="color: #34495e;">🗓️ Konaklama Detayları</h6>
+                    <div class="row mb-5 text-center g-3">
+                        <div class="col-4">
+                            <div class="p-3 border rounded-3 bg-white shadow-sm h-100">
+                                <p class="text-muted small mb-1 fw-semibold">Check-In</p>
+                                <h6 class="fw-bold mb-0">@(ViewBag.CheckInDate != null ? ((DateTime)ViewBag.CheckInDate).ToString("dd MMM yyyy") : "N/A")</h6>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded-3 bg-white shadow-sm h-100">
+                                <p class="text-muted small mb-1 fw-semibold">Check-Out</p>
+                                <h6 class="fw-bold mb-0">@(ViewBag.CheckOutDate != null ? ((DateTime)ViewBag.CheckOutDate).ToString("dd MMM yyyy") : "N/A")</h6>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded-3 bg-white shadow-sm h-100">
+                                <p class="text-muted small mb-1 fw-semibold">Gece Sayısı</p>
+                                <h6 class="fw-bold mb-0 text-primary">@nights Gece</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amount Summary -->
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-2">💰 Ödeme Yöntemi</h6>
+                                <p class="text-muted small">
+                                    Kredi/Banka Kartı ile güvenli ödeme (Mock Payment System). <br />
+                                    Tutar, işlem tarihinde geçerli olan döviz kuruna göre hesaplanmıştır.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="d-flex justify-content-between mb-2 px-2">
+                                <span class="text-muted">Ara Toplam:</span>
+                                <strong class="text-dark">@(ViewBag.Amount != null ? ViewBag.Amount.ToString("C") : "0,00 ₺")</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 px-2 border-bottom pb-2">
+                                <span class="text-muted">KDV (%0):</span>
+                                <strong class="text-dark">0,00 ₺</strong>
+                            </div>
+                            <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mt-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0 fw-bold" style="color: #155724;">Genel Toplam</h5>
+                                    <h4 class="mb-0 fw-bold" style="color: #28a745;">@(ViewBag.Amount != null ? ViewBag.Amount.ToString("C") : "0,00 ₺")</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex flex-wrap gap-3 justify-content-center mb-5" id="action-buttons">
+                <button class="btn btn-outline-primary btn-lg px-4 fw-bold rounded-pill shadow-sm" onclick="printInvoice()">
+                    🖨️ Faturayı Yazdır
+                </button>
+                <a href="/reservation/list" class="btn btn-success btn-lg px-4 fw-bold rounded-pill shadow-sm">
+                    📋 Rezervasyonlarıma Dön
+                </a>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert border bg-light text-center rounded-3 shadow-sm" role="alert" id="info-alert">
+                <p class="mb-0 text-muted">
+                    Faturanızın dijital kopyası sistemde kayıtlı e-posta adresinize gönderilmiştir.<br />
+                    Yardıma ihtiyacınız olursa <a href="mailto:support@stayhub.com" class="fw-bold text-decoration-none text-primary">support@stayhub.com</a> ile iletişime geçebilirsiniz.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Genel Arayüz Stilleri */
+    h1, h2, h3, h4, h5, h6 {
+        letter-spacing: -0.5px;
+    }
+
+    /* Buton Tasarımları */
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3) !important;
+        }
+
+    .btn-outline-primary {
+        border-width: 2px;
+        transition: all 0.3s ease;
+    }
+
+        .btn-outline-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.2) !important;
+        }
+
+    /* Yazdırma (Print) Ayarları */
+    
+    .container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #invoice {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+
+    .card-body {
+        padding: 0 !important;
+    }
+
+    }
+</style>
+
+<script>
+    // ✅ Faturayı Yazdır / PDF Kaydet
+    function printInvoice() {
+        window.print();
+    }
+</script>

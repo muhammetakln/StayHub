@@ -1,4 +1,5 @@
-﻿using Core.Abstracts.Bases;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using Core.Abstracts.Bases;
 using Core.Concretes.Enum;
 
 namespace Core.Concretes.Entities
@@ -13,7 +14,6 @@ namespace Core.Concretes.Entities
 
         public string PaymentMethod { get; set; } = null!;
 
-      
         public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
@@ -22,7 +22,8 @@ namespace Core.Concretes.Entities
 
         public string? Notes { get; set; }
 
-       
+        // EF Core'a ReservationId kolonunu kullanmasını açıkça söylüyoruz
+        [ForeignKey(nameof(ReservationId))]
         public virtual Reservation? Reservation { get; set; }
     }
 }

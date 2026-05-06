@@ -1,0 +1,284 @@
+﻿@using Core.Concretes.DTOs
+@model PaymentProcessDto
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Ödeme Yap";
+}
+
+<div class="container mt-5">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold">💳 Ödeme Yap</h1>
+            <p class="text-muted">Rezervasyonunuz tamamlamak için ödeme yapınız</p>
+        </div>
+    </div>
+
+    <!-- Error Messages -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading">❌ Hata</h5>
+            <p class="mb-0">@TempData["ErrorMessage"]</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left - Payment Form -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-primary text-white fw-bold">
+                    💰 Ödeme Bilgileri
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="/payment/process/@ViewBag.ReservationId" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <!-- Order Number (Hidden) -->
+                        <input type="hidden" name="orderNumber" value="@Model.OrderNumber">
+                        <input type="hidden" name="amount" value="@ViewBag.Amount">
+                        <input type="hidden" name="currency" value="TRY">
+
+                        <!-- Bank Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">🏦 Banka Seçimi</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" value="garanti" id="garanti" checked>
+                                        <label class="form-check-label" for="garanti">
+                                            🏦 Garanti Bank<br>
+                                            <small class="text-muted">< 50.000 TRY</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" value="akbank" id="akbank">
+                                        <label class="form-check-label" for="akbank">
+                                            🏦 Akbank<br>
+                                            <small class="text-muted">< 100.000 TRY</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" value="isbank" id="isbank">
+                                        <label class="form-check-label" for="isbank">
+                                            🏦 İş Bank<br>
+                                            <small class="text-muted">< 75.000 TRY</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Number -->
+                        <div class="mb-3">
+                            <label for="cardNumber" class="form-label fw-bold">Kart Numarası</label>
+                            <input type="text"
+                                   class="form-control form-control-lg @(ViewData.ModelState.ContainsKey("cardNumber") && !ViewData.ModelState["cardNumber"].ValidationState.ToString().Contains("Valid") ? "is-invalid" : "")"
+                                   id="cardNumber"
+                                   name="cardNumber"
+                                   placeholder="1234 5678 9012 3456"
+                                   maxlength="19"
+                                   value="@Model.CardNumber"
+                                   required>
+                            <small class="text-muted">Test: 4242 4242 4242 4242</small>
+                            @if (ViewData.ModelState.ContainsKey("cardNumber") && !ViewData.ModelState["cardNumber"].ValidationState.ToString().Contains("Valid"))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    @ViewData.ModelState["cardNumber"].Errors.FirstOrDefault()?.ErrorMessage
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Card Holder -->
+                        <div class="mb-3">
+                            <label for="cardHolder" class="form-label fw-bold">Kart Sahibinin Adı</label>
+                            <input type="text"
+                                   class="form-control form-control-lg @(ViewData.ModelState.ContainsKey("cardHolder") && !ViewData.ModelState["cardHolder"].ValidationState.ToString().Contains("Valid") ? "is-invalid" : "")"
+                                   id="cardHolder"
+                                   name="cardHolder"
+                                   placeholder="John Doe"
+                                   value="@Model.CardHolder"
+                                   required>
+                            @if (ViewData.ModelState.ContainsKey("cardHolder") && !ViewData.ModelState["cardHolder"].ValidationState.ToString().Contains("Valid"))
+                            {
+                                <div class="invalid-feedback d-block">
+                                    @ViewData.ModelState["cardHolder"].Errors.FirstOrDefault()?.ErrorMessage
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Expiry Date & CVV -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="expiryDate" class="form-label fw-bold">Son Kullanma Tarihi</label>
+                                <input type="text"
+                                       class="form-control form-control-lg @(ViewData.ModelState.ContainsKey("expiryDate") && !ViewData.ModelState["expiryDate"].ValidationState.ToString().Contains("Valid") ? "is-invalid" : "")"
+                                       id="expiryDate"
+                                       name="expiryDate"
+                                       placeholder="MM/YY"
+                                       maxlength="5"
+                                       value="@Model.ExpiryDate"
+                                       pattern="\d{2}/\d{2}"
+                                       required>
+                                @if (ViewData.ModelState.ContainsKey("expiryDate") && !ViewData.ModelState["expiryDate"].ValidationState.ToString().Contains("Valid"))
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        @ViewData.ModelState["expiryDate"].Errors.FirstOrDefault()?.ErrorMessage
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                <label for="cvv" class="form-label fw-bold">CVV</label>
+                                <input type="text"
+                                       class="form-control form-control-lg @(ViewData.ModelState.ContainsKey("cvv") && !ViewData.ModelState["cvv"].ValidationState.ToString().Contains("Valid") ? "is-invalid" : "")"
+                                       id="cvv"
+                                       name="cvv"
+                                       placeholder="123"
+                                       maxlength="4"
+                                       value="@Model.CVV"
+                                       pattern="\d{3,4}"
+                                       required>
+                                @if (ViewData.ModelState.ContainsKey("cvv") && !ViewData.ModelState["cvv"].ValidationState.ToString().Contains("Valid"))
+                                {
+                                    <div class="invalid-feedback d-block">
+                                        @ViewData.ModelState["cvv"].Errors.FirstOrDefault()?.ErrorMessage
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Açıklamalar (İsteğe bağlı)</label>
+                            <textarea class="form-control"
+                                      id="description"
+                                      name="description"
+                                      rows="2"
+                                      placeholder="Not...">@Model.Description</textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn">
+                            ✅ Ödemeyi Tamamla - @ViewBag.Amount?.ToString("C")
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Info -->
+            <div class="alert alert-info" role="alert">
+                <h6 class="alert-heading">🔒 Güvenlik Bilgisi</h6>
+                <p class="mb-0">
+                    Bu bir <strong>MOCK (Sahte) Ödeme Sistemi</strong>'dir. Gerçek para gitmez.
+                    Test amaçlı kullanılmaktadır.
+                </p>
+            </div>
+
+            <!-- Test Cards Info -->
+            <div class="alert alert-warning" role="alert">
+                <h6 class="alert-heading">🧪 Test Kartları</h6>
+                <p class="mb-2"><strong>Garanti Bank (< 50.000 TRY):</strong></p>
+                <small class="d-block mb-3">
+                    Kart: 4242 4242 4242 4242 | Tariş: 12/25 | CVV: 123
+                </small>
+                <p class="mb-2"><strong>Akbank (< 100.000 TRY):</strong></p>
+                <small class="d-block mb-3">
+                    Kart: 5555 5555 5555 4444 | Tariş: 06/26 | CVV: 456
+                </small>
+                <p class="mb-2"><strong>İş Bank (< 75.000 TRY):</strong></p>
+                <small class="d-block">
+                    Kart: 3782 822463 10005 | Tariş: 09/27 | CVV: 789
+                </small>
+            </div>
+        </div>
+
+        <!-- Right - Order Summary -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg p-4 rounded-3 position-sticky" style="top: 20px;">
+                <h5 class="fw-bold mb-4">📋 Sipariş Özeti</h5>
+
+                <!-- Hotel Info -->
+                <div class="mb-4 pb-3 border-bottom">
+                    <p class="mb-2"><strong>🏨 Otel</strong></p>
+                    <p class="text-muted">@ViewBag.HotelName</p>
+                </div>
+
+                <!-- Dates -->
+                <div class="mb-4 pb-3 border-bottom">
+                    <p class="mb-2"><strong>📅 Tarihler</strong></p>
+                    <small class="text-muted d-block">
+                        Giriş: @ViewBag.CheckInDate?.ToString("dd MMM yyyy")
+                    </small>
+                    <small class="text-muted d-block">
+                        Çıkış: @ViewBag.CheckOutDate?.ToString("dd MMM yyyy")
+                    </small>
+                </div>
+
+                <!-- Total -->
+                <div class="mb-4 p-3 bg-light rounded-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Toplam Tutar:</h6>
+                        <h5 class="mb-0 text-primary fw-bold">@ViewBag.Amount?.ToString("C")</h5>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <a href="/reservation/list" class="btn btn-outline-secondary btn-sm w-100">
+                    ← Geri Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    h1 {
+        color: #2c3e50;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        border: none;
+    }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0a58ca, #084298);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .card {
+        border-radius: 15px;
+    }
+
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    #submitBtn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+</style>
+
+<script>
+    // Form submit olduğunda loading state göster
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Ödeme işleniyor...';
+    });
+</script>

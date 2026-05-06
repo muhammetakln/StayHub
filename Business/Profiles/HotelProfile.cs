@@ -15,7 +15,7 @@ namespace Business.Profiles
 
             CreateMap<CreateHotelDto, Hotel>();
             CreateMap<UpdateHotelDto, Hotel>();
-
+            CreateMap<AddOnService, AddOnServiceDto>();
             CreateMap<Review, ReviewDto>();
             CreateMap<Amenity, AmenityDto>();
             CreateMap<Room, RoomDto>();

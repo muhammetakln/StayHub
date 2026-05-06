@@ -6,32 +6,55 @@ using Utils.Models;
 
 namespace Utils.Helpers
 {
-    public class EmailSender:IEmailSender
+    public class EmailSender : IEmailSender
     {
         private readonly EmailSettings settings;
-        public EmailSender(IOptions<EmailSettings>options)
+
+        public EmailSender(IOptions<EmailSettings> options)
         {
             settings = options.Value;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            using var client = new SmtpClient(settings.Host,settings.Port)
+            // BURASI ÇOK KRİTİK: Hatayı ekranda patlatması için try-catch ekliyoruz
+            try
             {
-                Credentials = new NetworkCredential(settings.UserName, settings.Password),
-                EnableSsl = true,
+                using var client = new SmtpClient(settings.Host, settings.Port)
+                {
+                    Credentials = new NetworkCredential(settings.UserName, settings.Password),
+                    EnableSsl = settings.EnableSSL,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Timeout = 10000 // 10 saniye sonra vazgeç
+                };
 
-            };
-            using var mailMessage = new MailMessage
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(settings.UserName, settings.DisplayName),
+                    Subject = subject,
+                    Body = htmlMessage,
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(email);
+
+                await client.SendMailAsync(mailMessage);
+
+                // Gönderim başarılıysa konsola yaz
+                Console.WriteLine(">>>>>> E-POSTA BAŞARIYLA GÖNDERİLDİ: " + email);
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(settings.UserName, settings.DisplayName),
-                Subject = subject,
-                Body = htmlMessage,
-                IsBodyHtml = true,
+                // HATA VARSA BURADA DURDURUP HATAYI GÖRECEĞİZ
+                Console.WriteLine("!!!!!! E-POSTA HATASI !!!!!!");
+                Console.WriteLine("Mesaj: " + ex.Message);
+                if (ex.InnerException != null)
+                    Console.WriteLine("İç Hata: " + ex.InnerException.Message);
 
-            };
-            mailMessage.To.Add(email);
-            await client.SendMailAsync(mailMessage);
+                // Hatayı fırlatıyoruz ki uygulama "Başarılı" deyip geçmesin, hata sayfasını görelim
+                throw new Exception($"SMTP Gönderim Hatası: {ex.Message}", ex);
+            }
         }
     }
 }

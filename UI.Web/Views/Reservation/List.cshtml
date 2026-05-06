@@ -1,32 +1,30 @@
 ﻿@using Core.Concretes.DTOs
-@model List<ReservationDto>
-
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Rezervasyonlarım";
 }
 
-<div class="container mt-4">
+@model List<ReservationDto>
+
+<div class="container-fluid mt-4">
     <!-- Page Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="display-5 fw-bold">📋 Rezervasyonlarım</h1>
-                    <p class="text-muted">
-                        Toplam <strong>@Model.Count</strong> rezervasyon
-                    </p>
+                    <p class="text-muted">Toplam @Model.Count rezervasyon</p>
                 </div>
                 <div>
-                    <a href="/hotel" class="btn btn-outline-primary">
-                        🏨 Otel Ara
+                    <a href="/hotel" class="btn btn-outline-primary btn-sm">
+                        🏨 Otelleri Gözat
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Success Message -->
+    <!-- Success/Error Messages -->
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -35,7 +33,6 @@
         </div>
     }
 
-    <!-- Error Message -->
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -51,72 +48,72 @@
             @foreach (var reservation in Model)
             {
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <!-- Card Header -->
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">🏨 @reservation.HotelName</h5>
+                    <div class="card h-100 border-0 shadow-sm reservation-card">
+                        <!-- Card Header with Status -->
+                        <div class="card-header @GetStatusColor(reservation.Status)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">@reservation.HotelName</h5>
+                                <span class="badge bg-light text-dark">
+                                    @GetStatusBadge(reservation.Status)
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Card Body -->
                         <div class="card-body">
                             <!-- Room Info -->
-                            <div class="mb-3">
-                                <p class="mb-1">
-                                    <strong>🚪 Oda:</strong> @reservation.RoomNumber
-                                </p>
-                            </div>
+                            <p class="mb-2">
+                                <small class="text-muted">🚪 Oda:</small>
+                                <br>
+                                <strong>@reservation.RoomNumber</strong>
+                            </p>
 
                             <!-- Dates -->
-                            <div class="mb-3">
-                                <p class="mb-1">
-                                    <strong>📅 Giriş:</strong> @reservation.CheckInDate.ToString("dd.MM.yyyy")
-                                </p>
-                                <p class="mb-0">
-                                    <strong>📅 Çıkış:</strong> @reservation.CheckOutDate.ToString("dd.MM.yyyy")
-                                </p>
-                            </div>
-
-                            <!-- Status Badge -->
-                            <div class="mb-3">
-                                @if (reservation.Status == "Confirmed")
-                                {
-                                    <span class="badge bg-success">✅ Onaylandı</span>
-                                }
-                                else if (reservation.Status == "Pending")
-                                {
-                                    <span class="badge bg-warning text-dark">⏳ Beklemede</span>
-                                }
-                                else if (reservation.Status == "Cancelled")
-                                {
-                                    <span class="badge bg-danger">❌ İptal Edildi</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">ℹ️ @reservation.Status</span>
-                                }
-                            </div>
+                            <p class="mb-2">
+                                <small class="text-muted">📅 Tarihler:</small>
+                                <br>
+                                <small>
+                                    @reservation.CheckInDate.ToString("dd MMM yyyy") →
+                                    @reservation.CheckOutDate.ToString("dd MMM yyyy")
+                                </small>
+                            </p>
 
                             <!-- Price -->
-                            <div class="mb-3 pb-3 border-bottom">
-                                <p class="mb-0">
-                                    <strong>💰 Toplam Fiyat:</strong>
-                                    <span class="text-primary fw-bold">@reservation.TotalPrice.ToString("C")</span>
-                                </p>
-                            </div>
+                            <p class="mb-3 pb-3 border-bottom">
+                                <small class="text-muted">💰 Toplam Tutar:</small>
+                                <br>
+                                <strong class="text-primary fs-5">@reservation.TotalPrice.ToString("C")</strong>
+                            </p>
 
-                            <!-- Actions -->
-                            <div class="d-flex gap-2">
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
                                 <!-- Details Button -->
-                                <a href="/reservation/details/@reservation.Id" class="btn btn-info btn-sm flex-grow-1">
+                                <a href="/reservation/details/@reservation.Id" class="btn btn-sm btn-outline-primary">
                                     👁️ Detaylar
                                 </a>
 
-                                <!-- Cancel Button (if not cancelled) -->
-                                @if (reservation.Status != "Cancelled")
+                                <!-- Payment Button (Only for Pending Status) -->
+                                @if (reservation.Status.ToLower() == "pending")
                                 {
-                                    <form method="post" action="/reservation/cancel/@reservation.Id" style="flex: 1;">
+                                    <a href="/payment/process/@reservation.Id" class="btn btn-sm btn-success">
+                                        💳 Ödeme Yap
+                                    </a>
+                                }
+                                else if (reservation.Status.ToLower() == "confirmed")
+                                {
+                                    <button type="button" class="btn btn-sm btn-success" disabled>
+                                        ✅ Ödeme Tamamlandı
+                                    </button>
+                                }
+
+                                <!-- Cancel Button -->
+                                <!-- ✅ DÜZELTME: Sadece iptal edilmemiş VEYA tarihi bugün ve sonrası olanlar iptal edilebilir -->
+                                @if (reservation.Status.ToLower() != "cancelled" && reservation.CheckInDate.Date >= DateTime.UtcNow.Date)
+                                {
+                                    <form method="post" action="/reservation/cancel/@reservation.Id" style="display: inline;">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-danger btn-sm w-100" onclick="return confirm('Rezervasyonu iptal etmek istediğinize emin misiniz?')">
+                                        <button type="submit" class="btn btn-sm btn-danger w-100"
+                                                onclick="return confirm('Rezervasyonunuzu iptal etmek istediğinize emin misiniz?')">
                                             ❌ İptal Et
                                         </button>
                                     </form>
@@ -134,40 +131,16 @@
         <div class="row">
             <div class="col-12">
                 <div class="alert alert-info text-center py-5" role="alert">
-                    <h4 class="alert-heading">😢 Henüz Rezervasyonunuz Yok</h4>
-                    <p>Otelleri keşfetmeye başlamak için başlayın!</p>
+                    <h4 class="alert-heading">😢 Rezervasyon Yok</h4>
+                    <p>Henüz hiç rezervasyon yapmadınız. Otelleri keşfetmeye başlayın!</p>
                     <hr>
-                    <a href="/hotel" class="btn btn-primary btn-lg">
-                        🏨 Otelleri Göster
+                    <a href="/hotel" class="btn btn-primary btn-sm">
+                        🏨 Otelleri Gözat
                     </a>
                 </div>
             </div>
         </div>
     }
-
-    <!-- Info Section -->
-    <div class="row mt-5 pt-5 border-top">
-        <div class="col-md-3 text-center mb-4">
-            <div class="display-6">🔒</div>
-            <h6>Güvenli Rezervasyon</h6>
-            <p class="text-muted small">SSL şifreli ödeme</p>
-        </div>
-        <div class="col-md-3 text-center mb-4">
-            <div class="display-6">⭐</div>
-            <h6>Doğrulanmış Oteller</h6>
-            <p class="text-muted small">Gerçek müşteri yorumları</p>
-        </div>
-        <div class="col-md-3 text-center mb-4">
-            <div class="display-6">💰</div>
-            <h6>En İyi Fiyat Garantisi</h6>
-            <p class="text-muted small">Benzersiz oranlar</p>
-        </div>
-        <div class="col-md-3 text-center mb-4">
-            <div class="display-6">🎧</div>
-            <h6>24/7 Destek</h6>
-            <p class="text-muted small">Her zaman yardımcı</p>
-        </div>
-    </div>
 </div>
 
 <style>
@@ -175,33 +148,54 @@
         color: #2c3e50;
     }
 
-    .card {
+    .reservation-card {
         transition: transform 0.3s, box-shadow 0.3s;
         border-radius: 12px;
     }
 
-        .card:hover {
+        .reservation-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
         }
 
-    .btn-primary {
-        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    .btn-success {
+        background: linear-gradient(135deg, #198754, #157347);
         border: none;
     }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #0a58ca, #084298);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        .btn-success:hover {
+            background: linear-gradient(135deg, #157347, #0d3622);
         }
 
-    .card-header {
-        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .badge {
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
+    .card {
+        border-radius: 12px;
     }
 </style>
+
+@functions {
+    string GetStatusColor(string status)
+    {
+        if (string.IsNullOrEmpty(status)) return "bg-secondary text-white";
+
+        return status.ToLower() switch
+        {
+            "confirmed" => "bg-success text-white",
+            "pending" => "bg-warning text-dark",
+            "cancelled" => "bg-danger text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+
+    string GetStatusBadge(string status)
+    {
+        if (string.IsNullOrEmpty(status)) return "Bilinmiyor";
+
+        return status.ToLower() switch
+        {
+            "confirmed" => "✅ Onaylandı",
+            "pending" => "⏳ Bekleme",
+            "cancelled" => "❌ İptal Edildi",
+            _ => status
+        };
+    }
+}

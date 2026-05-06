@@ -16,7 +16,6 @@ namespace Core.Abstracts.Interfaces  // ← Değişti
         Task<RegisterResponseDto> RegisterAsync(RegisterDto dto);
 
         // Profile
-
         // Password
         Task<IResult> ChangePasswordAsync(int guestId, ChangePasswordDto dto);
         Task<IResult> ResetPasswordAsync(ResetPasswordDto dto);

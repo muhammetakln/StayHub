@@ -150,6 +150,8 @@ namespace Core.Concretes.DTOs
         public decimal GrandTotal { get; set; }
     }
 
+
+
     public class CreateReservationDto
     {
         [Required(ErrorMessage = "Misafir ID gereklidir")]
@@ -170,6 +172,12 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Check-out")]
         public DateTime CheckOutDate { get; set; }
 
+        // ✅ EKLEDİĞİMİZ ALAN: Bu alan servisteki hatayı çözecek
+        [Required(ErrorMessage = "Misafir sayısı gereklidir")]
+        [Range(1, 10, ErrorMessage = "Misafir sayısı 1-10 arasında olmalıdır")]
+        [Display(Name = "Misafir Sayısı")]
+        public int NumberOf { get; set; }
+
         [Display(Name = "Ekstra Hizmet ID'leri")]
         public List<int> SelectedAddOnServiceIds { get; set; } = [];
 
@@ -181,32 +189,33 @@ namespace Core.Concretes.DTOs
         [Range(0.01, 1000000, ErrorMessage = "Geçerli bir fiyat giriniz")]
         [Display(Name = "Toplam Fiyat")]
         public decimal TotalPrice { get; set; }
+        public List<int> SelectedServiceIds { get; set; } = new();
     }
+}
 
-    public class UpdateReservationDto
-    {
-        [Required(ErrorMessage = "Check-in tarihi gereklidir")]
-        [DataType(DataType.DateTime)]
-        [Display(Name = "Check-in")]
-        public DateTime CheckInDate { get; set; }
+public class UpdateReservationDto
+{
+    [Required(ErrorMessage = "Check-in tarihi gereklidir")]
+    [DataType(DataType.DateTime)]
+    [Display(Name = "Check-in")]
+    public DateTime CheckInDate { get; set; }
 
-        [Required(ErrorMessage = "Check-out tarihi gereklidir")]
-        [DataType(DataType.DateTime)]
-        [Display(Name = "Check-out")]
-        public DateTime CheckOutDate { get; set; }
+    [Required(ErrorMessage = "Check-out tarihi gereklidir")]
+    [DataType(DataType.DateTime)]
+    [Display(Name = "Check-out")]
+    public DateTime CheckOutDate { get; set; }
 
-        [StringLength(500, ErrorMessage = "Özel istekler 500 karakteri geçemez")]
-        [Display(Name = "Özel İstekler")]
-        public string? SpecialRequests { get; set; }
+    [StringLength(500, ErrorMessage = "Özel istekler 500 karakteri geçemez")]
+    [Display(Name = "Özel İstekler")]
+    public string? SpecialRequests { get; set; }
 
-        [Display(Name = "Ekstra Hizmet ID'leri")]
-        public List<int> SelectedAddOnServiceIds { get; set; } = [];
-    }
+    [Display(Name = "Ekstra Hizmet ID'leri")]
+    public List<int> SelectedAddOnServiceIds { get; set; } = [];
+}
 
-    public class CancelReservationDto
-    {
-        [StringLength(500, ErrorMessage = "İptal sebebi 500 karakteri geçemez")]
-        [Display(Name = "İptal Sebebi")]
-        public string? CancellationReason { get; set; }
-    }
+public class CancelReservationDto
+{
+    [StringLength(500, ErrorMessage = "İptal sebebi 500 karakteri geçemez")]
+    [Display(Name = "İptal Sebebi")]
+    public string? CancellationReason { get; set; }
 }

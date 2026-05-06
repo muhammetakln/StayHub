@@ -1,5 +1,4 @@
-﻿using Business.Adapters;
-using Business.Mappings;
+﻿using Business.Mappings;
 using Business.Profiles;
 using Business.Services;
 using Core.Abstracts;
@@ -48,9 +47,8 @@ namespace Business
             services.AddScoped<IAmenityService, AmenityService>();
             services.AddScoped<IReservationService, ReservationService>();
             services.AddScoped<IReviewService, ReviewService>();
-            services.AddScoped<IPaymentService, PaymentService>();
-            services.AddScoped<IPaymentAdapter, IyzicoPaymentAdapter>();
-            services.AddScoped<IPaymentAdapter, StripePaymentAdapter>();
+            services.AddScoped<IPaymentService, MockPaymentService>();
+           
             return services;
 
 

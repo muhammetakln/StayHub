@@ -1,10 +1,11 @@
 ﻿@using Core.Concretes.DTOs
-@model ReservationDetailDto
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Rezervasyon Detayları";
 }
+
+@model ReservationDetailDto
 
 <div class="container mt-4">
     <!-- Page Header -->
@@ -230,8 +231,17 @@
                     }
                 </div>
 
+                <!-- Fatura Görüntüle Butonu (Confirmed için) -->
+                @if (Model.Status == "Confirmed")
+                {
+                    <a href="/payment/success/@Model.Id" class="btn btn-info btn-sm w-100 mb-2" target="_blank">
+                        📋 Fatura Görüntüle
+                    </a>
+                }
+
                 <!-- Actions -->
-                @if (Model.Status != "Cancelled")
+                <!-- ✅ DÜZELTME: Sadece iptal edilmemiş VEYA tarihi bugün ve sonrası olanlar iptal edilebilir -->
+                @if (Model.Status != "Cancelled" && Model.CheckInDate.Date >= DateTime.UtcNow.Date)
                 {
                     <form method="post" action="/reservation/cancel/@Model.Id">
                         @Html.AntiForgeryToken()
@@ -278,4 +288,14 @@
             box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
         }
 
+    .btn-info {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        border: none;
+    }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #138496, #0c5460);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
+        }
 </style>

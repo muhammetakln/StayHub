@@ -19,12 +19,13 @@ namespace Core.Concretes.Entities
         public TimeOnly CheckInTime { get; set; } = new(14, 0);
         public TimeOnly CheckOutTime { get; set; } = new(11, 0);
         public bool IsActive { get; set; } = true;
-        public decimal MinPrice { get; set; } = 250; // ✅ EKLENDI
-        public double AverageRating { get; set; } = 0.0; // ✅ EKLENDI
-        public int ReviewCount { get; set; } = 0; // ✅ EKLENDI
-        public string? CoverImageUrl { get; set; } // ✅ EKLENDI
+        public decimal MinPrice { get; set; } = 250; 
+        public double AverageRating { get; set; } = 0.0;
+        public int ReviewCount { get; set; } = 0; 
+        public string? CoverImageUrl { get; set; } 
         public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();
         public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public virtual ICollection<AddOnService> AddOnServices { get; set; } = [];
     }
 }

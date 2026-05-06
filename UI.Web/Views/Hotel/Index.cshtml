@@ -25,7 +25,6 @@
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="profileDropdown">
                             <li><a class="dropdown-item" href="/account/profile">⚙️ Profil</a></li>
-                            <li><a class="dropdown-item" href="/account/change-password">🔐 Şifre Değiştir</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form method="post" action="/account/logout" style="display: inline;">
@@ -350,17 +349,17 @@
     // TempData error message göster
     @if (TempData["ErrorMessage"] != null)
     {
-                    <text>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
-                        alertDiv.style.zIndex = '9999';
-                        alertDiv.style.width = '90%';
-                        alertDiv.style.maxWidth = '500px';
-                        alertDiv.setAttribute('role', 'alert');
-                        alertDiv.innerHTML = '@TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                        document.body.insertBefore(alertDiv, document.body.firstChild);
-                    });
-                    </text>
+                        <text>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                            alertDiv.style.zIndex = '9999';
+                            alertDiv.style.width = '90%';
+                            alertDiv.style.maxWidth = '500px';
+                            alertDiv.setAttribute('role', 'alert');
+                            alertDiv.innerHTML = '@TempData["ErrorMessage"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                            document.body.insertBefore(alertDiv, document.body.firstChild);
+                        });
+                        </text>
     }
 </script>

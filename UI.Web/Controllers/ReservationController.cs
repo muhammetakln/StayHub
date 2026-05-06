@@ -27,6 +27,7 @@ namespace UI.Web.Controllers
         }
 
         // ✅ POST: /reservation/create/{hotelId} - Yeni Rezervasyon Oluştur
+        // ✅ POST: /reservation/create/{hotelId} - Yeni Rezervasyon Oluştur
         [HttpPost("create/{hotelId}")]
         [Authorize(Roles = "Guest")]
         public async Task<IActionResult> Create(int hotelId, [FromForm] CreateReservationDto dto)
@@ -64,11 +65,13 @@ namespace UI.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Rezervasyon oluşturma hatası: Hotel={hotelId}");
-                TempData["ErrorMessage"] = "Rezervasyon yapılırken hata oluştu. Lütfen tekrar deneyin.";
+
+                // DEĞİŞİKLİK BURADA: Statik metin yerine servisten dönen gerçek hatayı (ex.Message) alıyoruz.
+                TempData["ErrorMessage"] = ex.Message;
+
                 return RedirectToAction("Details", "Hotel", new { id = hotelId });
             }
         }
-
         // ✅ GET: /reservation/details/{id} - Rezervasyon Detayları
         [HttpGet("details/{id}")]
         [Authorize(Roles = "Guest")]
@@ -93,25 +96,25 @@ namespace UI.Web.Controllers
                 var detailDto = new ReservationDetailDto
                 {
                     Id = reservation.Id,
-                    HotelId = reservation.HotelId,  // ✅ ReservationDto'da var
-                    HotelName = reservation.HotelName,  // ✅ ReservationDto'da var
+                    HotelId = reservation.HotelId,
+                    HotelName = reservation.HotelName,
                     HotelAddress = "Address",  // TODO: Service'den gelecek
                     HotelPhone = "Phone",  // TODO: Service'den gelecek
-                    RoomId = reservation.RoomId,  // ✅ ReservationDto'da var
-                    RoomNumber = reservation.RoomNumber,  // ✅ ReservationDto'da var
+                    RoomId = reservation.RoomId,
+                    RoomNumber = reservation.RoomNumber,
                     RoomType = "Standard",  // TODO: Service'den gelecek
-                    CheckInDate = reservation.CheckInDate,  // ✅ ReservationDto'da var
-                    CheckOutDate = reservation.CheckOutDate,  // ✅ ReservationDto'da var
-                    NightCount = nightCount,  // ✅ Tarihlerden hesapla
-                    Status = reservation.Status,  // ✅ ReservationDto'da var
-                    SpecialRequests = null,  // ❌ ReservationDto'da yok
-                    PricePerNight = reservation.TotalPrice / (nightCount > 0 ? nightCount : 1),  // ✅ Hesapla
-                    SubTotal = reservation.TotalPrice,  // ✅ ReservationDto'da var
-                    Tax = 0,  // ❌ ReservationDto'da yok
+                    CheckInDate = reservation.CheckInDate,
+                    CheckOutDate = reservation.CheckOutDate,
+                    NightCount = nightCount,
+                    Status = reservation.Status,
+                    SpecialRequests = null,
+                    PricePerNight = reservation.TotalPrice / (nightCount > 0 ? nightCount : 1),
+                    SubTotal = reservation.TotalPrice,
+                    Tax = 0,
                     AddOnServices = new List<AddOnServiceDto>(),
                     AddOnTotal = 0,
-                    GrandTotal = reservation.TotalPrice,  // ✅ ReservationDto'da var
-                    CreatedAt = DateTime.Now  // ❌ ReservationDto'da yok → Şimdi kullan
+                    GrandTotal = reservation.TotalPrice,
+                    CreatedAt = DateTime.Now
                 };
 
                 return View(detailDto);

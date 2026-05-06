@@ -10,9 +10,13 @@ namespace Utils.Models
     {
         public string Host { get; set; } = null!;
         public int Port { get; set; }
-        public string UserName { get; set; }=null!;
+        public string UserName { get; set; } = null!;
         public string Password { get; set; } = null!;
         public string DisplayName { get; set; } = null!;
+
+        public bool EnableSSL { get; set; }
+        public string FromEmail { get; set; } = null!;
+
         public bool Enabled { get; set; } = true;
     }
 }
