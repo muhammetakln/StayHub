@@ -4,10 +4,12 @@ using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Text.Encodings.Web;
 using UI.Web.Models;
+using UI.Web.ViewModels;
 
 namespace UI.Web.Controllers
 {
@@ -183,10 +185,10 @@ namespace UI.Web.Controllers
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
 
-                IdentificationNumber = "00000000000", 
-                Address = "Belirtilmedi",             
-                Country = "Türkiye",                 
-                DateOfBirth = DateTime.Now.AddYears(-18) 
+                IdentificationNumber = "00000000000",
+                Address = "Belirtilmedi",
+                Country = "Türkiye",
+                DateOfBirth = DateTime.Now.AddYears(-18)
             };
 
             try
@@ -212,6 +214,118 @@ namespace UI.Web.Controllers
 
             return View(dto);
         }
+
+        // --- ŞİFREMİ UNUTTUM İŞLEMLERİ ---
+
+        [HttpGet("forgot-password")]
+        [AllowAnonymous]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
+
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var callbackUrl = Url.Action(
+                "ResetPassword",
+                "Account",
+                new { userId = user.Id, code = code },
+                protocol: Request.Scheme);
+
+            await _emailSender.SendEmailAsync(
+                model.Email,
+                "StayHub - Şifre Sıfırlama Talebi",
+                $"Hesabınızın şifresini sıfırlamak için lütfen <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>buraya tıklayın</a>.");
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        [HttpGet("forgot-password-confirmation")]
+        [AllowAnonymous]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        // --- ŞİFRE YENİLEME (RESET PASSWORD) İŞLEMLERİ ---
+
+        [HttpGet("ResetPassword")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                return BadRequest("Geçersiz veya eksik şifre sıfırlama bağlantısı.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return BadRequest("Kullanıcı bulunamadı.");
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Token = code,
+                Email = user.Email
+            };
+
+            return View(model);
+        }
+
+        [HttpPost("ResetPassword")]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Güvenlik gereği kullanıcı yoksa bile çaktırmadan Ana Sayfaya yönlendiriyoruz
+                TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir.";
+                return RedirectToAction("Index", "Home");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                // İşlem başarılıysa Ana Sayfaya (Home/Index) yönlendiriyoruz
+                TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir. Yeni şifrenizle giriş yapabilirsiniz.";
+                return RedirectToAction("Index", "Home");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        // --- YARDIMCI METOTLAR ---
 
         private IActionResult RedirectToLocal(string returnUrl)
         {

@@ -18,7 +18,6 @@ namespace Business.Services
         private readonly StayHubContext _context;
         private readonly ILogger<MockPaymentService> _logger;
 
-        // Mock Payment Database (In-Memory)
         private static readonly Dictionary<string, PaymentStatus> MockDatabase = new();
 
         public MockPaymentService(StayHubContext context, ILogger<MockPaymentService> logger)
@@ -27,7 +26,6 @@ namespace Business.Services
             _logger = logger;
         }
 
-        // ✅ Ödeme Oluştur
         public async Task<IResult> CreatePaymentAsync(int reservationId, PaymentProcessDto dto)
         {
             try
@@ -43,14 +41,12 @@ namespace Business.Services
                     return Result.Failure("Rezervasyon bulunamadı");
                 }
 
-                // ✅ Card validation
                 if (string.IsNullOrEmpty(dto.CardNumber) || dto.CardNumber.Length < 13)
                 {
                     _logger.LogWarning($"[MOCK PAYMENT] Geçersiz kart numarası");
                     return Result.Failure("Geçersiz kart numarası");
                 }
 
-                // ✅ Mock bank simulation
                 var bankStatus = SimulateBank(dto.PaymentMethod ?? "garanti", dto.Amount);
 
                 var payment = new Payment
@@ -79,7 +75,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ Rezervasyona Göre Ödeme Al
         public async Task<PaymentDetailDto?> GetPaymentByReservationIdAsync(int reservationId)
         {
             try
@@ -117,7 +112,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ Ödeme Durumu Güncelle
         public async Task<IResult> UpdatePaymentStatusAsync(int id, string status)
         {
             try
@@ -153,7 +147,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ İade İşle
         public async Task<IResult> ProcessRefundAsync(int paymentId)
         {
             try
@@ -189,14 +182,13 @@ namespace Business.Services
             }
         }
 
-        // ✅ MOCK BANK SIMULATION
         private static string SimulateBank(string bank, decimal amount)
         {
             return bank.ToLower() switch
             {
-                "garanti" => amount < 50000 ? "Completed" : "Failed",      // Garanti: < 50K TRY
-                "akbank" => amount < 100000 ? "Completed" : "Failed",      // Akbank: < 100K TRY
-                "isbank" => amount < 75000 ? "Completed" : "Failed",       // İş Bank: < 75K TRY
+                "garanti" => amount < 50000 ? "Completed" : "Failed",      
+                "akbank" => amount < 100000 ? "Completed" : "Failed",      
+                "isbank" => amount < 75000 ? "Completed" : "Failed",       
                 _ => "Failed"
             };
         }

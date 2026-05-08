@@ -47,15 +47,33 @@ namespace UI.Web.Controllers
             return View(new CreateRoomDto { HotelId = hotelId });
         }
 
-        [HttpPost("create/{hotelId}")] // Route'dan hotelId alıyoruz
+        [HttpPost("create/{hotelId}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int hotelId, CreateRoomDto dto)
         {
-            // Model kontrolü
+            // 1. Standart model doğrulaması
             if (!ModelState.IsValid) return View(dto);
 
-            // 🔥 SENİN SERVİSİNE GÖRE GÜNCELLENDİ:
-            // Servis 'CreateRoomByIdAsync' bekliyor ve 'hotelId' parametresi istiyor.
+            // 🛡️ 2. KRİTİK KONTROL: Çift Oda Kaydını Engelleme
+            // Oteldeki mevcut odaları çekiyoruz
+            var existingRoomsResult = await _roomService.GetRoomsByHotelIdAsync(hotelId);
+
+            if (existingRoomsResult.IsSuccess && existingRoomsResult.Data != null)
+            {
+                // Boşlukları silip büyük/küçük harf duyarsız kontrol yapıyoruz
+                bool roomExists = existingRoomsResult.Data.Any(r =>
+                    !string.IsNullOrEmpty(r.Name) &&
+                    r.Name.Trim().Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (roomExists)
+                {
+                    // Eğer oda varsa Toastr/SweetAlert ile hata fırlat ve işlemi durdur
+                    TempData["ErrorMessage"] = $"Bu otelde '{dto.Name}' adında bir oda zaten mevcut. Lütfen farklı bir numara/isim girin.";
+                    return View(dto);
+                }
+            }
+
+            // 3. Her şey kolundaysa kaydı gerçekleştir
             var result = await _roomService.CreateRoomByIdAsync(hotelId, dto);
 
             if (result.IsSuccess)
@@ -65,7 +83,7 @@ namespace UI.Web.Controllers
             }
 
             // Servis başarısızsa hata mesajını ekrana bas
-            ModelState.AddModelError("", result.Message);
+            TempData["ErrorMessage"] = result.Message;
             return View(dto);
         }
 
@@ -75,7 +93,7 @@ namespace UI.Web.Controllers
         {
             var result = await _roomService.DeleteRoomAsync(id);
             if (result.IsSuccess)
-                TempData["InfoMessage"] = "Oda silindi.";
+                TempData["SuccessMessage"] = "Oda başarıyla silindi.";
             else
                 TempData["ErrorMessage"] = result.Message;
 

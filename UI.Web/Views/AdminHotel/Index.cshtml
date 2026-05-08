@@ -67,8 +67,8 @@
 
     <h3 class="fw-bold mb-4 border-bottom pb-2"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Yönetim Modülleri</h3>
 
-    <div class="row g-4 mb-5">
-        <div class="col-md-6 col-lg-3">
+    <div class="row g-4 mb-5 justify-content-center">
+        <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="icon-circle bg-primary-subtle text-primary mx-auto mb-3">
@@ -76,7 +76,6 @@
                     </div>
                     <h5 class="fw-bold">Rezervasyonlar</h5>
                     <p class="text-muted small mb-4">Gelen talepleri onaylayın, misafir girişlerini takip edin.</p>
-                    @* ✅ BURASI BAĞLANDI *@
                     <a href="/admin/reservation?hotelId=@Model?.Id" class="btn btn-outline-primary mt-auto rounded-pill fw-bold">
                         İncele
                     </a>
@@ -84,7 +83,7 @@
             </div>
         </div>
 
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="icon-circle bg-success-subtle text-success mx-auto mb-3">
@@ -97,28 +96,15 @@
             </div>
         </div>
 
-        <div class="col-md-6 col-lg-3">
-            <div class="card module-card text-center shadow-sm h-100 border-0">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="icon-circle bg-info-subtle text-info mx-auto mb-3">
-                        <i class="bi bi-magic fs-2"></i>
-                    </div>
-                    <h5 class="fw-bold">Ek Hizmetler (@(Model?.AddOnServices?.Count ?? 0))</h5>
-                    <p class="text-muted small mb-4">SPA, Transfer, Kahvaltı gibi servisleri yönetin.</p>
-                    <a href="/admin/addon/index/@Model?.Id" class="btn btn-outline-info mt-auto rounded-pill fw-bold">Düzenle</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="icon-circle bg-secondary-subtle text-secondary mx-auto mb-3">
-                        <i class="bi bi-gear-wide-connected fs-2"></i>
+                        <i class="bi bi-pencil-square fs-2"></i>
                     </div>
-                    <h5 class="fw-bold">Ayarlar</h5>
-                    <p class="text-muted small mb-4">Otel iletişim bilgilerini ve görsellerini güncelleyin.</p>
-                    <a href="/admin/hotel/edit/@Model?.Id" class="btn btn-outline-secondary mt-auto rounded-pill fw-bold">Ayarlar</a>
+                    <h5 class="fw-bold">Oteli Düzenle</h5>
+                    <p class="text-muted small mb-4">Otel detaylarını, iletişim bilgilerini ve görsellerini güncelleyin.</p>
+                    <a href="/admin/hotel/edit/@Model?.Id" class="btn btn-outline-secondary mt-auto rounded-pill fw-bold">Düzenle</a>
                 </div>
             </div>
         </div>

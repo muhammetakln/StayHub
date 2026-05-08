@@ -72,7 +72,6 @@ namespace Business.Services
                     };
                 }
 
-                // Default "User" role'ü ata
                 var roleExists = await _roleManager.RoleExistsAsync("User");
                 if (!roleExists)
                 {
@@ -80,7 +79,6 @@ namespace Business.Services
                 }
                 await _userManager.AddToRoleAsync(guest, "User");
 
-                // Email verification token generate et
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(guest);
 
                 var authDto = new AuthDto
@@ -135,7 +133,6 @@ namespace Business.Services
                     };
                 }
 
-                // Email doğrulanmış mı kontrol et
                 if (!guest.EmailConfirmed)
                 {
                     return new LoginResponseDto
@@ -146,7 +143,6 @@ namespace Business.Services
                     };
                 }
 
-                // Aktif mi kontrol et
                 if (!guest.IsActive)
                 {
                     return new LoginResponseDto
@@ -157,7 +153,6 @@ namespace Business.Services
                     };
                 }
 
-                // Şifre kontrol et
                 var result = await _signInManager.PasswordSignInAsync(guest, dto.Password, dto.RememberMe, lockoutOnFailure: true);
 
                 if (!result.Succeeded)
@@ -180,7 +175,6 @@ namespace Business.Services
                     };
                 }
 
-                // Son giriş tarihini güncelle
                 guest.LastLoginDate = DateTime.UtcNow;
                 await _userManager.UpdateAsync(guest);
 

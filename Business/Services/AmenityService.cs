@@ -33,7 +33,6 @@ namespace Business.Services
             {
                 logger.LogInformation($"[AMENITY] Olanak oluşturuluyor: Hotel={hotelId}, Name={dto.Name}");
 
-                // Otel var mı?
                 var hotelExists = await context.Hotels.AnyAsync(h => h.Id == hotelId && !h.IsDeleted);
                 if (!hotelExists)
                 {
@@ -41,7 +40,6 @@ namespace Business.Services
                     return Result.Failure("Otel bulunamadı");
                 }
 
-                // Aynı isimde olanak var mı?
                 var amenityExists = await context.Amenities
                     .AnyAsync(a => a.HotelId == hotelId && a.Name == dto.Name && !a.IsDeleted);
 

@@ -147,7 +147,7 @@ namespace Business.Services
                     .Include(h => h.Rooms)
                     .Include(h => h.Amenities)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) // ✅ EKLENDİ: Otel detay sayfasında ek hizmetlerin görünmesi için kritik[cite: 1]
+                    .Include(h => h.AddOnServices) 
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -175,7 +175,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) // ✅ EKLENDİ: Genel listede ek hizmetleri çekiyoruz[cite: 1]
+                    .Include(h => h.AddOnServices) 
                     .Where(h => !h.IsDeleted && h.IsActive)
                     .ToListAsync();
 
@@ -198,7 +198,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) // ✅ EKLENDİ[cite: 1]
+                    .Include(h => h.AddOnServices) 
                     .Where(h => !h.IsDeleted && h.IsActive && h.City == city)
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
@@ -222,7 +222,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) // ✅ EKLENDİ[cite: 1]
+                    .Include(h => h.AddOnServices) 
                     .Where(h => !h.IsDeleted && h.IsActive &&
                            (h.Reviews.Average(r => (double?)r.Rating) ?? 0) >= (double)minRating)
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)

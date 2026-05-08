@@ -149,7 +149,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ OTELİN ODALARINI AL
         public async Task<IResult<List<RoomDto>>> GetRoomsByHotelIdAsync(int hotelId)
         {
             try
@@ -163,7 +162,6 @@ namespace Business.Services
 
                 _logger.LogInformation($"[ROOM] {rooms.Count} oda bulundu");
 
-                // RoomDto'ya map et
                 var roomDtos = rooms.Select(r => new RoomDto
                 {
                     Id = r.Id,
@@ -184,7 +182,6 @@ namespace Business.Services
             }
         }
 
-        // ✅ ODAYI ID'YE GÖRE AL
         public async Task<IResult<RoomDto>> GetRoomByIdAsync(int roomId)
         {
             try

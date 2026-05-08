@@ -4,10 +4,11 @@ using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Core.Concretes.Enum;
 using Data.Contexts;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Utils.Responses;
-using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace Business.Services
 {
@@ -26,12 +27,12 @@ namespace Business.Services
             _emailSender = emailSender;
         }
 
-        // ✅ REZERVASYON OLUŞTURMA
         public async Task<List<ReservationDto>> CreateReservationAsync(int guestId, CreateReservationDto dto)
         {
             try
             {
                 var guest = await _context.Users.FindAsync(guestId) ?? throw new Exception("Misafir bulunamadı");
+
                 var room = await _context.Rooms.Include(r => r.Hotel)
                     .FirstOrDefaultAsync(r => r.Id == dto.RoomId && !r.IsDeleted && r.IsActive)
                     ?? throw new Exception("Oda bulunamadı");
@@ -61,7 +62,6 @@ namespace Business.Services
                     TotalPrice = totalPrice,
                     Status = ReservationStatus.Pending,
                     CreatedAt = DateTime.UtcNow
-                    // 🛡️ HotelId atanmadı, veritabanında yok.
                 };
 
                 await _context.Reservations.AddAsync(reservation);
@@ -86,6 +86,11 @@ namespace Business.Services
                     await _context.SaveChangesAsync();
                 }
 
+                if (room.Hotel != null && !string.IsNullOrEmpty(room.Hotel.Email))
+                {
+                    await SendNotificationToHotel(room.Hotel, reservation, room, guest);
+                }
+
                 return await GetReservationsByIdAsync(guestId);
             }
             catch (Exception ex)
@@ -95,11 +100,44 @@ namespace Business.Services
             }
         }
 
-        // ✅ REZERVASYONLARI LİSTELEME (MİSAFİR İÇİN)
+        public async Task SendNotificationToHotel(Hotel hotel, Reservation res, Room room, IdentityUser<int> guest) 
+        {
+            try
+            {
+                string guestName = guest is Guest g ? $"{g.FirstName} {g.LastName}" : guest.UserName ?? "Misafir";
+
+                string body = $@"
+                <div style='font-family:Arial; border:1px solid #3498db; padding:20px; max-width: 600px;'>
+                    <h2 style='color:#2c3e50;'>🔔 Yeni Rezervasyon Bildirimi</h2>
+                    <p>Sayın <b>{hotel.Name}</b> Yetkilisi,</p>
+                    <p>Sisteminiz üzerinden yeni bir rezervasyon oluşturulmuştur. Lütfen ilgili odayı misafiriniz için hazırlayınız. Detaylar aşağıdadır:</p>
+                    
+                    <div style='background-color:#f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                        <p style='margin: 5px 0;'><b>🔑 Rezervasyon No:</b> {res.ReservationNumber}</p>
+                        <p style='margin: 5px 0;'><b>👤 Misafir Adı:</b> {guestName}</p>
+                        <p style='margin: 5px 0;'><b>🚪 Oda:</b> {room.RoomNumber} ({room.Name})</p>
+                        <p style='margin: 5px 0;'><b>📅 Giriş Tarihi:</b> {res.CheckInDate:dd.MM.yyyy}</p>
+                        <p style='margin: 5px 0;'><b>📅 Çıkış Tarihi:</b> {res.CheckOutDate:dd.MM.yyyy}</p>
+                        <p style='margin: 5px 0;'><b>👥 Kişi Sayısı:</b> {res.NumberOf}</p>
+                        <h3 style='margin: 15px 0 0 0; color: #e74c3c;'>Toplam Tutar: {res.TotalPrice:N2} TL</h3>
+                    </div>
+                    
+                    <p style='font-size:12px; color:gray; text-align: center; border-top: 1px solid #ddd; padding-top: 10px;'>
+                        Bu mesaj StayHub Otomasyon Sistemi tarafından otomatik olarak gönderilmiştir. Lütfen bu maile cevap vermeyiniz.
+                    </p>
+                </div>";
+
+                await _emailSender.SendEmailAsync(hotel.Email!, $"Yeni Rezervasyon: {res.ReservationNumber} - Oda {room.RoomNumber}", body);
+                _logger.LogInformation($"Otele bildirim maili gönderildi: {hotel.Email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Otel bildirim maili gönderilirken hata oluştu.");
+            }
+        }
+
         public async Task<List<ReservationDto>> GetReservationsByIdAsync(int guestId)
         {
-            // 🛡️ SQLite'ın r.HotelId aramasını engellemek için Projection (Select) kullanıyoruz.
-            // Bu yöntem veritabanından sadece var olan sütunları çeker.
             var reservationsRaw = await _context.Reservations
                 .AsNoTracking()
                 .Where(r => r.GuestId == guestId && !r.IsDeleted)
@@ -117,7 +155,6 @@ namespace Business.Services
             {
                 var dto = _mapper.Map<ReservationDto>(item.Reservation);
 
-                // 🛡️ DTO'daki HotelId ve isim alanlarını elle dolduruyoruz.
                 dto.HotelName = item.HotelData?.Name ?? "StayHub Otel";
                 dto.HotelId = item.HotelData?.Id ?? 0;
                 dto.RoomNumber = item.RoomData?.RoomNumber ?? "N/A";
@@ -129,10 +166,8 @@ namespace Business.Services
             return dtoList;
         }
 
-        // ✅ TEKİL REZERVASYON DETAYI
         public async Task<ReservationDto?> GetReservationByIdAsync(int id)
         {
-            // Yine aynı mantıkla r.HotelId kolonuna basmaması için Select kullanıyoruz.
             var item = await _context.Reservations
                 .AsNoTracking()
                 .Where(r => r.Id == id && !r.IsDeleted)
@@ -160,7 +195,6 @@ namespace Business.Services
             return dto;
         }
 
-        // --- DİĞER YARDIMCI METOTLAR ---
 
         public async Task<IResult> CancelReservationAsync(int id)
         {
@@ -184,7 +218,9 @@ namespace Business.Services
                     .FirstOrDefaultAsync(r => r.Id == reservationId);
                 if (reservation == null || reservation.Guest == null) return;
 
-                string body = $"<h2>İptal Bildirimi</h2><p>Sn. {reservation.Guest.FirstName}, {reservation.ReservationNumber} nolu kaydınız iptal edildi.</p>";
+                string name = reservation.Guest is Guest g ? g.FirstName : reservation.Guest.UserName;
+
+                string body = $"<h2>İptal Bildirimi</h2><p>Sn. {name}, {reservation.ReservationNumber} nolu kaydınız iptal edildi.</p>";
                 await _emailSender.SendEmailAsync(reservation.Guest.Email!, "Rezervasyon İptali", body);
             }
             catch (Exception ex) { _logger.LogError(ex, "Mail Hatası"); }
@@ -199,7 +235,7 @@ namespace Business.Services
 
         public async Task SendInvoiceEmail(Guest guest, Reservation res, Room room)
         {
-            // ... (Invoice mail mantığın aynı kalabilir)
+           
         }
     }
 }
