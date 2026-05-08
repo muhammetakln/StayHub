@@ -1,0 +1,83 @@
+﻿@using Core.Concretes.DTOs
+@model CreateRoomDto
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Oda Kaydı";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white p-4">
+                    <h3 class="mb-0 fw-bold"><i class="bi bi-building-add me-2"></i>Yeni Oda Tanımla</h3>
+                    <p class="mb-0 text-white-50 small">Oda bilgilerini doldurarak sisteme dahil edin.</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Create" asp-route-hotelId="@Model.HotelId" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="HotelId" />
+
+                        <div class="mb-4">
+                            <label asp-for="Name" class="form-label fw-bold">Oda İsmi / No *</label>
+                            <input asp-for="Name" class="form-control form-control-lg" placeholder="Örn: 101 Numaralı Standart Oda" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label asp-for="Capacity" class="form-label fw-bold">Kapasite (Kişi)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-people"></i></span>
+                                    <input asp-for="Capacity" type="number" class="form-control" />
+                                </div>
+                                <span asp-validation-for="Capacity" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Size" class="form-label fw-bold">Alan (m²)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-arrows-fullscreen"></i></span>
+                                    <input asp-for="Size" type="number" class="form-control" />
+                                </div>
+                                <span asp-validation-for="Size" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Price" class="form-label fw-bold">Gecelik Fiyat</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">₺</span>
+                                    <input asp-for="Price" type="number" step="0.01" class="form-control" />
+                                </div>
+                                <span asp-validation-for="Price" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Description" class="form-label fw-bold">Oda Özellikleri / Açıklama</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Manzara, yatak tipi, TV, minibar gibi detayları belirtin..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4 p-3 border rounded-3 bg-light">
+                            <div class="form-check form-switch fs-5">
+                                <input class="form-check-input" type="checkbox" asp-for="IsActive" checked>
+                                <label class="form-check-label fw-bold" asp-for="IsActive">Oda Satışa Hazır (Aktif)</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-5 pt-3 border-top">
+                            <a href="/admin/room/index/@Model.HotelId" class="btn btn-outline-secondary px-4 rounded-pill">Vazgeç</a>
+                            <button type="submit" class="btn btn-primary px-5 rounded-pill shadow">
+                                <i class="bi bi-save me-2"></i>Odayı Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

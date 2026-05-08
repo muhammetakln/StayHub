@@ -13,7 +13,6 @@ namespace UI.Web.Controllers
             _logger = logger;
         }
 
-        // ✅ ANA SAYFA - LOGIN/REGISTER
         [HttpGet("")]
         [HttpGet("index")]
         [HttpGet("home")]

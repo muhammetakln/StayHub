@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - StayHub Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+        }
+
+            .sidebar a {
+                color: #adb5bd;
+                transition: all 0.3s;
+            }
+
+                .sidebar a:hover, .sidebar a.active {
+                    color: #fff;
+                    background-color: #343a40;
+                    border-radius: 5px;
+                }
+
+        .main-content {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <div class="sidebar p-3 d-flex flex-column" style="width: 250px;">
+            <a href="/admin/hotel" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none border-bottom pb-3">
+                <span class="fs-4 fw-bold">🏨 StayHub Admin</span>
+            </a>
+            <ul class="nav nav-pills flex-column mb-auto mt-3 gap-2">
+                <li class="nav-item">
+                    <a href="/admin/hotel" class="nav-link @(Context.Request.Path == "/admin/hotel" ? "active" : "")">
+                        <i class="bi bi-speedometer2 me-2"></i> Yönetim Paneli
+                    </a>
+                </li>
+
+                @* Sadece oteli olan Adminlere bu menüleri göster *@
+                @if (User.HasClaim(c => c.Type == "HotelId"))
+                {
+                    <li>
+                        <a href="/admin/reservation" class="nav-link">
+                            <i class="bi bi-calendar-check me-2"></i> Rezervasyonlar
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/room" class="nav-link">
+                            <i class="bi bi-door-open me-2"></i> Odalar
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/admin/hotel/pricing" class="nav-link">
+                            <i class="bi bi-currency-dollar me-2"></i> Fiyat Yönetimi
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <hr class="text-secondary">
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle fs-4 me-2"></i>
+                    <strong>@User.Identity?.Name</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                    <li><a class="dropdown-item" href="/account/profile">Profil Ayarları</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="/account/logout" method="post" class="px-3">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-link dropdown-item text-danger p-0">Çıkış Yap</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="main-content flex-grow-1 p-4">
+            <main role="main">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            let inactivityTime = function () {
+                let time;
+                window.onload = resetTimer;
+                document.onmousemove = resetTimer;
+                document.onkeypress = resetTimer;
+                document.onclick = resetTimer;
+                document.onscroll = resetTimer;
+
+                function logout() {
+                    alert("10 dakika boyunca işlem yapmadığınız için güvenliğiniz gereği oturumunuz kapatılmıştır.");
+                    var form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = '/account/logout';
+
+                    var token = document.createElement('input');
+                    token.type = 'hidden';
+                    token.name = '__RequestVerificationToken';
+                    token.value = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+                    form.appendChild(token);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+
+                function resetTimer() {
+                    clearTimeout(time);
+                    time = setTimeout(logout, 600000); // 10 Dakika
+                }
+            };
+            inactivityTime();
+        </script>
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

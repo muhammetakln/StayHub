@@ -2,7 +2,7 @@
 using Data.Contexts;
 using Microsoft.AspNetCore.Identity;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Data.Seeders
@@ -16,111 +16,105 @@ namespace Data.Seeders
         {
             try
             {
-                // ADMIN ROLE OLUSTUR
-                var adminRoleExists = await roleManager.RoleExistsAsync("Admin");
-                if (!adminRoleExists)
+                // 1. ROLLERİ OLUŞTUR (SuperAdmin, Admin, Guest)
+                string[] roleNames = { "SuperAdmin", "Admin", "Guest" };
+                foreach (var roleName in roleNames)
                 {
-                    await roleManager.CreateAsync(new IdentityRole<int> { Name = "Admin" });
-                    Console.WriteLine("✅ Admin role oluşturuldu");
-                }
-
-                // GUEST ROLE OLUSTUR
-                var guestRoleExists = await roleManager.RoleExistsAsync("Guest");
-                if (!guestRoleExists)
-                {
-                    await roleManager.CreateAsync(new IdentityRole<int> { Name = "Guest" });
-                    Console.WriteLine("✅ Guest role oluşturuldu");
-                }
-
-                // ADMIN USER OLUSTUR
-                var adminUserEmail = "admin@stayhub.com";
-                var adminUserExists = await userManager.FindByEmailAsync(adminUserEmail);
-
-                if (adminUserExists == null)
-                {
-                    var adminUser = new Guest
+                    if (!await roleManager.RoleExistsAsync(roleName))
                     {
-                        UserName = adminUserEmail,
-                        Email = adminUserEmail,
-                        FirstName = "Admin",
-                        LastName = "User",
-                        PhoneNumber = "5551111111",
+                        await roleManager.CreateAsync(new IdentityRole<int> { Name = roleName });
+                        Console.WriteLine($"✅ {roleName} rolü oluşturuldu");
+                    }
+                }
+
+                // 2. ANA SUPER ADMIN OLUŞTUR (admin@stayhub.com)
+                var superAdminEmail = "admin@stayhub.com";
+                var superAdminUser = await userManager.FindByEmailAsync(superAdminEmail);
+
+                if (superAdminUser == null)
+                {
+                    var superAdmin = new Guest
+                    {
+                        UserName = superAdminEmail,
+                        Email = superAdminEmail,
+                        FirstName = "StayHub",
+                        LastName = "SuperAdmin",
+                        PhoneNumber = "5550000000",
                         Country = "Turkey",
-                        Address = "Admin Address",
-                        IdentificationNumber = "12345678901",
-                        DateOfBirth = new DateTime(1990, 1, 1),
+                        Address = "Merkez Ofis",
+                        IdentificationNumber = "00000000000", // Sistem hesabı
+                        DateOfBirth = new DateTime(1985, 1, 1),
                         IsActive = true,
                         EmailConfirmed = true,
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    var result = await userManager.CreateAsync(adminUser, "Admin@123");
+                    // Şifreyi biraz daha güçlendirdik
+                    var result = await userManager.CreateAsync(superAdmin, "Admin*123456");
 
                     if (result.Succeeded)
                     {
-                        // Admin user'ı Admin role'üne ekle
-                        await userManager.AddToRoleAsync(adminUser, "Admin");
-                        Console.WriteLine($"✅ Admin user oluşturuldu: {adminUserEmail}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ Admin user oluşturulamadı: {string.Join(", ", result.Errors)}");
-                    }
-                }
-                else
-                {
-                    // Zaten var, admin role'üne ekle
-                    var isInAdminRole = await userManager.IsInRoleAsync(adminUserExists, "Admin");
-                    if (!isInAdminRole)
-                    {
-                        await userManager.AddToRoleAsync(adminUserExists, "Admin");
-                        Console.WriteLine($"✅ Admin user zaten vardı, Admin role'üne eklendi");
+                        await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                        await userManager.AddToRoleAsync(superAdmin, "Admin"); // Hem Super hem normal Admin
+                        Console.WriteLine($"🚀 ANA SUPER ADMIN OLUŞTURULDU: {superAdminEmail}");
                     }
                 }
 
-                // TEST GUEST USER OLUSTUR
+                // 3. İKİNCİ BİR ÖRNEK ADMİN (Opsiyonel - Panel testi için)
+                var managerEmail = "manager@stayhub.com";
+                if (await userManager.FindByEmailAsync(managerEmail) == null)
+                {
+                    var manager = new Guest
+                    {
+                        UserName = managerEmail,
+                        Email = managerEmail,
+                        FirstName = "Otel",
+                        LastName = "Yöneticisi",
+                        PhoneNumber = "5551111111",
+                        Country = "Turkey",
+                        Address = "Yönetim Paneli",
+                        IdentificationNumber = "11111111111",
+                        DateOfBirth = new DateTime(1990, 5, 20),
+                        IsActive = true,
+                        EmailConfirmed = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    var result = await userManager.CreateAsync(manager, "Manager*123");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(manager, "Admin");
+                        Console.WriteLine($"✅ Örnek Admin oluşturuldu: {managerEmail}");
+                    }
+                }
+
+                // 4. TEST MÜŞTERİSİ (guest@stayhub.com)
                 var guestUserEmail = "guest@stayhub.com";
-                var guestUserExists = await userManager.FindByEmailAsync(guestUserEmail);
+                var guestUser = await userManager.FindByEmailAsync(guestUserEmail);
 
-                if (guestUserExists == null)
+                if (guestUser == null)
                 {
-                    var guestUser = new Guest
+                    var guest = new Guest
                     {
                         UserName = guestUserEmail,
                         Email = guestUserEmail,
                         FirstName = "Test",
-                        LastName = "Guest",
+                        LastName = "Müşteri",
                         PhoneNumber = "5552222222",
                         Country = "Turkey",
-                        Address = "Guest Address",
-                        IdentificationNumber = "10987654321",
-                        DateOfBirth = new DateTime(1995, 6, 15),
+                        Address = "Müşteri Mah.",
+                        IdentificationNumber = "22222222222",
+                        DateOfBirth = new DateTime(1998, 10, 10),
                         IsActive = true,
                         EmailConfirmed = true,
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    var result = await userManager.CreateAsync(guestUser, "Guest@123");
-
+                    var result = await userManager.CreateAsync(guest, "Guest*123");
                     if (result.Succeeded)
                     {
-                        // Guest user'ı Guest role'üne ekle
-                        await userManager.AddToRoleAsync(guestUser, "Guest");
-                        Console.WriteLine($"✅ Guest user oluşturuldu: {guestUserEmail}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"❌ Guest user oluşturulamadı: {string.Join(", ", result.Errors)}");
-                    }
-                }
-                else
-                {
-                    // Zaten var, guest role'üne ekle
-                    var isInGuestRole = await userManager.IsInRoleAsync(guestUserExists, "Guest");
-                    if (!isInGuestRole)
-                    {
-                        await userManager.AddToRoleAsync(guestUserExists, "Guest");
-                        Console.WriteLine($"✅ Guest user zaten vardı, Guest role'üne eklendi");
+                        await userManager.AddToRoleAsync(guest, "Guest");
+                        Console.WriteLine($"✅ Test Müşterisi oluşturuldu: {guestUserEmail}");
                     }
                 }
             }

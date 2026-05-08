@@ -1,0 +1,125 @@
+﻿@using Core.Concretes.DTOs
+@model IEnumerable<ReservationDto>
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Rezervasyon Yönetimi";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="bi bi-calendar-check me-2 text-primary"></i>Rezervasyonlar</h2>
+            <p class="text-muted small mb-0">@ViewBag.HotelName - Tüm konaklama kayıtları.</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3">Rezervasyon No</th>
+                            <th>Oda Bilgisi</th>
+                            <th>Tarih Aralığı</th>
+                            <th>Toplam Tutar</th>
+                            <th>Durum</th>
+                            <th class="text-end pe-4">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var res in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">ID: #@res.Id</div>
+                                        @* DTO'da GuestName yoksa RoomNumber üzerinden takip sağlıyoruz *@
+                                        <div class="text-muted small">Otel: @res.HotelName</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@res.RoomNumber</div>
+                                        <span class="badge bg-info-subtle text-info x-small">
+                                            <i class="bi bi-door-closed me-1"></i>@(res.RoomName ?? "Standart Oda")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold">
+                                            @res.CheckInDate.ToString("dd.MM.yyyy") - @res.CheckOutDate.ToString("dd.MM.yyyy")
+                                        </div>
+                                        @{
+                                            var nights = (res.CheckOutDate - res.CheckInDate).Days;
+                                        }
+                                        <div class="text-muted x-small">@nights Gece Konaklama</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-success">@res.TotalPrice.ToString("C2")</div>
+                                    </td>
+                                    <td>
+                                        @{
+                                            // Status string olduğu için büyük-küçük harf duyarlılığına dikkat
+                                            var status = res.Status?.ToString();
+                                            var statusClass = status == "Confirmed" ? "bg-success" :
+                                            status == "Cancelled" ? "bg-danger" : "bg-warning text-dark";
+                                        }
+                                        <span class="badge rounded-pill @statusClass px-3">
+                                            @(status ?? "Pending")
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="dropdown">
+                                            <button class="btn btn-light btn-sm rounded-circle shadow-sm" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                                <li><a class="dropdown-item" href="/admin/reservation/details/@res.Id"><i class="bi bi-eye me-2"></i>Detaylar</a></li>
+                                                @if (res.Status != "Cancelled")
+                                                {
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form asp-action="Cancel" asp-route-id="@res.Id" asp-route-hotelId="@res.HotelId" method="post" onsubmit="return confirm('Bu rezervasyonu iptal etmek istediğinize emin misiniz?');">
+                                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-x-circle me-2"></i>İptal Et</button>
+                                                        </form>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="py-4">
+                                        <i class="bi bi-calendar-x display-1 text-light"></i>
+                                        <p class="text-muted mt-3">Herhangi bir rezervasyon kaydı bulunamadı.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .x-small {
+        font-size: 0.75rem;
+    }
+
+    .btn-light {
+        background: #f8f9fa;
+        border: 1px solid #eee;
+    }
+
+    .dropdown-item {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+</style>

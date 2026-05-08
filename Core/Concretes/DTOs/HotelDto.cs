@@ -127,6 +127,10 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Yorumlar")]
         public IEnumerable<ReviewDto> Reviews { get; set; } = new List<ReviewDto>();
         public List<AddOnServiceDto> AddOnServices { get; set; } = new();
+        public int TodayCheckIns { get; set; }    
+        public int TodayCheckOuts { get; set; }   
+        public int ActiveReservations { get; set; } 
+        public decimal MonthlyEarning { get; set; }
     }
 
     public class HotelSummaryDto

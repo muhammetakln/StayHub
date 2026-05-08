@@ -11,21 +11,48 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. MVC Servisleri
 builder.Services.AddControllersWithViews();
 
-// 2. İş Mantığı ve Veritabanı Servisleri
+// --- 1. GUEST SERVICES & IDENTITY AYARLARI ---
 builder.Services.AddGuestServices(builder.Configuration);
 
-// 3. E-Posta Yapılandırması (Kritik Bölüm)
-// appsettings.json içindeki "EmailSettings" bölümünü nesneye eşler
+// 🔥 EKLENEN GÜVENLİK AYARLARI: Var olmayan mail ve hesap güvenliği
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    // E-posta benzersiz olmalı (Aynı maille 2. kayıt yapılamaz)
+    options.User.RequireUniqueEmail = true;
+
+    // Şüpheli Giriş Denemeleri (Brute Force Korunması)
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // 15 dakika kilitle
+    options.Lockout.MaxFailedAccessAttempts = 5; // 5 hatalı denemede bloke et
+    options.Lockout.AllowedForNewUsers = true;
+
+    // Şifre kuralları (İsteğe bağlı olarak daha da sıkılaştırabilirsin)
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 6;
+});
+
+// --- 2. COOKIE VE OTOMATİK ÇIKIŞ AYARLARI ---
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/account/login";
+    options.LogoutPath = "/account/logout";
+    options.AccessDeniedPath = "/account/login";
+
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(10); // 10 Dakika hareketsizlikte oturum düşer
+    options.SlidingExpiration = true;
+
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-// IEmailSender istendiğinde bizim yazdığımız EmailSender sınıfını verir
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
-// 4. Veritabanı ve Seed İşlemleri
+// --- 3. VERİTABANI MİGRASYON VE SEEDER (Admin Ekleme Burada Yapılıyor) ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -36,6 +63,7 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
         context.Database.Migrate();
+        // 🔥 RoleSeeder artık ilk Admin'i de oluşturacak (Bir sonraki adımda dosyasını güncelleyeceğiz)
         await RoleSeeder.SeedRolesAsync(userManager, roleManager, context);
         HotelSeeder.SeedHotels(context);
     }
@@ -46,7 +74,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// 5. Middleware (Ara Katman) Ayarları
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 if (!app.Environment.IsDevelopment())
@@ -62,7 +89,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 6. Güvenlik Başlıkları (Development dahil her zaman aktif olması önerilir)
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append("X-Content-Type-Options", "nosniff");

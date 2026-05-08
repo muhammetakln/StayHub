@@ -1,15 +1,11 @@
 ﻿using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
-using Core.Concretes.Entities; // ✅ Review nesnesi için eklendi
-using Data.Contexts; // ✅ StayHubContext için eklendi
+using Core.Concretes.Entities;
+using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims; // ✅ Kullanıcı ID'sini almak için eklendi
-using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace UI.Web.Controllers
 {
@@ -25,207 +21,104 @@ namespace UI.Web.Controllers
             _logger = logger;
         }
 
-        // ✅ DÜZELTME: Bütün otelleri belleğe çekmek yerine doğrudan FilterHotelsAsync ile veritabanında arama yapılır.
-        [HttpGet("")]
-        [AllowAnonymous]
-        public async Task<IActionResult> Index(string? searchTerm = null, string? city = null)
+        // ✅ GET: /hotel
+        [HttpGet]
+        public async Task<IActionResult> Index(string? city)
         {
-            try
+            // 1. Şehir parametresi varsa doğrudan servis üzerinden filtreli çekiyoruz (Daha performanslı)
+            List<HotelDto> hotels;
+
+            if (!string.IsNullOrWhiteSpace(city))
             {
-                _logger.LogInformation("Hotel Index açılıyor");
-
-                // Arama parametrelerini oluştur
-                var filter = new HotelSearchFilterDto
-                {
-                    SearchKeyword = searchTerm,
-                    City = city,
-                    PageSize = 50 // Maksimum 50 otel gösterilsin
-                };
-
-                // Doğrudan veritabanı seviyesinde filtrelenmiş veriyi al
-                var hotels = await _hotelService.FilterHotelsAsync(filter);
-
-                ViewBag.SearchTerm = searchTerm;
+                _logger.LogInformation($"{city} şehri için oteller filtreleniyor.");
+                hotels = await _hotelService.GetHotelsByCityAsync(city);
                 ViewBag.City = city;
-                ViewBag.ResultCount = hotels?.Count ?? 0;
-
-                return View(hotels ?? new List<HotelDto>());
+                ViewBag.ResultCount = hotels.Count;
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Hotel Index hatası");
-                TempData["ErrorMessage"] = "Otel listesi yüklenirken hata oluştu";
-                return View(new List<HotelDto>());
+                _logger.LogInformation("Tüm oteller listeleniyor.");
+                hotels = await _hotelService.GetHotelsAsync();
+                ViewBag.City = null;
             }
+
+            return View(hotels);
         }
 
-        [HttpGet("details/{id?}")]
+        // ✅ GET: /hotel/details/{id}
+        [HttpGet("details/{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int id)
         {
             try
             {
-                // Eğer URL'ye ID girilmeden gelinirse, çökmek yerine ana sayfaya atar
-                if (id == null || id <= 0)
-                {
-                    _logger.LogWarning("Geçersiz veya eksik ID ile detay sayfasına erişilmeye çalışıldı.");
-                    TempData["ErrorMessage"] = "Lütfen incelemek istediğiniz oteli listeden seçin.";
-                    return RedirectToAction(nameof(Index));
-                }
+                if (id <= 0) return RedirectToAction(nameof(Index));
 
-                _logger.LogInformation($"Hotel detayı açılıyor: {id}");
-
-                var hotelDetail = await _hotelService.GetHotelByIdAsync(id.Value);
+                var hotelDetail = await _hotelService.GetHotelByIdAsync(id);
 
                 if (hotelDetail == null)
                 {
-                    _logger.LogWarning($"Otel bulunamadı: {id}");
-                    TempData["ErrorMessage"] = "Aradığınız otel bulunamadı veya yayından kaldırılmış olabilir.";
+                    TempData["ErrorMessage"] = "Otel bulunamadı.";
                     return RedirectToAction(nameof(Index));
                 }
 
-                _logger.LogInformation($"Hotel detayı başarıyla yüklendi: {hotelDetail.Name}");
                 return View(hotelDetail);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Hotel Details hatası: {id}");
-                TempData["ErrorMessage"] = "Otel detayı yüklenirken sistemsel bir hata oluştu.";
+                _logger.LogError(ex, "Detay sayfası yüklenirken hata.");
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        [HttpGet("by-city/{city}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ByCity(string city)
-        {
-            try
-            {
-                _logger.LogInformation($"Şehir filtresi: {city}");
-                var hotels = await _hotelService.GetHotelsByCityAsync(city);
-
-                ViewBag.City = city;
-                ViewBag.ResultCount = hotels?.Count ?? 0;
-
-                return View("Index", hotels ?? new List<HotelDto>());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"ByCity hatası: {city}");
-                TempData["ErrorMessage"] = "Oteller yüklenirken hata oluştu";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        [HttpGet("top-rated")]
-        [AllowAnonymous]
-        public async Task<IActionResult> TopRated()
-        {
-            try
-            {
-                _logger.LogInformation("Top rated oteller listeleniyor");
-                var hotels = await _hotelService.GetHotelsByRatingAsync(4.0m);
-
-                ViewBag.City = "En Yüksek Puanlı";
-                ViewBag.ResultCount = hotels?.Count ?? 0;
-
-                return View("Index", hotels ?? new List<HotelDto>());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "TopRated hatası");
-                TempData["ErrorMessage"] = "Oteller yüklenirken hata oluştu";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        [HttpGet("special-offers")]
-        [AllowAnonymous]
-        public async Task<IActionResult> SpecialOffers()
-        {
-            try
-            {
-                _logger.LogInformation("Özel teklifler listeleniyor");
-                var allHotels = await _hotelService.GetHotelsAsync();
-
-                var specialHotels = allHotels?
-                    .Where(h => h.HotelType == "Luxury" || h.HotelType == "Resort")
-                    .ToList() ?? new List<HotelDto>();
-
-                ViewBag.City = "Özel Teklifler";
-                ViewBag.ResultCount = specialHotels.Count;
-
-                return View("Index", specialHotels);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "SpecialOffers hatası");
-                TempData["ErrorMessage"] = "Oteller yüklenirken hata oluştu";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
+        // ✅ POST: /hotel/book/{hotelId}
         [HttpPost("book/{hotelId}")]
         [Authorize(Roles = "Guest")]
         public async Task<IActionResult> Book(int hotelId, [FromForm] CreateReservationDto dto)
         {
             try
             {
-                _logger.LogInformation($"Rezervasyon başlatıldı: Hotel={hotelId}");
-                TempData["SuccessMessage"] = "Rezervasyon talebiniz başarıyla alındı!";
-                return RedirectToAction(nameof(Index));
+                // Formdan gelen verileri doğrudan ReservationController'ın Create metoduna yönlendiriyoruz
+                // Bu sayede kod tekrarı yapmamış oluruz.
+                return RedirectToAction("Create", "Reservation", new { hotelId = hotelId, dto = dto });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Book hatası: {hotelId}");
-                TempData["ErrorMessage"] = "Rezervasyon yapılırken bir hata oluştu. Lütfen tekrar deneyin.";
+                TempData["ErrorMessage"] = "İşlem başlatılamadı.";
                 return RedirectToAction(nameof(Details), new { id = hotelId });
             }
         }
 
-        // ✅ DÜZELTME: Eski HotelFilterDto özelliklerini kullanmaya çalışan atamalar temizlendi.
+        // ✅ GET: /hotel/search
         [HttpGet("search")]
-        [AllowAnonymous] // Herkes arama yapabilsin
         public async Task<IActionResult> Search(HotelSearchFilterDto dto)
         {
             try
             {
-                _logger.LogInformation("Gelişmiş arama yapılıyor");
-
-                // Formdan (View'dan) gelen dto'yu doğrudan kullanarak filtreleme yapıyoruz
                 var hotels = await _hotelService.FilterHotelsAsync(dto);
-
-                ViewBag.SearchTerm = dto.SearchKeyword;
                 ViewBag.City = dto.City;
                 ViewBag.ResultCount = hotels?.Count ?? 0;
-
-                return View("Index", hotels ?? new List<HotelDto>());
+                return View("Index", hotels);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Search hatası");
-                TempData["ErrorMessage"] = "Arama yapılırken hata oluştu";
+                _logger.LogError(ex, "Gelişmiş arama hatası.");
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        // ✅ YENİ EKLENDİ: Yorum Yapma Metodu
+        // ✅ POST: /hotel/add-review
         [HttpPost("add-review")]
-        [Authorize(Roles = "Guest")] // Sadece giriş yapmış misafirler
+        [Authorize(Roles = "Guest")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddReview([FromServices] StayHubContext context, int hotelId, int rating, string title, string comment)
         {
             try
             {
-                // Kullanıcının ID'sini alıyoruz
                 var guestIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(guestIdStr) || !int.TryParse(guestIdStr, out int guestId))
-                {
-                    TempData["ErrorMessage"] = "Yorum yapmak için giriş yapmalısınız.";
-                    return RedirectToAction("Details", new { id = hotelId });
-                }
+                if (!int.TryParse(guestIdStr, out int guestId)) return Unauthorized();
 
-                // Yeni yorum nesnesini oluşturuyoruz
                 var review = new Review
                 {
                     HotelId = hotelId,
@@ -234,26 +127,20 @@ namespace UI.Web.Controllers
                     Title = title,
                     Comment = comment,
                     CreatedAt = DateTime.Now,
-                    IsPublished = true,
-                    IsDeleted = false,
-                    HelpfulCount = 0,
-                    UnhelpfulCount = 0,
-                    IsReplied = false
+                    IsPublished = true
                 };
 
-                // Veritabanına kaydet
                 context.Reviews.Add(review);
                 await context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Yorumunuz başarıyla eklendi, teşekkür ederiz!";
+                TempData["SuccessMessage"] = "Yorumunuz için teşekkürler!";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Yorum eklenirken hata oluştu.");
-                TempData["ErrorMessage"] = "Yorumunuz eklenirken beklenmedik bir hata oluştu.";
+                _logger.LogError(ex, "Yorum hatası.");
+                TempData["ErrorMessage"] = "Yorum eklenemedi.";
             }
 
-            // İşlem bitince kullanıcıyı tekrar otel detay sayfasına gönder
             return RedirectToAction("Details", new { id = hotelId });
         }
     }

@@ -5,13 +5,12 @@ using Core.Concretes.DTOs;
 using Core.Concretes.Enum;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace UI.Web.Controllers
 {
-    [Authorize(Roles = "Guest")] // Tüm controller için yetki şartı
+    [Authorize(Roles = "Guest")] // Sadece Misafirler erişebilir
     [Route("reservation")]
     public class ReservationController : Controller
     {
@@ -41,6 +40,7 @@ namespace UI.Web.Controllers
                 var guestIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(guestIdStr, out int guestId)) return Unauthorized();
 
+                // Service içindeki yeni "r.HotelId" içermeyen güvenli metodu çağırıyoruz
                 var reservations = await _reservationService.GetReservationsByIdAsync(guestId);
                 _logger.LogInformation($"[LIST] Guest={guestId}, Count={reservations.Count}");
 
@@ -60,7 +60,7 @@ namespace UI.Web.Controllers
             try
             {
                 var reservation = await _reservationService.GetReservationByIdAsync(id);
-                if (reservation == null) return RedirectToAction("List");
+                if (reservation == null) return RedirectToAction(nameof(List));
 
                 var nightCount = (int)(reservation.CheckOutDate - reservation.CheckInDate).TotalDays;
 
@@ -85,7 +85,7 @@ namespace UI.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Detay sayfası hatası");
-                return RedirectToAction("List");
+                return RedirectToAction(nameof(List));
             }
         }
 
@@ -100,7 +100,7 @@ namespace UI.Web.Controllers
 
                 await _reservationService.CreateReservationAsync(guestId, dto);
                 TempData["SuccessMessage"] = "Rezervasyon başarıyla oluşturuldu!";
-                return RedirectToAction("List");
+                return RedirectToAction(nameof(List));
             }
             catch (Exception ex)
             {
@@ -109,49 +109,42 @@ namespace UI.Web.Controllers
             }
         }
 
+        // ✅ POST: /reservation/cancel/{id}
         [HttpPost("cancel/{id}")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int id)
         {
             try
             {
                 _logger.LogInformation($"[CANCEL] Rezervasyon iptal süreci: {id}");
 
-                // 1. Rezervasyonu DTO olarak çek (Otel adı, misafir adı vb. bilgiler içinde gelir)
                 var reservationDto = await _reservationService.GetReservationByIdAsync(id);
-                if (reservationDto == null) return RedirectToAction("List");
+                if (reservationDto == null) return RedirectToAction(nameof(List));
 
-                // 2. Ödeme bilgisini al (İptal edilmeden önce kontrol etmeliyiz)
                 var paymentDto = await _paymentService.GetPaymentByReservationIdAsync(id);
-
-                // 3. Rezervasyonu iptal et
                 var cancelResult = await _reservationService.CancelReservationAsync(id);
 
                 if (cancelResult.IsSuccess)
                 {
-                    // 4. Ödeme varsa iade işlemini başlat
                     if (paymentDto != null && paymentDto.Status == "Completed")
                     {
                         await _paymentService.ProcessRefundAsync(paymentDto.Id);
                     }
 
-                    // 5. Bilgilendirme maili gönder
-                    // Not: ReservationService içinde SendCancellationEmail metoduna 
-                    // rezervasyonun ID'sini göndererek entity'e içeride ulaşmasını sağlıyoruz.
                     await _reservationService.SendCancellationEmail(id);
-
-                    TempData["SuccessMessage"] = "Rezervasyon iptal edildi ve bilgilendirme maili gönderildi.";
+                    TempData["SuccessMessage"] = "Rezervasyon iptal edildi ve iade süreci başlatıldı.";
                 }
                 else
                 {
                     TempData["ErrorMessage"] = cancelResult.Message;
                 }
 
-                return RedirectToAction("List");
+                return RedirectToAction(nameof(List));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "İptal akışında hata");
-                return RedirectToAction("List");
+                return RedirectToAction(nameof(List));
             }
         }
     }

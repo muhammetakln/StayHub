@@ -111,6 +111,7 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Aktif")]
         public bool IsActive { get; set; } = true;
+        public int HotelId { get; set; }
     }
 
     public class UpdateRoomDto

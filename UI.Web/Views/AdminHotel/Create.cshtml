@@ -2,116 +2,142 @@
 @model CreateHotelDto
 
 @{
-    ViewData["Title"] = "Yeni Otel Ekle";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Yeni Otel Kaydı";
 }
 
-<div class="container mt-5">
+<div class="container mt-4 mb-5">
     <div class="row">
         <div class="col-md-10 offset-md-1">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0">➕ Yeni Otel Ekle</h3>
+            @* Adım Göstergesi (Süreç Takibi için) *@
+            <div class="d-flex justify-content-between mb-4 px-5">
+                <div class="text-center">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow" style="width:40px; height:40px;">1</div>
+                    <p class="small fw-bold mt-2">Otel Bilgileri</p>
                 </div>
-                <div class="card-body">
-                    <form method="post" action="/admin/hotel/create">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Otel Adı *</label>
-                            <input type="text" class="form-control" asp-for="Name" placeholder="Otel adını girin" required>
-                            <span asp-validation-for="Name" class="text-danger"></span>
+                <div class="flex-grow-1 border-bottom mb-4 mx-3 opacity-25" style="margin-top:20px;"></div>
+                <div class="text-center opacity-50">
+                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:40px; height:40px;">2</div>
+                    <p class="small mt-2">Odalar & Hizmetler</p>
+                </div>
+                <div class="flex-grow-1 border-bottom mb-4 mx-3 opacity-25" style="margin-top:20px;"></div>
+                <div class="text-center opacity-50">
+                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:40px; height:40px;">3</div>
+                    <p class="small mt-2">Tamamla</p>
+                </div>
+            </div>
+
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white bg-opacity-25 rounded-3 p-3 me-3">
+                            <i class="bi bi-building-fill-add text-white fs-2"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-white">Yeni Otel Kaydı</h3>
+                            <p class="mb-0 text-white-50">Önce temel bilgileri kaydedelim, ardından odalarınızı ekleyeceğiz.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    @* ✅ VALIDATION SUMMARY *@
+                    <div asp-validation-summary="All" class="alert alert-danger d-none" id="errorSummary"></div>
+
+                    <form asp-controller="AdminHotel" asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2"><i class="bi bi-info-circle me-2"></i>Genel Bilgiler</h5>
+
+                        <div class="mb-4">
+                            <label asp-for="Name" class="form-label fw-bold">Otel Adı *</label>
+                            <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="StayHub Otel">
+                            <span asp-validation-for="Name" class="text-danger small"></span>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Şehir *</label>
-                                    <input type="text" class="form-control" asp-for="City" placeholder="İstanbul" required>
-                                    <span asp-validation-for="City" class="text-danger"></span>
-                                </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label asp-for="City" class="form-label fw-bold">Şehir *</label>
+                                <input type="text" class="form-control" asp-for="City" placeholder="İstanbul">
+                                <span asp-validation-for="City" class="text-danger small"></span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Bölge</label>
-                                    <input type="text" class="form-control" asp-for="Region" placeholder="Beşiktaş">
-                                </div>
+                            <div class="col-md-4">
+                                <label asp-for="Region" class="form-label fw-bold">Bölge</label>
+                                <input type="text" class="form-control" asp-for="Region" placeholder="Karaköy">
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Ülke *</label>
-                                    <input type="text" class="form-control" asp-for="Country" placeholder="Turkey" required>
-                                    <span asp-validation-for="Country" class="text-danger"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Otel Tipi</label>
-                                    <input type="text" class="form-control" asp-for="HotelType" placeholder="Luxury, Budget, Business">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Adres *</label>
-                            <input type="text" class="form-control" asp-for="Address" placeholder="Sokak, Cadde, Mahalle" required>
-                            <span asp-validation-for="Address" class="text-danger"></span>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Telefon *</label>
-                                    <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="5551234567" required>
-                                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Email *</label>
-                                    <input type="email" class="form-control" asp-for="Email" placeholder="hotel@example.com" required>
-                                    <span asp-validation-for="Email" class="text-danger"></span>
-                                </div>
+                            <div class="col-md-4">
+                                <label asp-for="Country" class="form-label fw-bold">Ülke *</label>
+                                <input type="text" class="form-control" asp-for="Country" value="Türkiye">
                             </div>
                         </div>
 
-                        <div class="row">
+                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5"><i class="bi bi-telephone me-2"></i>İletişim & Detaylar</h5>
+
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Website</label>
-                                    <input type="url" class="form-control" asp-for="Website" placeholder="https://otel.com">
-                                </div>
+                                <label asp-for="Email" class="form-label fw-bold">E-Posta *</label>
+                                <input type="email" class="form-control" asp-for="Email" placeholder="info@otel.com">
+                                <span asp-validation-for="Email" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Puan (0-5)</label>
-                                    <input type="text" class="form-control" asp-for="Rating" placeholder="4.5">
-                                </div>
+                                <label asp-for="PhoneNumber" class="form-label fw-bold">Telefon *</label>
+                                <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="0212...">
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Açıklama</label>
-                            <textarea class="form-control" asp-for="Description" rows="3" placeholder="Otel hakkında bilgi yazın"></textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="isActive" asp-for="IsActive" checked>
-                                <label class="form-check-label" for="isActive">
-                                    ✓ Aktif Duruma Ayarla
-                                </label>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="HotelType" class="form-label fw-bold">Otel Türü</label>
+                                <select class="form-select" asp-for="HotelType">
+                                    <option value="Boutique">Butik Otel</option>
+                                    <option value="Resort">Resort</option>
+                                    <option value="Business">Şehir Oteli</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="StarRating" class="form-label fw-bold">Yıldız Sayısı</label>
+                                <select class="form-select" asp-for="StarRating">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <option value="@i">@i Yıldız</option>
+                                    }
+                                </select>
                             </div>
                         </div>
 
-                        <hr class="my-4">
+                        <div class="mb-4">
+                            <label asp-for="Description" class="form-label fw-bold">Otel Açıklaması *</label>
+                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Otelinizin sunduğu ayrıcalıkları anlatın..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="/admin/hotel" class="btn btn-secondary btn-lg">
-                                ← İptal
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                ✓ Kaydet
+                        <div class="row g-3 bg-light p-3 rounded-3 mb-5 border">
+                            <div class="col-md-6">
+                                <label asp-for="CoverImageUrl" class="form-label fw-bold">Kapak Resmi URL</label>
+                                <input type="url" class="form-control" asp-for="CoverImageUrl" placeholder="https://...">
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="CheckInTime" class="form-label fw-bold">Giriş Saati</label>
+                                <input type="time" class="form-control" asp-for="CheckInTime" value="14:00">
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="CheckOutTime" class="form-label fw-bold">Çıkış Saati</label>
+                                <input type="time" class="form-control" asp-for="CheckOutTime" value="12:00">
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info border-0 shadow-sm rounded-3 mb-5 d-flex">
+                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Bilgi:</strong> Oteli kaydettikten sonra otomatik olarak <strong>Oda Ekleme</strong> ve <strong>Ek Hizmetler</strong> sayfasına yönlendirileceksiniz.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/admin/hotel" class="btn btn-outline-secondary btn-lg px-4 rounded-pill">Vazgeç</a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
+                                Kaydet ve Devam Et <i class="bi bi-arrow-right ms-2"></i>
                             </button>
                         </div>
                     </form>
@@ -121,30 +147,15 @@
     </div>
 </div>
 
-<style>
-    .card {
-        border: none;
-        border-radius: 10px;
-    }
-
-    .form-control:focus {
-        border-color: #198754;
-        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #198754, #157347);
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, #157347, #11443d);
-        }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d, #5c636a);
-    }
-
-        .btn-secondary:hover {
-            background: linear-gradient(135deg, #5c636a, #4c5357);
-        }
-</style>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Hata varsa göster
+        document.addEventListener('DOMContentLoaded', function () {
+            var summary = document.querySelector('#errorSummary ul');
+            if (summary && summary.children.length > 0) {
+                document.getElementById('errorSummary').classList.remove('d-none');
+            }
+        });
+    </script>
+}
