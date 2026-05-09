@@ -25,7 +25,6 @@ namespace Core.Concretes.Entities
         public virtual Guest? Guest { get; set; }
         public virtual Room? Room { get; set; }
         public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
-        public virtual ICollection<ReservationAddOnService> AddOnServices { get; set; } = new List<ReservationAddOnService>();
-
+        public virtual ICollection<ReservationAddOnService> SelectedServices { get; set; } = new List<ReservationAddOnService>();
     }
 }

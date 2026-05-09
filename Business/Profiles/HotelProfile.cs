@@ -6,17 +6,31 @@ public class HotelProfile : Profile
 {
     public HotelProfile()
     {
-        
+        // Hotel -> HotelDto (Liste sayfasında da hizmetler gerekiyorsa eklendi)
+        CreateMap<Hotel, HotelDto>()
+            .ForMember(dest => dest.AddOnServices, opt => opt.MapFrom(src => src.AddOnServices));
 
-        CreateMap<Hotel, HotelDto>();
-        CreateMap<Hotel, HotelDetailDto>();
+        // Hotel -> HotelDetailDto (Müşteri detay sayfası için KRİTİK KISIM)
+        CreateMap<Hotel, HotelDetailDto>()
+            .ForMember(dest => dest.AddOnServices, opt => opt.MapFrom(src => src.AddOnServices))
+            .ForMember(dest => dest.Rooms, opt => opt.MapFrom(src => src.Rooms))
+            .ForMember(dest => dest.Reviews, opt => opt.MapFrom(src => src.Reviews))
+            .ForMember(dest => dest.Amenities, opt => opt.MapFrom(src => src.Amenities));
 
-        CreateMap<CreateHotelDto, Hotel>();
-        CreateMap<UpdateHotelDto, Hotel>();
+        // Create ve Update işlemleri
+        CreateMap<CreateHotelDto, Hotel>()
+            .ForMember(dest => dest.AddOnServices, opt => opt.MapFrom(src => src.AddOnServices));
 
-        CreateMap<AddOnService, AddOnServiceDto>();
-        CreateMap<Review, ReviewDto>();
-        CreateMap<Amenity, AmenityDto>();
-        CreateMap<Room, RoomDto>();
+        CreateMap<UpdateHotelDto, Hotel>()
+            .ForMember(dest => dest.AddOnServices, opt => opt.MapFrom(src => src.AddOnServices));
+
+        // Alt nesnelerin DTO eşleşmeleri
+        CreateMap<AddOnService, AddOnServiceDto>().ReverseMap();
+        CreateMap<Review, ReviewDto>().ReverseMap();
+        CreateMap<Amenity, AmenityDto>().ReverseMap();
+        CreateMap<Room, RoomDto>().ReverseMap();
+
+        // Düzenleme sayfası için gerekli olabilecek alt nesne eşleşmesi
+        CreateMap<AddOnService, UpdateAddOnServiceDto>().ReverseMap();
     }
 }

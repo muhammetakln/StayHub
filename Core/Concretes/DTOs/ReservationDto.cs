@@ -21,7 +21,6 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Oda Numarası")]
         public string RoomNumber { get; set; } = null!;
 
-        // ✅ Servisteki 'RoomName' hatasını çözmek için eklendi
         [Display(Name = "Oda Türü")]
         public string? RoomName { get; set; }
 

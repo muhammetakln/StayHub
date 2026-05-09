@@ -79,7 +79,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) 
+                    .Include(h => h.AddOnServices)
                     .Where(h => !h.IsDeleted);
 
                 if (!string.IsNullOrEmpty(dto.SearchKeyword))
@@ -147,7 +147,7 @@ namespace Business.Services
                     .Include(h => h.Rooms)
                     .Include(h => h.Amenities)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) 
+                    .Include(h => h.AddOnServices)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -175,7 +175,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) 
+                    .Include(h => h.AddOnServices)
                     .Where(h => !h.IsDeleted && h.IsActive)
                     .ToListAsync();
 
@@ -198,7 +198,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) 
+                    .Include(h => h.AddOnServices)
                     .Where(h => !h.IsDeleted && h.IsActive && h.City == city)
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
@@ -222,7 +222,7 @@ namespace Business.Services
                     .AsNoTracking()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Include(h => h.AddOnServices) 
+                    .Include(h => h.AddOnServices)
                     .Where(h => !h.IsDeleted && h.IsActive &&
                            (h.Reviews.Average(r => (double?)r.Rating) ?? 0) >= (double)minRating)
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
@@ -257,27 +257,60 @@ namespace Business.Services
             return await FilterHotelsAsync(filter);
         }
 
+
         public async Task UpdateHotelAsync(int id, UpdateHotelDto dto)
         {
             try
             {
-                _logger.LogInformation($"Otel güncelleniyor: {id}");
+                // 1. Oteli ve mevcut hizmetlerini "Include" ederek çekiyoruz
                 var hotel = await _context.Hotels
+                    .Include(h => h.AddOnServices)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
                     throw new KeyNotFoundException($"Otel bulunamadı: {id}");
 
+                // 2. Temel otel bilgilerini (Ad, Adres, vb.) DTO'dan aktar
                 _mapper.Map(dto, hotel);
+
+                // 3. 🔥 EK HİZMETLERİ KAYDETME MANTIĞI
+                // Mevcut hizmetleri veritabanından siliyoruz (Sıfırlayıp yeniden yazmak en güvenli yoldur)
+                if (hotel.AddOnServices != null)
+                {
+                    _context.AddOnServices.RemoveRange(hotel.AddOnServices);
+                }
+
+                // 4. Formdan gelen yeni listeyi ekliyoruz
+                if (dto.AddOnServices != null && dto.AddOnServices.Any())
+                {
+                    foreach (var serviceDto in dto.AddOnServices)
+                    {
+                        // Boş isimli satırları ekleme
+                        if (!string.IsNullOrWhiteSpace(serviceDto.Name))
+                        {
+                            hotel.AddOnServices.Add(new AddOnService
+                            {
+                                Name = serviceDto.Name,
+                                Price = serviceDto.Price,
+                                Unit = serviceDto.Unit,
+                                HotelId = hotel.Id,
+                                IsActive = true,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+
                 hotel.UpdatedAt = DateTime.UtcNow;
-                _context.Hotels.Update(hotel);
+
+                // 5. Tüm değişiklikleri (Otel + Yeni Hizmetler) tek seferde kaydet
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Otel güncellendi: {id}");
+                _logger.LogInformation($"Otel ID {id} ve ek hizmetleri başarıyla güncellendi.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Otel güncellenme hatası");
+                _logger.LogError(ex, "UpdateHotelAsync içinde hata oluştu!");
                 throw;
             }
         }

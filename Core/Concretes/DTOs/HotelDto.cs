@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using static Core.Concretes.DTOs.AddOnServiceDto;
 
 namespace Core.Concretes.DTOs
 {
@@ -37,7 +38,7 @@ namespace Core.Concretes.DTOs
         public int ReviewCount { get; set; }
 
         [Display(Name = "Kapak Resmi")]
-        public string? CoverImageUrl { get; set; } 
+        public string? CoverImageUrl { get; set; }
 
         [Display(Name = "aktif mi otel?")]
         public bool IsActive { get; set; }
@@ -49,6 +50,7 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Çıkış Saati")]
         public TimeOnly CheckOutTime { get; set; } = new TimeOnly(11, 0);
+        public List<AddOnServiceDto> AddOnServices { get; set; } = new List<AddOnServiceDto>();
     }
 
     public class HotelDetailDto
@@ -107,29 +109,29 @@ namespace Core.Concretes.DTOs
         public decimal MinPrice { get; set; } = 0m;
 
         [Display(Name = "Giriş Saati")]
-        public TimeOnly  CheckInTime { get; set; } 
+        public TimeOnly CheckInTime { get; set; }
 
         [Display(Name = "Çıkış Saati")]
-        public TimeOnly CheckOutTime { get; set; } 
+        public TimeOnly CheckOutTime { get; set; }
 
         [Display(Name = "Aktif mi?")]
         public bool IsActive { get; set; } = true;
 
         [Display(Name = "Kapak Resmi")]
         public string? CoverImageUrl { get; set; }
-        
+
         [Display(Name = "Odalar")]
         public IEnumerable<RoomDto> Rooms { get; set; } = new List<RoomDto>();
 
         [Display(Name = "Olanaklar")]
         public IEnumerable<AmenityDto> Amenities { get; set; } = new List<AmenityDto>();
-      
+
         [Display(Name = "Yorumlar")]
         public IEnumerable<ReviewDto> Reviews { get; set; } = new List<ReviewDto>();
         public List<AddOnServiceDto> AddOnServices { get; set; } = new();
-        public int TodayCheckIns { get; set; }    
-        public int TodayCheckOuts { get; set; }   
-        public int ActiveReservations { get; set; } 
+        public int TodayCheckIns { get; set; }
+        public int TodayCheckOuts { get; set; }
+        public int ActiveReservations { get; set; }
         public decimal MonthlyEarning { get; set; }
     }
 
@@ -215,7 +217,6 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Aktif")]
         public bool IsActive { get; set; } = true;
 
-        // ✅ EKLEMELER
         [Display(Name = "Giriş Saati")]
         public TimeOnly CheckInTime { get; set; } = new TimeOnly(14, 0);
 
@@ -224,10 +225,12 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Kapak Görseli URL")]
         public string? CoverImageUrl { get; set; }
+        public List<AddOnServiceDto> AddOnServices { get; set; } = new List<AddOnServiceDto>();
     }
 
     public class UpdateHotelDto
     {
+        public int Id { get; set; }
         [Required(ErrorMessage = "Otel adı gereklidir")]
         [StringLength(100, MinimumLength = 3, ErrorMessage = "Otel adı 3-100 karakter arasında olmalıdır")]
         [Display(Name = "Otel Adı")]
@@ -284,7 +287,6 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Aktif")]
         public bool IsActive { get; set; }
 
-        // ✅ EKLEMELER
         [Display(Name = "Giriş Saati")]
         public TimeOnly CheckInTime { get; set; }
 
@@ -293,5 +295,13 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Kapak Görseli URL")]
         public string? CoverImageUrl { get; set; }
+        public List<UpdateAddOnServiceDto> AddOnServices { get; set; } = new List<UpdateAddOnServiceDto>();
+    }
+    public class UpdateAddOnServiceDto
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public decimal Price { get; set; }
+        public string? Unit { get; set; }
     }
 }

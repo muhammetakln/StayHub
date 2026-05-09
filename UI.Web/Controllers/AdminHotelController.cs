@@ -152,7 +152,15 @@ namespace UI.Web.Controllers
                 IsActive = hotel.IsActive,
                 CoverImageUrl = hotel.CoverImageUrl,
                 CheckInTime = hotel.CheckInTime,
-                CheckOutTime = hotel.CheckOutTime
+                CheckOutTime = hotel.CheckOutTime,
+
+                // ✅ GÜNCELLEME BURADA: Mevcut hizmetleri DTO'ya eşliyoruz ki Edit sayfasında kutucuklar dolu gelsin
+                AddOnServices = hotel.AddOnServices?.Select(s => new UpdateAddOnServiceDto
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Price = s.Price,
+                }).ToList() ?? new List<UpdateAddOnServiceDto>()
             };
             return View(updateDto);
         }
@@ -161,7 +169,13 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, UpdateHotelDto dto)
         {
-            if (!ModelState.IsValid) return View(dto);
+            // Validasyon hatası varsa hangi alanın hata verdiğini loglayalım (Debug için)
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                _logger.LogWarning("Otel güncellenirken validasyon hatası: {Errors}", errors);
+                return View(dto);
+            }
 
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && (user == null || user.HotelId != id)) return Forbid();
