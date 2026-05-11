@@ -37,28 +37,43 @@
 
     @* İstatistik Kartları *@
     <div class="row g-4 mb-5">
+        @* ✅ BUGÜN GİRİŞLER BUTON YAPILDI *@
         <div class="col-md-3">
-            <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-primary">
-                <p class="text-muted mb-1 text-uppercase fw-bold small">Bugün Girişler</p>
-                <h3 class="fw-bold mb-0">@(Model?.TodayCheckIns ?? 0)</h3>
-                <div class="text-primary small mt-2"><i class="bi bi-box-arrow-in-right"></i> Giriş Bekleyen</div>
-            </div>
+            <a href="/admin/reservation/daily-reports?filter=checkins&hotelId=@Model?.Id" class="text-decoration-none h-100 d-block">
+                <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-primary">
+                    <p class="text-muted mb-1 text-uppercase fw-bold small">Bugün Girişler</p>
+                    <h3 class="fw-bold mb-0 text-dark">@(Model?.TodayCheckIns ?? 0)</h3>
+                    <div class="text-primary small mt-2"><i class="bi bi-box-arrow-in-right"></i> Giriş Bekleyen</div>
+                </div>
+            </a>
         </div>
+
+        @* ✅ ŞU AN OTELDE BUTON YAPILDI *@
         <div class="col-md-3">
-            <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-success">
-                <p class="text-muted mb-1 text-uppercase fw-bold small">Şu An Otelde</p>
-                <h3 class="fw-bold mb-0">@(Model?.ActiveReservations ?? 0)</h3>
-                <div class="text-success small mt-2"><i class="bi bi-person-check"></i> Aktif Konaklama</div>
-            </div>
+            <a href="/admin/reservation/daily-reports?filter=active&hotelId=@Model?.Id" class="text-decoration-none h-100 d-block">
+                <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-success">
+                    <p class="text-muted mb-1 text-uppercase fw-bold small">Şu An Otelde</p>
+                    <h3 class="fw-bold mb-0 text-dark">@(Model?.ActiveReservations ?? 0)</h3>
+                    <div class="text-success small mt-2"><i class="bi bi-person-check"></i> Aktif Konaklama</div>
+                </div>
+            </a>
         </div>
+
+        @* ✅ MİSAFİR PUANI *@
         <div class="col-md-3">
-            <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-warning">
-                <p class="text-muted mb-1 text-uppercase fw-bold small">Misafir Puanı</p>
-                @* Müşteri yorum yaptıkça bu değer otomatik güncellenir *@
-                <h3 class="fw-bold mb-0" id="avgRatingText">@(Model?.AverageRating.ToString("F1") ?? "0.0")</h3>
-                <div class="text-warning small mt-2"><i class="bi bi-star-fill"></i> <span id="reviewCountText">@(Model?.ReviewCount ?? 0)</span> Yorum</div>
-            </div>
+            <a href="#reviewsSection" class="text-decoration-none h-100 d-block">
+                <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-warning">
+                    <p class="text-muted mb-1 text-uppercase fw-bold small">Misafir Puanı</p>
+                    <h3 class="fw-bold mb-0 text-dark" id="avgRatingText">@(Model?.AverageRating.ToString("F1") ?? "0.0")</h3>
+                    <div class="text-warning small mt-2">
+                        <i class="bi bi-star-fill"></i>
+                        <span id="reviewCountText" class="text-dark">@(Model?.ReviewCount ?? 0)</span>
+                        <span class="text-dark">Yorum (Görmek için tıkla)</span>
+                    </div>
+                </div>
+            </a>
         </div>
+
         <div class="col-md-3">
             <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-info">
                 <p class="text-muted mb-1 text-uppercase fw-bold small">Aylık Ciro</p>
@@ -107,7 +122,7 @@
     </div>
 
     @* ✅ YORUM YÖNETİM PANELİ *@
-    <div class="row">
+    <div class="row" id="reviewsSection">
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-white py-3">
@@ -198,12 +213,10 @@
 
 @section Scripts {
     <script>
-        // ✅ Formu Aç/Kapat
         function toggleReplyForm(id) {
             $(`#reply-form-row-${id}`).toggleClass('d-none');
         }
 
-        // ✅ Cevabı AJAX ile Gönder
         function submitReply(id) {
             const replyText = $(`#reply-text-${id}`).val();
             if (!replyText) return alert("Lütfen bir cevap metni yazın.");
@@ -223,7 +236,6 @@
             });
         }
 
-        // ✅ Yorumu Kaldır (Soft Delete)
         function deleteReview(id) {
             if (confirm("Bu yorumu tamamen kaldırmak istediğinize emin misiniz?")) {
                 $.ajax({
@@ -233,9 +245,10 @@
                         if (res.success) {
                             $(`#review-row-${id}`).fadeOut(500);
                             $(`#reply-form-row-${id}`).remove();
-                            // Sayıyı dinamik azaltmak istersen:
                             let currentCount = parseInt($("#reviewCountText").text());
-                            $("#reviewCountText").text(currentCount - 1);
+                            if (currentCount > 0) {
+                                $("#reviewCountText").text(currentCount - 1);
+                            }
                         }
                     }
                 });
@@ -245,7 +258,6 @@
 }
 
 <style>
-    /* Tasarım İyileştirmeleri */
     .stat-card {
         border-radius: 16px;
         transition: all 0.3s ease;

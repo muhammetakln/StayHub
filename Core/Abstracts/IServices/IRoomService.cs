@@ -8,7 +8,7 @@ namespace Core.Abstracts.Interfaces
     public interface IRoomService
     {
         // CRUD İşlemleri
-        Task<IResult> CreateRoomByIdAsync(int hotelId, CreateRoomDto dto);
+        Task<IResult<RoomDto>> CreateRoomByIdAsync(int hotelId, CreateRoomDto dto);
         Task<IResult> UpdateRoomAsync(int roomId, UpdateRoomDto dto);
         Task<IResult> DeleteRoomAsync(int roomId);
 

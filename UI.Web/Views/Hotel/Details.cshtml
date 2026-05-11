@@ -146,7 +146,6 @@
                                     <p class="text-muted mt-2">@review.Content</p>
                                     <small class="text-secondary opacity-75">📅 @review.CreatedAt.ToString("dd MMMM yyyy", new CultureInfo("tr-TR"))</small>
 
-                                    @* ✅ ADMİN CEVABI ALANI EKLENDİ *@
                                     @if (review.IsReplied && !string.IsNullOrEmpty(review.OwnerReply))
                                     {
                                         <div class="bg-light p-3 rounded-3 border-start border-4 border-primary ms-4 mt-3">
@@ -193,6 +192,7 @@
                                     {
                                         foreach (var room in Model.Rooms)
                                         {
+                                            @* ✅ Görsel listesini serialize ederken IUrlHelper veya mutlak yol kullanımı için hazırlık *@
                                             var roomImagesJson = System.Text.Json.JsonSerializer.Serialize(room.RoomImage?.Select(i => i.ImageUrl) ?? new List<string>());
                                             <option value="@room.Id"
                                                     data-price="@room.Price.ToString(CultureInfo.InvariantCulture)"
@@ -225,7 +225,7 @@
                                 <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-gift"></i> Ekstra Hizmetler</h6>
                                 @if (Model.AddOnServices != null && Model.AddOnServices.Any())
                                 {
-                                    @foreach (var service in Model.AddOnServices)
+                                    foreach (var service in Model.AddOnServices)
                                     {
                                         <div class="form-check d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
                                             <div>
@@ -276,7 +276,6 @@
         if(document.getElementById('CheckOutDate')) document.getElementById('CheckOutDate').min = today;
     });
 
-    // ✅ YORUM GÖNDERME FONKSİYONU (AJAX)
     function submitReview() {
         const hotelId = $("#revHotelId").val();
         const rating = $("#revRating").val();
@@ -303,34 +302,10 @@
                 if (response.success) {
                     $("#reviewForm")[0].reset();
                     bootstrap.Collapse.getInstance(document.getElementById('reviewFormCollapse')).hide();
-
-                    let starsHtml = "";
-                    for(let i=0; i<rating; i++) { starsHtml += "<span>⭐</span>"; }
-                    const today = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
-
-                    const newReview = `
-                        <div class="border-bottom pb-4 mb-4" style="display:none;">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <span class="fw-bold fs-5 d-block">@User.Identity?.Name</span>
-                                    <h6 class="text-primary mt-1">${title}</h6>
-                                </div>
-                                <span class="text-warning fs-5">${starsHtml}</span>
-                            </div>
-                            <p class="text-muted mt-2">${content}</p>
-                            <small class="text-secondary opacity-75">📅 ${today}</small>
-                        </div>
-                    `;
-
-                    if($("#noReviewText").length) $("#noReviewText").remove();
-                    const $newEl = $(newReview).prependTo("#reviewsList");
-                    $newEl.fadeIn(800);
+                    location.reload(); // Puan ortalaması için sayfayı yenilemek en sağlıklısı
                 } else {
                     alert(response.message);
                 }
-            },
-            error: function (xhr) {
-                alert("Bir hata oluştu. Giriş yapmamış olabilirsiniz.");
             }
         });
     }
@@ -340,21 +315,35 @@
         const carouselInner = document.getElementById("mainCarouselInner");
         const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
-        const items = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
-        items.forEach(item => item.remove());
+
+        // Önceki oda resimlerini temizle
+        const extraItems = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
+        extraItems.forEach(item => item.remove());
+
+        // Ana resmi aktif et
         hotelPrimaryItem.classList.add('active');
 
         if (roomSelect.selectedIndex > 0) {
             let images = [];
-            try { images = JSON.parse(selectedOption.getAttribute("data-images") || "[]"); } catch (e) { console.error("JSON Error"); }
+            try {
+                const data = selectedOption.getAttribute("data-images");
+                images = JSON.parse(data || "[]");
+            } catch (e) {
+                console.error("Görsel verisi okunurken hata oluştu.");
+            }
+
             const roomName = selectedOption.getAttribute("data-name");
 
             if (images.length > 0) {
                 images.forEach((img) => {
                     const div = document.createElement('div');
                     div.className = 'carousel-item';
+
+                    // ✅ Görsel yolu kontrolü (Başa / ekleme)
+                    const src = img.startsWith('/') ? img : '/' + img;
+
                     div.innerHTML = `
-                        <img src="${img}" class="gallery-img" loading="lazy">
+                        <img src="${src}" class="gallery-img" loading="lazy" onerror="this.src='/images/default-hotel.jpg'">
                         <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-pill py-2">
                             <h2 class="mb-0">${roomName}</h2>
                             <span class="badge bg-info">Oda Görseli</span>
@@ -362,7 +351,9 @@
                     `;
                     carouselInner.appendChild(div);
                 });
-                setTimeout(() => { myCarousel.to(1); }, 100);
+
+                // İlk oda görseline odaklan (index 1 çünkü 0 ana otel resmi)
+                setTimeout(() => { myCarousel.to(1); }, 150);
             }
         } else {
             myCarousel.to(0);

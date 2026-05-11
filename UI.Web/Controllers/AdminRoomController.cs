@@ -5,6 +5,8 @@ using Core.Concretes.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Data.Contexts; // ✅ Eklendi
+using Microsoft.EntityFrameworkCore; // ✅ Eklendi
 
 namespace UI.Web.Controllers
 {
@@ -15,24 +17,23 @@ namespace UI.Web.Controllers
         private readonly IRoomService _roomService;
         private readonly IHotelService _hotelService;
         private readonly UserManager<Guest> _userManager;
+        private readonly StayHubContext _context; // ✅ Eklendi
 
-        public AdminRoomController(IRoomService roomService, IHotelService hotelService, UserManager<Guest> userManager)
+        public AdminRoomController(IRoomService roomService, IHotelService hotelService, UserManager<Guest> userManager, StayHubContext context)
         {
             _roomService = roomService;
             _hotelService = hotelService;
             _userManager = userManager;
+            _context = context; // ✅ Eklendi
         }
 
-        // Otelin odalarını listeler
         [HttpGet("index/{hotelId}")]
         public async Task<IActionResult> Index(int hotelId)
         {
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && user?.HotelId != hotelId) return Forbid();
 
-            // Servis 'IResult<List<RoomDto>>' döndüğü için '.Data' üzerinden listeye ulaşıyoruz
             var result = await _roomService.GetRoomsByHotelIdAsync(hotelId);
-
             var hotel = await _hotelService.GetHotelByIdAsync(hotelId);
             ViewBag.HotelName = hotel?.Name;
             ViewBag.HotelId = hotelId;
@@ -40,50 +41,45 @@ namespace UI.Web.Controllers
             return View(result.Data ?? new List<RoomDto>());
         }
 
-        // GET: Ekleme veya Düzenleme Formu
         [HttpGet("create/{hotelId}/{id?}")]
         public async Task<IActionResult> Create(int hotelId, int? id)
         {
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && user?.HotelId != hotelId) return Forbid();
 
-            // ID yoksa (Yeni Ekleme)
             if (!id.HasValue || id == 0)
             {
                 ViewBag.Title = "Yeni Oda Ekle";
                 return View(new CreateRoomDto { HotelId = hotelId, IsActive = true });
             }
 
-            // ID varsa (Düzenleme)
             var existingRoomResult = await _roomService.GetRoomByIdAsync(id.Value);
-            if (!existingRoomResult.IsSuccess || existingRoomResult.Data == null)
-            {
-                return NotFound();
-            }
+            if (!existingRoomResult.IsSuccess || existingRoomResult.Data == null) return NotFound();
 
             ViewBag.Title = "Oda Düzenle";
             var existingRoom = existingRoomResult.Data;
 
-            // DTO dönüşümü yapıyoruz
             var dto = new CreateRoomDto
             {
                 Id = existingRoom.Id,
+                HotelId = hotelId, // ✅ HotelId eklendi
                 Name = existingRoom.Name ?? string.Empty,
                 RoomNumber = existingRoom.RoomNumber ?? string.Empty,
                 Description = existingRoom.Description,
                 Price = existingRoom.Price,
                 Capacity = existingRoom.Capacity,
                 Size = existingRoom.Size,
-                IsActive = existingRoom.IsActive
+                IsActive = existingRoom.IsActive,
+               
             };
 
             return View(dto);
         }
 
-        // POST: Kaydetme veya Güncelleme İşlemi
         [HttpPost("create/{hotelId}/{id?}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int hotelId, int? id, CreateRoomDto dto)
+        // ✅ 'List<IFormFile> Images' parametresi eklendi (HTML'deki name="Images" ile aynı olmalı)
+        public async Task<IActionResult> Create(int hotelId, int? id, CreateRoomDto dto, List<IFormFile> Images)
         {
             if (!ModelState.IsValid)
             {
@@ -91,7 +87,9 @@ namespace UI.Web.Controllers
                 return View(dto);
             }
 
-            // 1. GÜNCELLEME İŞLEMİ
+            int currentRoomId = 0;
+
+            // 1. GÜNCELLEME VEYA EKLEME
             if (dto.Id > 0)
             {
                 var updateDto = new UpdateRoomDto
@@ -111,37 +109,64 @@ namespace UI.Web.Controllers
                 };
 
                 await _roomService.UpdateRoomAsync(dto.Id, updateDto);
-                TempData["SuccessMessage"] = "Oda bilgileri başarıyla güncellendi.";
-                return RedirectToAction(nameof(Index), new { hotelId = dto.HotelId });
+                currentRoomId = dto.Id;
+                TempData["SuccessMessage"] = "Oda bilgileri güncellendi.";
             }
-
-            // 2. YENİ ODA EKLEME İŞLEMİ
-            var existingRoomsResult = await _roomService.GetRoomsByHotelIdAsync(dto.HotelId);
-            if (existingRoomsResult.IsSuccess && existingRoomsResult.Data != null)
+            else
             {
-                bool roomExists = existingRoomsResult.Data.Any(r =>
-                    !string.IsNullOrEmpty(r.Name) &&
-                    (r.Name.Trim().Equals(dto.Name?.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                     r.Name.Trim().Equals(dto.RoomNumber.Trim(), StringComparison.OrdinalIgnoreCase)));
+                // Var olan generic dönüş tipini (Data barındıranı) kullandığınızdan emin olun
+                var createResult = await _roomService.CreateRoomByIdAsync(dto.HotelId, dto);
 
-                if (roomExists)
+                if (!createResult.IsSuccess)
                 {
                     ViewBag.Title = "Yeni Oda Ekle";
-                    TempData["ErrorMessage"] = $"Bu otelde '{dto.RoomNumber}' numaralı veya isimli bir oda zaten mevcut.";
+                    TempData["ErrorMessage"] = createResult.Message;
                     return View(dto);
                 }
+
+                // ✅ ÇÖZÜM: createResult.Data üzerinden Id'ye erişiyoruz
+                // Eğer hala hata veriyorsa, IRoomService içindeki metodun dönüş tipinin 
+                // IDataResult<RoomDto> olduğundan emin olun.
+                currentRoomId = createResult.Data.Id;
+                TempData["SuccessMessage"] = "Yeni oda eklendi.";
             }
 
-            var result = await _roomService.CreateRoomByIdAsync(dto.HotelId, dto);
-            if (result.IsSuccess)
+            // ✅ 2. GÖRSEL YÜKLEME VE ENTITY KAYIT MANTIĞI
+            if (Images != null && Images.Count > 0)
             {
-                TempData["SuccessMessage"] = "Yeni oda başarıyla eklendi.";
-                return RedirectToAction(nameof(Index), new { hotelId = dto.HotelId });
+                string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "rooms");
+                if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                int order = 1;
+                foreach (var file in Images)
+                {
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                    string filePath = Path.Combine(uploadFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    // ✅ Senin RoomImage entity yapına tam uyumlu kayıt
+                    var roomImage = new RoomImage
+                    {
+                        RoomId = currentRoomId,
+                        ImageUrl = "/uploads/rooms/" + fileName,
+                        ImageName = file.FileName,
+                        DisplayOrder = order,
+                        IsPrimary = (order == 1),
+                        UploadedAt = true, // Entity'deki bool alan
+                        IsDeleted = false
+                    };
+
+                    _context.RoomImages.Add(roomImage);
+                    order++;
+                }
+                await _context.SaveChangesAsync();
             }
 
-            ViewBag.Title = "Yeni Oda Ekle";
-            TempData["ErrorMessage"] = result.Message;
-            return View(dto);
+            return RedirectToAction(nameof(Index), new { hotelId = hotelId });
         }
 
         [HttpPost("delete/{id}")]
@@ -150,7 +175,7 @@ namespace UI.Web.Controllers
         {
             var result = await _roomService.DeleteRoomAsync(id);
             if (result.IsSuccess)
-                TempData["SuccessMessage"] = "Oda başarıyla silindi.";
+                TempData["SuccessMessage"] = "Oda silindi.";
             else
                 TempData["ErrorMessage"] = result.Message;
 

@@ -1,14 +1,14 @@
 ﻿using Core.Abstracts.Interfaces;
 using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
-using Core.Concretes.Enum; // ✅ Enum'lar için eklendi
+using Core.Concretes.Enum;
 using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using Microsoft.AspNetCore.Identity.UI.Services; // ✅ IEmailSender için eklendi
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace UI.Web.Controllers
 {
@@ -20,20 +20,20 @@ namespace UI.Web.Controllers
         private readonly UserManager<Guest> _userManager;
         private readonly StayHubContext _context;
         private readonly IMapper _mapper;
-        private readonly IEmailSender _emailSender; // ✅ Eklendi
+        private readonly IEmailSender _emailSender;
 
         public AdminReservationController(
             IReservationService reservationService,
             UserManager<Guest> userManager,
             StayHubContext context,
             IMapper mapper,
-            IEmailSender emailSender) // ✅ Constructor'a eklendi
+            IEmailSender emailSender)
         {
             _reservationService = reservationService;
             _userManager = userManager;
             _context = context;
             _mapper = mapper;
-            _emailSender = emailSender; // ✅ Eklendi
+            _emailSender = emailSender;
         }
 
         [HttpGet("")]
@@ -77,6 +77,43 @@ namespace UI.Web.Controllers
             return View(dtoList);
         }
 
+        [HttpGet("daily-reports")]
+        public async Task<IActionResult> DailyReports(int hotelId, string filter = "checkins")
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+            if (!User.IsInRole("SuperAdmin") && user.HotelId != hotelId) return Forbid();
+
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+
+            var hotel = await _context.Hotels.AsNoTracking().FirstOrDefaultAsync(h => h.Id == hotelId);
+            ViewBag.HotelName = hotel?.Name;
+            ViewBag.HotelId = hotelId;
+            ViewBag.ActiveFilter = filter;
+
+            var query = _context.Reservations
+                .Include(r => r.Room)
+                .Include(r => r.Guest)
+                .Where(r => r.Room.HotelId == hotelId && !r.IsDeleted);
+
+            switch (filter.ToLower())
+            {
+                case "checkins":
+                    query = query.Where(r => r.CheckInDate >= today && r.CheckInDate < tomorrow);
+                    break;
+                case "active":
+                    query = query.Where(r => r.Status == ReservationStatus.CheckedIn);
+                    break;
+                case "checkouts":
+                    query = query.Where(r => r.CheckOutDate >= today && r.CheckOutDate < tomorrow);
+                    break;
+            }
+
+            var results = await query.OrderBy(r => r.CreatedAt).ToListAsync();
+            return View(results);
+        }
+
         [HttpGet("details/{id}")]
         public async Task<IActionResult> Details(int id)
         {
@@ -103,7 +140,6 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, string status)
         {
-            // ✅ Mail gönderebilmek için Guest ve Hotel bilgilerini de çekiyoruz
             var reservation = await _context.Reservations
                 .Include(r => r.Guest)
                 .Include(r => r.Room)
@@ -120,7 +156,6 @@ namespace UI.Web.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Rezervasyon durumu güncellendi.";
 
-                // ✅ MAİL BİLGİLENDİRMESİ
                 if (reservation.Guest != null && !string.IsNullOrEmpty(reservation.Guest.Email))
                 {
                     string statusText = parsedStatus switch

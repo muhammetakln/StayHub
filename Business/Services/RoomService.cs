@@ -27,7 +27,8 @@ namespace Business.Services
             _logger = logger;
         }
 
-        public async Task<IResult> CreateRoomByIdAsync(int hotelId, CreateRoomDto dto)
+        // ✅ Dönüş tipi IResult<RoomDto> olarak güncellendi
+        public async Task<IResult<RoomDto>> CreateRoomByIdAsync(int hotelId, CreateRoomDto dto)
         {
             try
             {
@@ -37,7 +38,7 @@ namespace Business.Services
                 if (!hotelExists)
                 {
                     _logger.LogWarning($"[ROOM] Otel bulunamadı: {hotelId}");
-                    return Result.Failure("Otel bulunamadı");
+                    return Result<RoomDto>.Failure("Otel bulunamadı");
                 }
 
                 var roomNumber = $"ROOM-{hotelId}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}";
@@ -51,10 +52,10 @@ namespace Business.Services
                     Capacity = dto.Capacity,
                     Size = dto.Size,
                     Price = dto.Price,
-                    PricePerNight = dto.Price, 
+                    PricePerNight = dto.Price,
                     Status = RoomStatus.Available,
                     IsActive = dto.IsActive,
-                    FloorNumber = 1, 
+                    FloorNumber = 1,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -62,12 +63,23 @@ namespace Business.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"[ROOM] Oda oluşturuldu: ID={room.Id}, RoomNumber={room.RoomNumber}");
-                return Result.Success("Oda başarıyla oluşturuldu");
+
+                // ✅ Oluşturulan oda bilgisini DTO'ya çevirip geri döndürüyoruz (Data taşımak için)
+                var roomDto = new RoomDto
+                {
+                    Id = room.Id,
+                    Name = room.Name,
+                    RoomNumber = room.RoomNumber,
+                    Price = room.Price,
+                    IsActive = room.IsActive
+                };
+
+                return Result<RoomDto>.Success(roomDto, "Oda başarıyla oluşturuldu");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[ROOM] CreateRoomByIdAsync hatası");
-                return Result.Failure("Oda oluşturulurken hata oluştu");
+                return Result<RoomDto>.Failure("Oda oluşturulurken hata oluştu");
             }
         }
 
@@ -84,7 +96,6 @@ namespace Business.Services
                     return Result.Failure("Oda bulunamadı");
                 }
 
-                // Güncelle
                 room.Name = dto.Name;
                 room.Description = dto.Description;
                 room.Capacity = dto.Capacity;
