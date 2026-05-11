@@ -39,14 +39,11 @@ namespace UI.Web.Controllers
 
             if (!User.IsInRole("SuperAdmin") && user.HotelId != hotelId) return Forbid();
 
-            // 🛡️ ÇÖZÜM: SQLite hatasını önlemek için önce Oda ID'lerini listeliyoruz
             var hotelRoomIds = await _context.Rooms
                 .Where(rm => rm.HotelId == hotelId)
                 .Select(rm => rm.Id)
                 .ToListAsync();
 
-            // Rezervasyonları bu Oda ID listesi üzerinden çekiyoruz
-            // Bu sayede SQL tarafında r.HotelId kolonu asla aranmaz
             var reservations = await _context.Reservations
                 .Include(r => r.Room)
                 .Include(r => r.Guest)
@@ -78,10 +75,47 @@ namespace UI.Web.Controllers
         [HttpGet("details/{id}")]
         public async Task<IActionResult> Details(int id)
         {
-            var reservationDto = await _reservationService.GetReservationByIdAsync(id);
-            if (reservationDto == null) return NotFound();
+            var reservation = await _context.Reservations
+                .Include(r => r.Guest)
+                .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Hotel)
+                .Include(r => r.SelectedServices)
+                    .ThenInclude(ra => ra.AddOnService)
+                .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
 
-            return View(reservationDto);
+            if (reservation == null) return NotFound();
+
+            var user = await _userManager.GetUserAsync(User);
+            if (!User.IsInRole("SuperAdmin") && reservation.Room?.HotelId != user.HotelId)
+            {
+                return Forbid();
+            }
+
+            return View(reservation);
+        }
+
+        [HttpPost("update-status")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, string status)
+        {
+            var reservation = await _context.Reservations.FindAsync(id);
+            if (reservation == null) return NotFound();
+
+            // ✅ GÜNCELLEME: String olarak gelen status değerini Enum tipine dönüştürüyoruz.
+            if (Enum.TryParse<Core.Concretes.Enum.ReservationStatus>(status, out var parsedStatus))
+            {
+                reservation.Status = parsedStatus;
+                reservation.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Rezervasyon durumu güncellendi.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Geçersiz durum değeri!";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = id });
         }
 
         [HttpPost("cancel/{id}")]

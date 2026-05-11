@@ -190,7 +190,7 @@ namespace Business.Services
 
                 var room = await _context.Rooms
                     .AsNoTracking()
-                    .Include(r => r.RoomImages)
+                    .Include(r => r.RoomImage)
                     .FirstOrDefaultAsync(r => r.Id == roomId && !r.IsDeleted);
 
                 if (room == null)

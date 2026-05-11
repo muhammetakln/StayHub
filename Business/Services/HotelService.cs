@@ -144,10 +144,13 @@ namespace Business.Services
                 _logger.LogInformation($"Otel bulunuyor: {id}");
                 var hotel = await _context.Hotels
                     .AsNoTracking()
-                    .Include(h => h.Rooms)
                     .Include(h => h.Amenities)
                     .Include(h => h.Reviews)
                     .Include(h => h.AddOnServices)
+                    // ✅ GÜNCELLEME: Sadece silinmemiş odaların gelmesi için filtre eklendi.
+                    .Include(h => h.Rooms.Where(r => !r.IsDeleted))
+                        .ThenInclude(r => r.RoomImage)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -261,44 +264,71 @@ namespace Business.Services
         {
             try
             {
-                // 1. Oteli veri tabanından buluyoruz (AddOnServices dahil ETMİYORUZ, doğrudan Context'ten sileceğiz)
+                // 1. Oteli ve hizmetleri takip (track) ederek çekiyoruz
                 var hotel = await _context.Hotels
+                    .Include(h => h.AddOnServices)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
                     throw new KeyNotFoundException($"Otel bulunamadı: {id}");
 
-                // 2. Temel otel bilgilerini (Ad, Adres, vb.) DTO'dan aktar
+                // 2. Temel otel bilgilerini güncelle
                 _mapper.Map(dto, hotel);
 
-                // 3. 🔥 EK HİZMETLERİ KAYDETME MANTIĞI (TRACKING HATASI ÇÖZÜMÜ)
-                // Veritabanındaki eski hizmetleri doğrudan context üzerinden bulup siliyoruz.
-                var existingServices = await _context.AddOnServices.Where(x => x.HotelId == id).ToListAsync();
-                if (existingServices.Any())
+                // 3. 🔥 AKILLI EK HİZMET YÖNETİMİ (FOREIGN KEY VE TRACKING HATASI ÇÖZÜMÜ)
+                if (dto.AddOnServices != null)
                 {
-                    _context.AddOnServices.RemoveRange(existingServices);
-                }
+                    // A. Silinenleri belirle (DTO'da olmayıp DB'de olanlar)
+                    var dtoIds = dto.AddOnServices.Where(x => x.Id > 0).Select(x => x.Id).ToList();
+                    var servicesToRemove = hotel.AddOnServices.Where(s => !dtoIds.Contains(s.Id)).ToList();
 
-                // 4. Formdan gelen yeni listeyi veritabanına doğrudan ekliyoruz
-                if (dto.AddOnServices != null && dto.AddOnServices.Any())
-                {
-                    var validServices = dto.AddOnServices.Where(s => !string.IsNullOrWhiteSpace(s.Name)).ToList();
-                    foreach (var serviceDto in validServices)
+                    foreach (var s in servicesToRemove)
                     {
-                        await _context.AddOnServices.AddAsync(new AddOnService
+                        // Eğer hizmet geçmişte bir rezervasyonda kullanılmışsa fiziksel silme yapma, IsDeleted işaretle
+                        bool isUsed = await _context.ReservationAddOnServices.AnyAsync(ra => ra.AddOnServiceId == s.Id);
+                        if (isUsed)
                         {
-                            Name = serviceDto.Name,
-                            Price = serviceDto.Price,
-                            Unit = serviceDto.Unit,
-                            HotelId = hotel.Id,
-                            IsActive = true,
-                            CreatedAt = DateTime.UtcNow
-                        });
+                            s.IsDeleted = true;
+                            s.IsActive = false;
+                        }
+                        else
+                        {
+                            _context.AddOnServices.Remove(s);
+                        }
+                    }
+
+                    // B. Mevcutları GÜNCELLE veya yenileri EKLE
+                    foreach (var sDto in dto.AddOnServices.Where(x => !string.IsNullOrWhiteSpace(x.Name)))
+                    {
+                        if (sDto.Id > 0)
+                        {
+                            // Mevcut olanı bul ve güncelle
+                            var existing = hotel.AddOnServices.FirstOrDefault(x => x.Id == sDto.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = sDto.Name;
+                                existing.Price = sDto.Price;
+                                existing.Unit = sDto.Unit;
+                                existing.UpdatedAt = DateTime.UtcNow;
+                            }
+                        }
+                        else
+                        {
+                            // Tamamen yeni bir hizmet ekle
+                            hotel.AddOnServices.Add(new AddOnService
+                            {
+                                Name = sDto.Name,
+                                Price = sDto.Price,
+                                Unit = sDto.Unit,
+                                HotelId = hotel.Id,
+                                IsActive = true,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
                     }
                 }
 
                 hotel.UpdatedAt = DateTime.UtcNow;
-
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Otel ID {id} ve ek hizmetleri başarıyla güncellendi.");

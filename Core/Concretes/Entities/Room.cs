@@ -19,7 +19,7 @@ namespace Core.Concretes.Entities
         public bool IsActive { get; set; } = true;
         public virtual Hotel? Hotel { get; set; }
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
-        public virtual ICollection<RoomImage> RoomImages { get; set; } = new List<RoomImage>();
+        public virtual ICollection<RoomImage> RoomImage { get; set; } = new List<RoomImage>();
 
     }
 }

@@ -65,9 +65,10 @@
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="btn-group">
-                                            <a href="/admin/room/edit/@room.Id" class="btn btn-sm btn-outline-warning rounded-pill me-2">
+                                            <a href="/admin/room/create/@ViewBag.HotelId/@room.Id" class="btn btn-sm btn-outline-warning rounded-pill me-2">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
+
                                             <form asp-action="Delete" asp-route-id="@room.Id" asp-route-hotelId="@ViewBag.HotelId" method="post" onsubmit="return confirm('Bu odayı silmek istediğinize emin misiniz?');">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">
                                                     <i class="bi bi-trash"></i>

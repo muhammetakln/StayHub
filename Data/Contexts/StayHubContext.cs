@@ -154,7 +154,7 @@ namespace Data.Contexts
                     .HasForeignKey(res => res.RoomId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasMany(r => r.RoomImages)
+                entity.HasMany(r => r.RoomImage)
                     .WithOne(ri => ri.Room)
                     .HasForeignKey(ri => ri.RoomId)
                     .OnDelete(DeleteBehavior.Cascade);

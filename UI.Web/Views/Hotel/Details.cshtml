@@ -46,19 +46,25 @@
     {
         <div class="row mb-4">
             <div class="col-12">
-                <div class="position-relative overflow-hidden rounded-4 shadow" style="height: 450px;">
-                    @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
-                    {
-                        <img src="@Model.CoverImageUrl" alt="@Model.Name" class="w-100 h-100 object-fit-cover">
-                    }
-                    else
-                    {
-                        <div class="w-100 h-100 bg-dark d-flex align-items-center justify-content-center text-white fs-1">🏨</div>
-                    }
-                    <div class="position-absolute bottom-0 start-0 w-100 p-4 bg-dark bg-opacity-50 text-white">
-                        <h1 class="display-4 fw-bold">@Model.Name</h1>
-                        <p class="fs-5 mb-0">📍 @Model.City, @Model.Country</p>
+                <div id="mainGalleryCarousel" class="carousel slide shadow rounded-4 overflow-hidden" data-bs-ride="carousel" style="background-color: #222;">
+                    <div class="carousel-inner" id="mainCarouselInner">
+                        <div class="carousel-item active" id="hotelPrimaryItem">
+                            <img src="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "/images/default-hotel.jpg" : Model.CoverImageUrl)"
+                                 class="gallery-img">
+                            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-pill py-2">
+                                <h2 class="mb-0">@Model.Name</h2>
+                                <p class="mb-0">📍 @Model.City, @Model.Country</p>
+                            </div>
+                        </div>
                     </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#mainGalleryCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon shadow" aria-hidden="true"></span>
+                        <span class="visually-hidden">Geri</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#mainGalleryCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon shadow" aria-hidden="true"></span>
+                        <span class="visually-hidden">İleri</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -76,54 +82,75 @@
                 </div>
 
                 <div class="card border-0 shadow-sm p-4 rounded-4">
-                    <h3 class="fw-bold mb-4">💬 Misafir Deneyimleri (@(Model.Reviews != null ? Model.Reviews.Count() : 0))</h3>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="fw-bold mb-0">💬 Misafir Deneyimleri (@(Model.Reviews?.Count() ?? 0))</h3>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <button class="btn btn-primary btn-sm rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#reviewFormCollapse">
+                                ✍️ Yorum Yap
+                            </button>
+                        }
+                    </div>
 
-                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
-                    {
-                        <div class="bg-light p-4 rounded-3 mb-5 border-start border-4 border-primary">
-                            <h5 class="fw-bold text-primary mb-3">Siz de Yorum Yapın</h5>
-                            <form asp-controller="Hotel" asp-action="AddReview" method="post">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="hotelId" value="@Model.Id" />
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <select name="rating" class="form-select border-primary border-opacity-25" required>
-                                            <option value="5">⭐⭐⭐⭐⭐ (Harika)</option>
-                                            <option value="4">⭐⭐⭐⭐ (Çok İyi)</option>
-                                            <option value="3">⭐⭐⭐ (İyi)</option>
-                                            <option value="2">⭐⭐ (Kötü)</option>
-                                            <option value="1">⭐ (Çok Kötü)</option>
+                    <div class="collapse mb-5" id="reviewFormCollapse">
+                        <div class="bg-light p-4 rounded-4 border border-primary border-opacity-25">
+                            <h5 class="fw-bold mb-3">Deneyiminizi Paylaşın</h5>
+                            <form action="/hotel/addreview" method="post">
+                                <input type="hidden" name="HotelId" value="@Model.Id" />
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">Başlık</label>
+                                        <input type="text" name="Title" class="form-control shadow-sm" placeholder="Örn: Harika bir konaklama" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Puanınız</label>
+                                        <select name="Rating" class="form-select shadow-sm" required>
+                                            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                                            <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                                            <option value="3">⭐⭐⭐ (3/5)</option>
+                                            <option value="2">⭐⭐ (2/5)</option>
+                                            <option value="1">⭐ (1/5)</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-8 mb-3">
-                                        <input type="text" name="title" class="form-control border-primary border-opacity-25" placeholder="Yorum Başlığı" required />
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Yorumunuz</label>
+                                        <textarea name="Content" class="form-control shadow-sm" rows="3" placeholder="Görüşlerinizi buraya yazın..." required></textarea>
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow">Yorumu Gönder</button>
                                     </div>
                                 </div>
-                                <textarea name="comment" class="form-control border-primary border-opacity-25 mb-3" rows="3" placeholder="Konaklamanız nasıldı?" required></textarea>
-                                <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Yorumu Yayınla</button>
                             </form>
                         </div>
-                    }
+                    </div>
 
                     @if (Model.Reviews != null && Model.Reviews.Any())
                     {
                         @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
                         {
                             <div class="border-bottom pb-4 mb-4">
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold fs-5">@review.GuestName</span>
-                                    <span class="text-warning">@string.Concat(Enumerable.Repeat("⭐", review.Rating))</span>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="fw-bold fs-5 d-block">@review.GuestName</span>
+                                        <h6 class="text-primary mt-1">@review.Title</h6>
+                                    </div>
+                                    <span class="text-warning fs-5">
+                                        @for (int i = 0; i < review.Rating; i++)
+                                        {
+                                            <span>⭐</span>
+                                        }
+                                    </span>
                                 </div>
-                                <h6 class="text-primary mt-1">@review.Title</h6>
-                                <p class="text-muted">@review.Content</p>
+                                <p class="text-muted mt-2">@review.Content</p>
                                 <small class="text-secondary opacity-75">📅 @review.CreatedAt.ToString("dd MMMM yyyy", new CultureInfo("tr-TR"))</small>
                             </div>
                         }
                     }
                     else
                     {
-                        <div class="text-center py-4">
-                            <p class="text-muted italic">Bu otel için henüz yorum yapılmamış.</p>
+                        <div class="text-center py-5">
+                            <i class="bi bi-chat-dots fs-1 text-light"></i>
+                            <p class="text-muted mt-3 italic">Henüz yorum yapılmamış.</p>
                         </div>
                     }
                 </div>
@@ -133,20 +160,24 @@
                 <div class="card border-0 shadow-lg p-4 rounded-4 position-sticky" style="top: 20px;">
                     <h3 class="fw-bold mb-4 text-center border-bottom pb-3">🛏️ Rezervasyon Yap</h3>
 
-                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Guest"))
+                    @if (User.Identity?.IsAuthenticated == true)
                     {
                         <form method="post" action="/reservation/create/@Model.Id" id="reservationForm">
                             @Html.AntiForgeryToken()
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Oda Seçimi</label>
-                                <select name="RoomId" id="RoomSelect" class="form-select form-select-lg shadow-sm" required onchange="updatePrice()">
+                                <select name="RoomId" id="RoomSelect" class="form-select form-select-lg shadow-sm" required onchange="handleRoomChange()">
                                     <option value="" data-price="0">-- Müsait Odalar --</option>
                                     @if (Model.Rooms != null)
                                     {
                                         foreach (var room in Model.Rooms)
                                         {
-                                            <option value="@room.Id" data-price="@room.Price.ToString(CultureInfo.InvariantCulture)">
+                                            var roomImagesJson = System.Text.Json.JsonSerializer.Serialize(room.RoomImage?.Select(i => i.ImageUrl) ?? new List<string>());
+                                            <option value="@room.Id"
+                                                    data-price="@room.Price.ToString(CultureInfo.InvariantCulture)"
+                                                    data-images='@roomImagesJson'
+                                                    data-name="@room.Name">
                                                 @room.Name (@room.Price.ToString("N0") TL / Gece)
                                             </option>
                                         }
@@ -156,11 +187,11 @@
 
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
-                                    <label class="form-label fw-bold small">📅 Giriş Tarihi</label>
+                                    <label class="form-label fw-bold small">📅 Giriş</label>
                                     <input type="date" name="CheckInDate" id="CheckInDate" class="form-control" required onchange="updatePrice()">
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label fw-bold small">📅 Çıkış Tarihi</label>
+                                    <label class="form-label fw-bold small">📅 Çıkış</label>
                                     <input type="date" name="CheckOutDate" id="CheckOutDate" class="form-control" required onchange="updatePrice()">
                                 </div>
                             </div>
@@ -172,52 +203,39 @@
 
                             <div class="mb-4 bg-light p-3 rounded-3 border">
                                 <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-gift"></i> Ekstra Hizmetler</h6>
-                                <div id="addOnServicesContainer">
-                                    @if (Model.AddOnServices != null && Model.AddOnServices.Any())
+                                @if (Model.AddOnServices != null && Model.AddOnServices.Any())
+                                {
+                                    @foreach (var service in Model.AddOnServices)
                                     {
-                                        foreach (var service in Model.AddOnServices)
-                                        {
-                                            <div class="form-check d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
-                                                <div>
-                                                    @* name="SelectedServiceIds" olarak güncellendi, bu sayede Controller'daki liste ile eşleşir *@
-                                                    <input class="form-check-input addon-checkbox" type="checkbox"
-                                                           name="SelectedServiceIds"
-                                                           value="@service.Id"
-                                                           data-price="@service.Price.ToString(CultureInfo.InvariantCulture)"
-                                                           id="service_@service.Id"
-                                                           onchange="updatePrice()">
-                                                    <label class="form-check-label small fw-semibold" for="service_@service.Id">
-                                                        @service.Name
-                                                    </label>
-                                                </div>
-                                                <span class="badge bg-secondary">+@service.Price.ToString("N0") TL</span>
+                                        <div class="form-check d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <div>
+                                                <input class="form-check-input addon-checkbox" type="checkbox" name="SelectedServiceIds" value="@service.Id" data-price="@service.Price.ToString(CultureInfo.InvariantCulture)" id="service_@service.Id" onchange="updatePrice()">
+                                                <label class="form-check-label small" for="service_@service.Id">@service.Name</label>
                                             </div>
-                                        }
+                                            <span class="badge bg-secondary">+@service.Price.ToString("N0") TL</span>
+                                        </div>
                                     }
-                                    else
-                                    {
-                                        <p class="text-muted small text-center mb-0">Hizmet bulunmuyor.</p>
-                                    }
-                                </div>
+                                }
                             </div>
 
                             <div class="mb-4 text-center bg-primary bg-opacity-10 p-3 rounded-3">
-                                <span class="text-muted small d-block">Ödenecek Toplam Tutar</span>
+                                <span class="text-muted small d-block">Toplam Tutar</span>
                                 <h2 id="totalPriceDisplay" class="text-primary fw-bold mb-0">0,00 ₺</h2>
-                                <input type="hidden" name="TotalPrice" id="hiddenTotalPrice" value="0">
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg fw-bold rounded-pill py-3 shadow" disabled>🚀 Rezervasyonu Tamamla</button>
-                                <a href="/hotel" class="btn btn-link btn-sm text-secondary">Ana Sayfaya Dön</a>
-                            </div>
+                            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 fw-bold rounded-pill shadow" disabled>🚀 Rezervasyonu Tamamla</button>
                         </form>
                     }
                     else
                     {
-                        <div class="alert alert-warning text-center rounded-4 shadow-sm border-0">
-                            <p class="mb-3">Rezervasyon yapabilmek için giriş yapmalısınız.</p>
-                            <a href="/account/login" class="btn btn-primary w-100 fw-bold">Giriş Yap</a>
+                        <div class="text-center py-4">
+                            <div class="bg-light rounded-4 p-4 border border-dashed">
+                                <i class="bi bi-lock-fill fs-1 text-warning mb-3 d-block"></i>
+                                <h5 class="fw-bold">Oturum Açmanız Gerekiyor</h5>
+                                <p class="text-muted small mb-4">Rezervasyon yapabilmek için lütfen giriş yapın.</p>
+                                <a href="/account/login" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm">🔑 Giriş Yap / Üye Ol</a>
+                                <p class="mt-3 mb-0 small"><a href="/hotel" class="text-decoration-none text-secondary">Vazgeç, listeye dön</a></p>
+                            </div>
                         </div>
                     }
                 </div>
@@ -226,64 +244,111 @@
     }
 </div>
 
-<style>
-    .object-fit-cover {
-        object-fit: cover;
-    }
-
-    .rounded-4 {
-        border-radius: 1.5rem !important;
-    }
-</style>
-
 <script>
+    let myCarousel;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const carouselEl = document.getElementById('mainGalleryCarousel');
+        myCarousel = new bootstrap.Carousel(carouselEl, { interval: 5000, pause: 'hover' });
+
+        const today = new Date().toISOString().split('T')[0];
+        if(document.getElementById('CheckInDate')) document.getElementById('CheckInDate').min = today;
+        if(document.getElementById('CheckOutDate')) document.getElementById('CheckOutDate').min = today;
+    });
+
+    function handleRoomChange() {
+        const roomSelect = document.getElementById("RoomSelect");
+        const carouselInner = document.getElementById("mainCarouselInner");
+        const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
+        const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+
+        const items = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
+        items.forEach(item => item.remove());
+
+        hotelPrimaryItem.classList.add('active');
+
+        if (roomSelect.selectedIndex > 0) {
+            let images = [];
+            try { images = JSON.parse(selectedOption.getAttribute("data-images") || "[]"); } catch (e) { console.error("JSON Error"); }
+            const roomName = selectedOption.getAttribute("data-name");
+
+            if (images.length > 0) {
+                images.forEach((img) => {
+                    const div = document.createElement('div');
+                    div.className = 'carousel-item';
+                    div.innerHTML = `
+                        <img src="${img}" class="gallery-img" loading="lazy">
+                        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded-pill py-2">
+                            <h2 class="mb-0">${roomName}</h2>
+                            <span class="badge bg-info">Oda Görseli</span>
+                        </div>
+                    `;
+                    carouselInner.appendChild(div);
+                });
+                setTimeout(() => { myCarousel.to(1); }, 100);
+            }
+        } else {
+            myCarousel.to(0);
+        }
+        updatePrice();
+    }
+
     function updatePrice() {
         const roomSelect = document.getElementById("RoomSelect");
-        const checkIn = document.getElementById("CheckInDate").value;
-        const checkOut = document.getElementById("CheckOutDate").value;
-        const guestInput = document.getElementById("NumberOf");
+        const checkIn = document.getElementById("CheckInDate")?.value;
+        const checkOut = document.getElementById("CheckOutDate")?.value;
+        const guestInput = document.getElementById("NumberOf")?.value;
         const priceDisplay = document.getElementById("totalPriceDisplay");
-        const hiddenPrice = document.getElementById("hiddenTotalPrice");
         const submitBtn = document.getElementById("submitBtn");
 
-        const addons = document.querySelectorAll(".addon-checkbox:checked");
+        if(!priceDisplay) return;
+
         let addonTotal = 0;
-        addons.forEach(checkbox => {
-            addonTotal += parseFloat(checkbox.getAttribute("data-price") || 0);
+        document.querySelectorAll(".addon-checkbox:checked").forEach(cb => {
+            addonTotal += parseFloat(cb.getAttribute("data-price") || 0);
         });
 
         if (roomSelect.selectedIndex === 0 || !checkIn || !checkOut) {
             priceDisplay.innerText = "0,00 ₺";
-            if(hiddenPrice) hiddenPrice.value = 0;
             if(submitBtn) submitBtn.disabled = true;
             return;
         }
 
         const roomPrice = parseFloat(roomSelect.options[roomSelect.selectedIndex].getAttribute("data-price") || 0);
-        const guestCount = parseInt(guestInput.value) || 1;
-
-        const d1 = new Date(checkIn);
-        const d2 = new Date(checkOut);
-        const nights = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+        const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
 
         if (nights > 0) {
-            const baseTotal = nights * roomPrice;
-            const extraCharge = guestCount > 1 ? (guestCount - 1) * 150 : 0;
-            const finalTotal = baseTotal + extraCharge + addonTotal;
-
-            priceDisplay.innerText = finalTotal.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
-            if(hiddenPrice) hiddenPrice.value = finalTotal;
+            const extraCharge = (parseInt(guestInput) > 1) ? (parseInt(guestInput) - 1) * 150 : 0;
+            const total = (nights * roomPrice) + extraCharge + addonTotal;
+            priceDisplay.innerText = total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
             if(submitBtn) submitBtn.disabled = false;
         } else {
-            priceDisplay.innerText = "Hatalı Tarih!";
-            if(hiddenPrice) hiddenPrice.value = 0;
+            priceDisplay.innerText = "Geçersiz Tarih";
             if(submitBtn) submitBtn.disabled = true;
         }
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('CheckInDate').setAttribute('min', today);
-        document.getElementById('CheckOutDate').setAttribute('min', today);
-    });
 </script>
+
+<style>
+    #mainGalleryCarousel {
+        height: 500px !important;
+        min-height: 500px;
+    }
+
+    .carousel-inner, .carousel-item {
+        height: 500px !important;
+    }
+
+    .gallery-img {
+        width: 100%;
+        height: 500px !important;
+        object-fit: cover;
+        display: block;
+    }
+
+    .carousel-control-prev-icon, .carousel-control-next-icon {
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        padding: 20px;
+    }
+</style>

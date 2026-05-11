@@ -1,123 +1,114 @@
 ﻿@using Core.Concretes.DTOs
+@using Core.Concretes.Enum
 @model CreateRoomDto
 
 @{
+    ViewData["Title"] = ViewBag.Title ?? "Oda İşlemleri";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    ViewData["Title"] = "Oda Kaydı";
 }
 
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
-        <div class="col-md-9">
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="card-header bg-dark text-white p-4">
-                    <h3 class="mb-0 fw-bold"><i class="bi bi-door-open me-2 text-warning"></i>Yeni Oda Tanımla</h3>
-                    <p class="mb-0 text-white-50 small">Odanın kapasite, fiyat ve olanaklarını belirleyerek sisteme dahil edin.</p>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-info text-white p-4 rounded-top-4">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-door-open-fill me-2"></i>@ViewBag.Title
+                    </h4>
                 </div>
-                <div class="card-body p-4 p-md-5">
-                    <form asp-action="Create" asp-route-hotelId="@Model.HotelId" method="post" id="roomCreateForm">
+                <div class="card-body p-4">
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger shadow-sm">
+                            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post">
                         @Html.AntiForgeryToken()
+
+                        @* DTO içindeki özellikleri doğrudan gizli alan olarak taşıyoruz *@
+                        <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="HotelId" />
 
-                        <div class="mb-4">
-                            <label asp-for="Name" class="form-label fw-bold text-dark">Oda İsmi / No <span class="text-danger">*</span></label>
-                            <input asp-for="Name" class="form-control form-control-lg border-secondary-subtle" placeholder="Örn: 101 Numaralı Standart Oda veya Kral Dairesi" required />
-                            <span asp-validation-for="Name" class="text-danger small"></span>
-                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="RoomNumber"></label>
+                                <input type="text" class="form-control" asp-for="RoomNumber" placeholder="Örn: 101-A">
+                                <span asp-validation-for="RoomNumber" class="text-danger small fw-bold"></span>
+                            </div>
 
-                        <div class="row g-4 mb-5">
-                            <div class="col-md-4">
-                                <label asp-for="Capacity" class="form-label fw-bold text-dark">Kapasite (Kişi)</label>
-                                <div class="input-group input-group-lg shadow-sm">
-                                    <span class="input-group-text bg-white text-primary border-secondary-subtle"><i class="bi bi-people-fill"></i></span>
-                                    <input asp-for="Capacity" type="number" class="form-control border-secondary-subtle" min="1" value="2" />
-                                </div>
-                                <span asp-validation-for="Capacity" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Size" class="form-label fw-bold text-dark">Alan (m²)</label>
-                                <div class="input-group input-group-lg shadow-sm">
-                                    <span class="input-group-text bg-white text-primary border-secondary-subtle"><i class="bi bi-arrows-fullscreen"></i></span>
-                                    <input asp-for="Size" type="number" class="form-control border-secondary-subtle" min="10" placeholder="Örn: 25" />
-                                </div>
-                                <span asp-validation-for="Size" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Price" class="form-label fw-bold text-dark">Gecelik Fiyat</label>
-                                <div class="input-group input-group-lg shadow-sm">
-                                    <span class="input-group-text bg-white text-success border-secondary-subtle fw-bold">₺</span>
-                                    <input asp-for="Price" type="number" step="0.01" class="form-control border-secondary-subtle" placeholder="0.00" />
-                                </div>
-                                <span asp-validation-for="Price" class="text-danger small"></span>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Name"></label>
+                                <input type="text" class="form-control" asp-for="Name" placeholder="Örn: Deluxe Suit">
+                                <span asp-validation-for="Name" class="text-danger small fw-bold"></span>
                             </div>
                         </div>
 
-                        <div class="mb-5">
-                            <label class="form-label fw-bold text-dark mb-3"><i class="bi bi-stars text-warning me-2"></i>Oda Olanakları</label>
-                            <div class="p-4 border border-secondary-subtle rounded-4 bg-light">
-                                <div class="row g-3" id="amenitiesContainer">
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="Ücretsiz Yüksek Hızlı WiFi" id="am1">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am1">📶 Ücretsiz WiFi</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="Klima (Sıcak/Soğuk)" id="am2">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am2">❄️ Klima</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="LCD Akıllı TV" id="am3">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am3">📺 Akıllı TV</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="Dolu Minibar" id="am4">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am4">🍷 Minibar</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="Deniz / Doğa Manzarası" id="am5">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am5">🌅 Manzara</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 col-sm-6">
-                                        <div class="form-check custom-checkbox-card">
-                                            <input class="form-check-input amenity-check" type="checkbox" value="Özel Jakuzi" id="am6">
-                                            <label class="form-check-label w-100 cursor-pointer" for="am6">🛁 Jakuzi</label>
-                                        </div>
-                                    </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Price"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₺</span>
+                                    <input type="number" step="0.01" class="form-control" asp-for="Price">
                                 </div>
+                                <span asp-validation-for="Price" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Capacity"></label>
+                                <input type="number" class="form-control" asp-for="Capacity">
+                                <span asp-validation-for="Capacity" class="text-danger small fw-bold"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Size"></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" asp-for="Size">
+                                    <span class="input-group-text">m²</span>
+                                </div>
+                                <span asp-validation-for="Size" class="text-danger small fw-bold"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="FloorNumber"></label>
+                                <input type="number" class="form-control" asp-for="FloorNumber">
+                                <span asp-validation-for="FloorNumber" class="text-danger small fw-bold"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Type"></label>
+                                <select class="form-select" asp-for="Type" asp-items="Html.GetEnumSelectList<RoomType>()"></select>
+                                <span asp-validation-for="Type" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" asp-for="Status"></label>
+                                <select class="form-select" asp-for="Status" asp-items="Html.GetEnumSelectList<RoomStatus>()"></select>
+                                <span asp-validation-for="Status" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Description" class="form-label fw-bold text-dark">Detaylı Açıklama</label>
-                            <textarea asp-for="Description" id="mainDescription" class="form-control border-secondary-subtle" rows="5" placeholder="Oda hakkında diğer detayları buraya yazabilirsiniz..."></textarea>
+                            <label class="form-label fw-bold" asp-for="Description"></label>
+                            <textarea class="form-control" asp-for="Description" rows="3" placeholder="Oda hakkında kısa bilgi..."></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-5 p-3 border border-success-subtle rounded-3 bg-success bg-opacity-10 d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="fw-bold text-success mb-1">Satış Durumu</h6>
-                                <small class="text-muted">Bu odayı hemen rezervasyona açmak istiyor musunuz?</small>
-                            </div>
-                            <div class="form-check form-switch fs-4 mb-0">
-                                <input class="form-check-input bg-success border-success" type="checkbox" asp-for="IsActive" checked>
-                            </div>
+                        <div class="mb-4 form-check form-switch fs-5">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="activeSwitch">
+                            <label class="form-check-label fw-bold" for="activeSwitch">Oda Satışa Açık (Aktif)</label>
                         </div>
 
-                        <div class="d-flex justify-content-between pt-3 border-top">
-                            <a href="/admin/room/index/@Model.HotelId" class="btn btn-light border px-4 py-2 rounded-pill fw-semibold shadow-sm">
-                                <i class="bi bi-arrow-left me-2"></i>Vazgeç
-                            </a>
-                            <button type="submit" class="btn btn-dark px-5 py-2 rounded-pill shadow fw-bold">
-                                <i class="bi bi-check2-circle me-2"></i>Odayı Sisteme Kaydet
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end pt-3 border-top">
+                            <a href="/admin/room/index/@Model.HotelId" class="btn btn-light px-4 rounded-pill border">İptal</a>
+                            <button type="submit" class="btn btn-info text-white px-5 fw-bold rounded-pill shadow-sm">
+                                <i class="bi bi-save me-2"></i>@(Model.Id > 0 ? "Değişiklikleri Kaydet" : "Odayı Sisteme Ekle")
                             </button>
                         </div>
                     </form>
@@ -127,74 +118,6 @@
     </div>
 </div>
 
-<style>
-    .cursor-pointer {
-        cursor: pointer;
-    }
-
-    /* Özel Checkbox Kart Tasarımı */
-    .custom-checkbox-card {
-        background: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 10px 15px;
-        transition: all 0.2s ease-in-out;
-        display: flex;
-        align-items: center;
-    }
-
-        .custom-checkbox-card:hover {
-            border-color: #0d6efd;
-            background-color: #f8faff;
-        }
-
-        .custom-checkbox-card .form-check-input {
-            margin-top: 0;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-
-        .custom-checkbox-card .form-check-label {
-            margin-bottom: 0;
-            font-weight: 500;
-            color: #495057;
-        }
-
-        /* Checkbox işaretlendiğinde kartın rengini değiştir */
-        .custom-checkbox-card:has(input:checked) {
-            border-color: #198754;
-            background-color: #d1e7dd;
-        }
-
-            .custom-checkbox-card:has(input:checked) .form-check-label {
-                color: #0f5132;
-                font-weight: 600;
-            }
-</style>
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-
-    <script>
-        $(document).ready(function() {
-            // Form gönderilmeden hemen önce olanakları açıklamaya ekleyen akıllı script
-            // Bu sayede DTO'yu veya veritabanını değiştirmeye gerek kalmadan veriyi tek alanda tutuyoruz.
-            $('#roomCreateForm').on('submit', function() {
-                var selectedAmenities = [];
-                $('.amenity-check:checked').each(function() {
-                    selectedAmenities.push($(this).val());
-                });
-
-                if (selectedAmenities.length > 0) {
-                    var currentDesc = $('#mainDescription').val().trim();
-                    var amenitiesText = "\n\nOda Olanakları: " + selectedAmenities.join(", ");
-
-                    // Mükerrer eklemeyi önlemek için kontrol
-                    if(currentDesc.indexOf("Oda Olanakları:") === -1) {
-                        $('#mainDescription').val(currentDesc + amenitiesText);
-                    }
-                }
-            });
-        });
-    </script>
 }

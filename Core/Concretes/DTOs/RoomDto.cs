@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Core.Concretes.Enum;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core.Concretes.DTOs
 {
@@ -10,6 +11,9 @@ namespace Core.Concretes.DTOs
         [Required]
         [Display(Name = "Oda Adı")]
         public string Name { get; set; } = null!;
+
+        [Display(Name = "Oda Numarası")]
+        public string? RoomNumber { get; set; }
 
         [Display(Name = "Açıklama")]
         public string? Description { get; set; }
@@ -28,6 +32,10 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Aktif mi?")]
         public bool IsActive { get; set; } = true;
+        public List<RoomImageDto> RoomImage { get; set; } = new();
+
+        [Display(Name = "Oda Resmi")]
+        public string? ImageUrl { get; set; }
     }
 
     public class RoomDetailDto
@@ -85,6 +93,10 @@ namespace Core.Concretes.DTOs
 
     public class CreateRoomDto
     {
+        [Required(ErrorMessage = "Oda numarası gereklidir")]
+        [Display(Name = "Oda Numarası")]
+        public string RoomNumber { get; set; } = null!;
+
         [Required(ErrorMessage = "Oda adı gereklidir")]
         [StringLength(100, MinimumLength = 3, ErrorMessage = "Oda adı 3-100 karakter arasında olmalıdır")]
         [Display(Name = "Oda Adı")]
@@ -109,13 +121,25 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Fiyat")]
         public decimal Price { get; set; }
 
+        [Required(ErrorMessage = "Kat Numarası gereklidir")]
+        [Display(Name = "Kat Numarası")]
+        public int FloorNumber { get; set; }
+
+        public RoomType Type { get; set; }
+        public RoomStatus Status { get; set; }
+
         [Display(Name = "Aktif")]
         public bool IsActive { get; set; } = true;
+
         public int HotelId { get; set; }
+        public int Id { get; set; }
     }
 
     public class UpdateRoomDto
     {
+        [Required(ErrorMessage = "Oda numarası gereklidir")]
+        public string RoomNumber { get; set; } = null!;
+
         [Required(ErrorMessage = "Oda adı gereklidir")]
         [StringLength(100, MinimumLength = 3, ErrorMessage = "Oda adı 3-100 karakter arasında olmalıdır")]
         [Display(Name = "Oda Adı")]
@@ -140,8 +164,17 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Fiyat")]
         public decimal Price { get; set; }
 
+        [Required(ErrorMessage = "Kat Numarası gereklidir")]
+        public int FloorNumber { get; set; }
+
+        public RoomType Type { get; set; }
+        public RoomStatus Status { get; set; }
+
         [Display(Name = "Aktif")]
         public bool IsActive { get; set; } = true;
+
+        public int HotelId { get; set; }
+        public int Id { get; set; }
     }
 
     public class RoomImageDto
@@ -168,5 +201,4 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Oda ID")]
         public int RoomId { get; set; }
     }
-   
 }

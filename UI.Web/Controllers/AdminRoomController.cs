@@ -40,49 +40,106 @@ namespace UI.Web.Controllers
             return View(result.Data ?? new List<RoomDto>());
         }
 
-        [HttpGet("create/{hotelId}")]
-        public IActionResult Create(int hotelId)
+        // GET: Ekleme veya Düzenleme Formu
+        [HttpGet("create/{hotelId}/{id?}")]
+        public async Task<IActionResult> Create(int hotelId, int? id)
         {
-            // Formda HotelId'yi gizli inputta tutmak için DTO'yu başlatıyoruz
-            return View(new CreateRoomDto { HotelId = hotelId });
+            var user = await _userManager.GetUserAsync(User);
+            if (!User.IsInRole("SuperAdmin") && user?.HotelId != hotelId) return Forbid();
+
+            // ID yoksa (Yeni Ekleme)
+            if (!id.HasValue || id == 0)
+            {
+                ViewBag.Title = "Yeni Oda Ekle";
+                return View(new CreateRoomDto { HotelId = hotelId, IsActive = true });
+            }
+
+            // ID varsa (Düzenleme)
+            var existingRoomResult = await _roomService.GetRoomByIdAsync(id.Value);
+            if (!existingRoomResult.IsSuccess || existingRoomResult.Data == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Title = "Oda Düzenle";
+            var existingRoom = existingRoomResult.Data;
+
+            // DTO dönüşümü yapıyoruz
+            var dto = new CreateRoomDto
+            {
+                Id = existingRoom.Id,
+                Name = existingRoom.Name ?? string.Empty,
+                RoomNumber = existingRoom.RoomNumber ?? string.Empty,
+                Description = existingRoom.Description,
+                Price = existingRoom.Price,
+                Capacity = existingRoom.Capacity,
+                Size = existingRoom.Size,
+                IsActive = existingRoom.IsActive
+            };
+
+            return View(dto);
         }
 
-        [HttpPost("create/{hotelId}")]
+        // POST: Kaydetme veya Güncelleme İşlemi
+        [HttpPost("create/{hotelId}/{id?}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int hotelId, CreateRoomDto dto)
+        public async Task<IActionResult> Create(int hotelId, int? id, CreateRoomDto dto)
         {
-            // 1. Standart model doğrulaması
-            if (!ModelState.IsValid) return View(dto);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Title = (id.HasValue && id.Value > 0) ? "Oda Düzenle" : "Yeni Oda Ekle";
+                return View(dto);
+            }
 
-            // 🛡️ 2. KRİTİK KONTROL: Çift Oda Kaydını Engelleme
-            // Oteldeki mevcut odaları çekiyoruz
-            var existingRoomsResult = await _roomService.GetRoomsByHotelIdAsync(hotelId);
+            // 1. GÜNCELLEME İŞLEMİ
+            if (dto.Id > 0)
+            {
+                var updateDto = new UpdateRoomDto
+                {
+                    Id = dto.Id,
+                    HotelId = dto.HotelId,
+                    RoomNumber = dto.RoomNumber,
+                    Name = string.IsNullOrWhiteSpace(dto.Name) ? dto.RoomNumber : dto.Name,
+                    Description = dto.Description,
+                    Capacity = dto.Capacity,
+                    Size = dto.Size,
+                    Price = dto.Price,
+                    FloorNumber = dto.FloorNumber,
+                    Type = dto.Type,
+                    Status = dto.Status,
+                    IsActive = dto.IsActive
+                };
 
+                await _roomService.UpdateRoomAsync(dto.Id, updateDto);
+                TempData["SuccessMessage"] = "Oda bilgileri başarıyla güncellendi.";
+                return RedirectToAction(nameof(Index), new { hotelId = dto.HotelId });
+            }
+
+            // 2. YENİ ODA EKLEME İŞLEMİ
+            var existingRoomsResult = await _roomService.GetRoomsByHotelIdAsync(dto.HotelId);
             if (existingRoomsResult.IsSuccess && existingRoomsResult.Data != null)
             {
-                // Boşlukları silip büyük/küçük harf duyarsız kontrol yapıyoruz
                 bool roomExists = existingRoomsResult.Data.Any(r =>
                     !string.IsNullOrEmpty(r.Name) &&
-                    r.Name.Trim().Equals(dto.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+                    (r.Name.Trim().Equals(dto.Name?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                     r.Name.Trim().Equals(dto.RoomNumber.Trim(), StringComparison.OrdinalIgnoreCase)));
 
                 if (roomExists)
                 {
-                    // Eğer oda varsa Toastr/SweetAlert ile hata fırlat ve işlemi durdur
-                    TempData["ErrorMessage"] = $"Bu otelde '{dto.Name}' adında bir oda zaten mevcut. Lütfen farklı bir numara/isim girin.";
+                    ViewBag.Title = "Yeni Oda Ekle";
+                    TempData["ErrorMessage"] = $"Bu otelde '{dto.RoomNumber}' numaralı veya isimli bir oda zaten mevcut.";
                     return View(dto);
                 }
             }
 
-            // 3. Her şey kolundaysa kaydı gerçekleştir
-            var result = await _roomService.CreateRoomByIdAsync(hotelId, dto);
-
+            var result = await _roomService.CreateRoomByIdAsync(dto.HotelId, dto);
             if (result.IsSuccess)
             {
                 TempData["SuccessMessage"] = "Yeni oda başarıyla eklendi.";
-                return RedirectToAction(nameof(Index), new { hotelId = hotelId });
+                return RedirectToAction(nameof(Index), new { hotelId = dto.HotelId });
             }
 
-            // Servis başarısızsa hata mesajını ekrana bas
+            ViewBag.Title = "Yeni Oda Ekle";
             TempData["ErrorMessage"] = result.Message;
             return View(dto);
         }

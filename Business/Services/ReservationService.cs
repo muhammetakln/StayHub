@@ -87,16 +87,14 @@ namespace Business.Services
                     await _context.SaveChangesAsync();
                 }
 
+                // Otele bilgilendirme maili rezervasyon düştüğü an gidebilir, bu kalıyor.
                 if (room.Hotel != null && !string.IsNullOrEmpty(room.Hotel.Email))
                 {
                     await SendNotificationToHotel(room.Hotel, reservation, room, guest);
                 }
 
-                // ✅ Müşteriye özet (fatura) maili gönder
-                if (guest is Guest g)
-                {
-                    await SendInvoiceEmail(g, reservation, room);
-                }
+                // ❌ ÇİFT MAİL HATASINI ÖNLEMEK İÇİN BURADAKİ GUEST FATURA MAİLİ KODUNU SİLDİK.
+                // Artık müşteri faturasını sadece PaymentController ödeme başarılı olduğunda atacak.
 
                 return await GetReservationsByIdAsync(guestId);
             }
@@ -239,7 +237,6 @@ namespace Business.Services
             return Result.Success("Güncellendi.");
         }
 
-        // ✅ İçi doldurulan fatura/özet maili metodu
         public async Task SendInvoiceEmail(Guest guest, Reservation res, Room room)
         {
             try

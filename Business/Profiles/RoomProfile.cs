@@ -8,10 +8,15 @@ namespace Business.Mappings
     {
         public RoomProfile()
         {
-            // Room -> RoomDto (OK)
-            CreateMap<Room, RoomDto>();
+            CreateMap<RoomImage, RoomImageDto>().ReverseMap();
 
-            // CreateRoomDto -> Room (FIXED)
+            CreateMap<Room, RoomDto>()
+                .ForMember(dest => dest.RoomImage, opt => opt.MapFrom(src => src.RoomImage.Where(i => !i.IsDeleted)))
+                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src =>
+                    src.RoomImage.FirstOrDefault(x => x.IsPrimary && !x.IsDeleted).ImageUrl))
+                .ReverseMap();
+
+            // Create Mapping
             CreateMap<CreateRoomDto, Room>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.HotelId, opt => opt.Ignore())
@@ -19,7 +24,7 @@ namespace Business.Mappings
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
 
-            // UpdateRoomDto -> Room (FIXED)
+            // Update Mapping
             CreateMap<UpdateRoomDto, Room>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.HotelId, opt => opt.Ignore())

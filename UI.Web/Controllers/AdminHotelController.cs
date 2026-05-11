@@ -34,7 +34,6 @@ namespace UI.Web.Controllers
         {
             try
             {
-                // 🛡️ Oturumu kontrol et
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
                 {
@@ -44,10 +43,8 @@ namespace UI.Web.Controllers
 
                 bool isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
 
-                // Kullanıcının bağlı bir oteli varsa detayları getir
                 if (user.HotelId.HasValue)
                 {
-                    // 🔥 Servisimiz artık TodayCheckIns, TodayCheckOuts vb. verileri de hesaplayıp getiriyor.
                     var hotelDetail = await _hotelService.GetHotelByIdAsync(user.HotelId.Value);
 
                     if (hotelDetail != null)
@@ -58,14 +55,12 @@ namespace UI.Web.Controllers
                     }
                 }
 
-                // Oteli olmayan normal admini oluşturma sayfasına gönder
                 if (!isSuperAdmin)
                 {
                     _logger.LogInformation("Admin kullanıcısının oteli yok, oluşturma sayfasına yönlendiriliyor.");
                     return RedirectToAction(nameof(Create));
                 }
 
-                // SuperAdmin için genel bir boş dashboard
                 return View(new HotelDetailDto
                 {
                     Name = "Sistem Yönetim Paneli",
@@ -88,7 +83,6 @@ namespace UI.Web.Controllers
         public async Task<IActionResult> Create()
         {
             var user = await _userManager.GetUserAsync(User);
-            // Zaten oteli olan normal admini dashboard'a geri yolla
             if (user != null && user.HotelId.HasValue && !User.IsInRole("SuperAdmin"))
                 return RedirectToAction(nameof(Index));
 
@@ -114,7 +108,6 @@ namespace UI.Web.Controllers
                     var updateResult = await _userManager.UpdateAsync(user);
                     if (updateResult.Succeeded)
                     {
-                        // Kimlik bilgilerini (claims) hemen güncellemek için kritik
                         await _signInManager.RefreshSignInAsync(user);
                     }
                 }
@@ -141,6 +134,7 @@ namespace UI.Web.Controllers
 
             var updateDto = new UpdateHotelDto
             {
+                Id = hotel.Id,
                 Name = hotel.Name,
                 Address = hotel.Address,
                 PhoneNumber = hotel.PhoneNumber,
@@ -154,7 +148,6 @@ namespace UI.Web.Controllers
                 CheckInTime = hotel.CheckInTime,
                 CheckOutTime = hotel.CheckOutTime,
 
-                // ✅ GÜNCELLEME BURADA: Mevcut hizmetleri DTO'ya eşliyoruz ki Edit sayfasında kutucuklar dolu gelsin
                 AddOnServices = hotel.AddOnServices?.Select(s => new UpdateAddOnServiceDto
                 {
                     Id = s.Id,
@@ -167,9 +160,9 @@ namespace UI.Web.Controllers
 
         [HttpPost("edit/{id}")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> Edit(int id, UpdateHotelDto dto)
         {
-            // Validasyon hatası varsa hangi alanın hata verdiğini loglayalım (Debug için)
             if (!ModelState.IsValid)
             {
                 var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
@@ -180,9 +173,20 @@ namespace UI.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && (user == null || user.HotelId != id)) return Forbid();
 
-            await _hotelService.UpdateHotelAsync(id, dto);
-            TempData["SuccessMessage"] = "Otel bilgileri başarıyla güncellendi.";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                await _hotelService.UpdateHotelAsync(id, dto);
+
+                // ✅ DEĞİŞİKLİK BURADA: Başarılı mesajı set ediliyor ve AYNI SAYFAYA yönlendiriliyor
+                TempData["SuccessMessage"] = "Otel bilgileri ve ek hizmetler başarıyla güncellendi!";
+                return RedirectToAction(nameof(Edit), new { id = id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Otel güncellenirken hata oluştu.");
+                TempData["ErrorMessage"] = "Sistemsel bir hata oluştu, lütfen tekrar deneyin.";
+                return View(dto);
+            }
         }
 
         [HttpPost("delete/{id}")]
