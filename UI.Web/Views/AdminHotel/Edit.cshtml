@@ -27,6 +27,18 @@
                             <span asp-validation-for="Name" class="text-danger small"></span>
                         </div>
 
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Yıldız Sayısı *</label>
+                            <select class="form-select" asp-for="StarRating" required>
+                                <option value="1">1 Yıldız</option>
+                                <option value="2">2 Yıldız</option>
+                                <option value="3">3 Yıldız</option>
+                                <option value="4">4 Yıldız</option>
+                                <option value="5">5 Yıldız</option>
+                            </select>
+                            <span asp-validation-for="StarRating" class="text-danger small"></span>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-bold">Şehir *</label>
@@ -100,7 +112,6 @@
                                         <div class="col-md-3">
                                             <div class="input-group">
                                                 <span class="input-group-text">₺</span>
-                                                @* type="number" ve step="0.01" kullanarak decimal hatasını önledik *@
                                                 <input type="number" step="0.01" name="AddOnServices[@i].Price" value="@Model.AddOnServices[i].Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" class="form-control text-end" placeholder="0,00" required />
                                             </div>
                                         </div>

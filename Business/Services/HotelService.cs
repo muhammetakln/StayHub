@@ -257,14 +257,12 @@ namespace Business.Services
             return await FilterHotelsAsync(filter);
         }
 
-
         public async Task UpdateHotelAsync(int id, UpdateHotelDto dto)
         {
             try
             {
-                // 1. Oteli ve mevcut hizmetlerini "Include" ederek çekiyoruz
+                // 1. Oteli veri tabanından buluyoruz (AddOnServices dahil ETMİYORUZ, doğrudan Context'ten sileceğiz)
                 var hotel = await _context.Hotels
-                    .Include(h => h.AddOnServices)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
                 if (hotel == null)
@@ -273,37 +271,35 @@ namespace Business.Services
                 // 2. Temel otel bilgilerini (Ad, Adres, vb.) DTO'dan aktar
                 _mapper.Map(dto, hotel);
 
-                // 3. 🔥 EK HİZMETLERİ KAYDETME MANTIĞI
-                // Mevcut hizmetleri veritabanından siliyoruz (Sıfırlayıp yeniden yazmak en güvenli yoldur)
-                if (hotel.AddOnServices != null)
+                // 3. 🔥 EK HİZMETLERİ KAYDETME MANTIĞI (TRACKING HATASI ÇÖZÜMÜ)
+                // Veritabanındaki eski hizmetleri doğrudan context üzerinden bulup siliyoruz.
+                var existingServices = await _context.AddOnServices.Where(x => x.HotelId == id).ToListAsync();
+                if (existingServices.Any())
                 {
-                    _context.AddOnServices.RemoveRange(hotel.AddOnServices);
+                    _context.AddOnServices.RemoveRange(existingServices);
                 }
 
-                // 4. Formdan gelen yeni listeyi ekliyoruz
+                // 4. Formdan gelen yeni listeyi veritabanına doğrudan ekliyoruz
                 if (dto.AddOnServices != null && dto.AddOnServices.Any())
                 {
-                    foreach (var serviceDto in dto.AddOnServices)
+                    var validServices = dto.AddOnServices.Where(s => !string.IsNullOrWhiteSpace(s.Name)).ToList();
+                    foreach (var serviceDto in validServices)
                     {
-                        // Boş isimli satırları ekleme
-                        if (!string.IsNullOrWhiteSpace(serviceDto.Name))
+                        await _context.AddOnServices.AddAsync(new AddOnService
                         {
-                            hotel.AddOnServices.Add(new AddOnService
-                            {
-                                Name = serviceDto.Name,
-                                Price = serviceDto.Price,
-                                Unit = serviceDto.Unit,
-                                HotelId = hotel.Id,
-                                IsActive = true,
-                                CreatedAt = DateTime.UtcNow
-                            });
-                        }
+                            Name = serviceDto.Name,
+                            Price = serviceDto.Price,
+                            Unit = serviceDto.Unit,
+                            HotelId = hotel.Id,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow
+                        });
                     }
                 }
 
                 hotel.UpdatedAt = DateTime.UtcNow;
 
-                // 5. Tüm değişiklikleri (Otel + Yeni Hizmetler) tek seferde kaydet
+                // 5. Tüm değişiklikleri tek seferde kaydet
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Otel ID {id} ve ek hizmetleri başarıyla güncellendi.");

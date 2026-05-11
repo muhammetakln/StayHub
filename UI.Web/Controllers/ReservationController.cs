@@ -40,7 +40,6 @@ namespace UI.Web.Controllers
                 var guestIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(guestIdStr, out int guestId)) return Unauthorized();
 
-                // Service içindeki yeni "r.HotelId" içermeyen güvenli metodu çağırıyoruz
                 var reservations = await _reservationService.GetReservationsByIdAsync(guestId);
                 _logger.LogInformation($"[LIST] Guest={guestId}, Count={reservations.Count}");
 
@@ -74,10 +73,9 @@ namespace UI.Web.Controllers
                     CheckOutDate = reservation.CheckOutDate,
                     NightCount = nightCount,
                     Status = reservation.Status,
-                    PricePerNight = reservation.TotalPrice / (nightCount > 0 ? nightCount : 1),
-                    AddOnServices = reservation.SelectedServices,
+
+                    AddOnServices = reservation.SelectedServices ?? new List<AddOnServiceDto>(),
                     GrandTotal = reservation.TotalPrice,
-                    CreatedAt = DateTime.Now
                 };
 
                 return View(detailDto);
@@ -91,19 +89,23 @@ namespace UI.Web.Controllers
 
         // ✅ POST: /reservation/create/{hotelId}
         [HttpPost("create/{hotelId}")]
-        public async Task<IActionResult> Create(int hotelId, [FromForm] CreateReservationDto dto)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(int hotelId, CreateReservationDto dto)
         {
             try
             {
                 var guestIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(guestIdStr, out int guestId)) return Unauthorized();
 
+                // ✅ ReservationService içindeki yeni mantık SelectedServiceIds listesini kullanacak
                 await _reservationService.CreateReservationAsync(guestId, dto);
-                TempData["SuccessMessage"] = "Rezervasyon başarıyla oluşturuldu!";
+
+                TempData["SuccessMessage"] = "Rezervasyonunuz ve seçtiğiniz ek hizmetler başarıyla kaydedildi!";
                 return RedirectToAction(nameof(List));
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Rezervasyon oluşturma hatası");
                 TempData["ErrorMessage"] = ex.Message;
                 return RedirectToAction("Details", "Hotel", new { id = hotelId });
             }

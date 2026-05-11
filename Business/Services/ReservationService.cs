@@ -47,8 +47,6 @@ namespace Business.Services
                 if (isOccupied) throw new Exception("Oda bu tarihlerde dolu.");
 
                 int nights = (int)(dto.CheckOutDate - dto.CheckInDate).TotalDays;
-
-                // Temel oda fiyatı hesaplama
                 decimal totalPrice = (room.Price * nights) + (dto.NumberOf > 1 ? (dto.NumberOf - 1) * 150 : 0);
 
                 var reservation = new Reservation
@@ -61,45 +59,43 @@ namespace Business.Services
                     NumberOf = dto.NumberOf,
                     NumberOfNights = nights,
                     PricePerNights = room.Price,
-                    TotalPrice = totalPrice, // İlk başta sadece oda fiyatı
+                    TotalPrice = totalPrice,
                     Status = ReservationStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 await _context.Reservations.AddAsync(reservation);
-                await _context.SaveChangesAsync(); // ID oluşması için kaydediyoruz
+                await _context.SaveChangesAsync();
 
-                // ✅ EK HİZMETLERİ İŞLEME VE TOPLAM FİYATA EKLEME
-                if (dto.SelectedServiceIds != null && dto.SelectedServiceIds.Any())
+                if (dto.SelectedServiceIds?.Any() == true)
                 {
                     foreach (var sId in dto.SelectedServiceIds)
                     {
-                        var service = await _context.AddOnServices
-                            .FirstOrDefaultAsync(s => s.Id == sId && !s.IsDeleted && s.IsActive);
-
+                        var service = await _context.AddOnServices.FindAsync(sId);
                         if (service == null) continue;
 
-                        // Toplam fiyata hizmet bedelini ekle
                         reservation.TotalPrice += service.Price;
-
-                        // Ara tabloya (ReservationAddOnService) kaydet
                         await _context.ReservationAddOnServices.AddAsync(new ReservationAddOnService
                         {
                             ReservationId = reservation.Id,
                             AddOnServiceId = sId,
                             Quantity = 1,
-                            Price = service.Price, // O anki fiyatı sabitliyoruz
+                            Price = service.Price,
                             CreatedAt = DateTime.UtcNow
                         });
                     }
-
-                    // Toplam fiyat ve hizmetler için son bir save
                     await _context.SaveChangesAsync();
                 }
 
                 if (room.Hotel != null && !string.IsNullOrEmpty(room.Hotel.Email))
                 {
                     await SendNotificationToHotel(room.Hotel, reservation, room, guest);
+                }
+
+                // ✅ Müşteriye özet (fatura) maili gönder
+                if (guest is Guest g)
+                {
+                    await SendInvoiceEmail(g, reservation, room);
                 }
 
                 return await GetReservationsByIdAsync(guestId);
@@ -243,9 +239,41 @@ namespace Business.Services
             return Result.Success("Güncellendi.");
         }
 
+        // ✅ İçi doldurulan fatura/özet maili metodu
         public async Task SendInvoiceEmail(Guest guest, Reservation res, Room room)
         {
+            try
+            {
+                string guestName = !string.IsNullOrEmpty(guest.FirstName) ? $"{guest.FirstName} {guest.LastName}" : guest.UserName ?? "Misafir";
 
+                string body = $@"
+                <div style='font-family:Arial; border:1px solid #2ecc71; padding:20px; max-width: 600px;'>
+                    <h2 style='color:#27ae60;'>🧾 Rezervasyon Özeti ve Fatura</h2>
+                    <p>Sayın <b>{guestName}</b>,</p>
+                    <p>Bizi tercih ettiğiniz için teşekkür ederiz. Rezervasyon işleminiz başarıyla tamamlanmıştır. Özet bilgileriniz aşağıdadır:</p>
+                    
+                    <div style='background-color:#f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                        <p style='margin: 5px 0;'><b>🔑 Rezervasyon No:</b> {res.ReservationNumber}</p>
+                        <p style='margin: 5px 0;'><b>🏨 Otel:</b> {room.Hotel?.Name ?? "StayHub Otel"}</p>
+                        <p style='margin: 5px 0;'><b>🚪 Oda:</b> {room.RoomNumber} ({room.Name})</p>
+                        <p style='margin: 5px 0;'><b>📅 Tarih:</b> {res.CheckInDate:dd.MM.yyyy} - {res.CheckOutDate:dd.MM.yyyy}</p>
+                        <p style='margin: 5px 0;'><b>👥 Misafir Sayısı:</b> {res.NumberOf} Kişi</p>
+                        <hr>
+                        <h3 style='margin: 15px 0 0 0; color: #c0392b;'>Ödenen Toplam Tutar: {res.TotalPrice:N2} TL</h3>
+                    </div>
+                    
+                    <p style='font-size:12px; color:gray; text-align: center; border-top: 1px solid #ddd; padding-top: 10px;'>
+                        İyi konaklamalar dileriz!<br><b>StayHub Ekibi</b>
+                    </p>
+                </div>";
+
+                await _emailSender.SendEmailAsync(guest.Email!, $"Rezervasyon Özeti - {res.ReservationNumber}", body);
+                _logger.LogInformation($"Misafire fatura/özet maili gönderildi: {guest.Email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fatura maili gönderilirken hata oluştu.");
+            }
         }
     }
 }

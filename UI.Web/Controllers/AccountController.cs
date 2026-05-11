@@ -33,7 +33,6 @@ namespace UI.Web.Controllers
             _emailSender = emailSender;
         }
 
-        // --- PROFİL VE ŞİFRE GÜNCELLEME ---
 
         [HttpGet("profile")]
         [Authorize]
@@ -96,7 +95,6 @@ namespace UI.Web.Controllers
             return RedirectToAction(nameof(Profile));
         }
 
-        // --- GİRİŞ / ÇIKIŞ İŞLEMLERİ ---
 
         [HttpGet("login")]
         [AllowAnonymous]
@@ -130,9 +128,18 @@ namespace UI.Web.Controllers
             var roles = await _userManager.GetRolesAsync(user);
             bool isAdminUser = roles.Contains("Admin") || roles.Contains("SuperAdmin");
 
+            // ✅ GÜVENLİK DÜZELTMESİ: Çift Yönlü Kesin Ayrım
+            // 1. Admin formundan müşteri girmeye çalışırsa engelle
             if (dto.UserType == "Admin" && !isAdminUser)
             {
-                ModelState.AddModelError(string.Empty, "Yetkisiz erişim denemesi.");
+                ModelState.AddModelError(string.Empty, "Bu ekrandan yalnızca otel yetkilileri giriş yapabilir.");
+                return View(dto);
+            }
+
+            // 2. Müşteri formundan Admin girmeye çalışırsa engelle
+            if (dto.UserType == "Guest" && isAdminUser)
+            {
+                ModelState.AddModelError(string.Empty, "Yetkili hesapları müşteri ekranından giriş yapamaz. Lütfen yetkili girişini kullanın.");
                 return View(dto);
             }
 
@@ -215,7 +222,6 @@ namespace UI.Web.Controllers
             return View(dto);
         }
 
-        // --- ŞİFREMİ UNUTTUM İŞLEMLERİ ---
 
         [HttpGet("forgot-password")]
         [AllowAnonymous]
@@ -264,7 +270,6 @@ namespace UI.Web.Controllers
             return View();
         }
 
-        // --- ŞİFRE YENİLEME (RESET PASSWORD) İŞLEMLERİ ---
 
         [HttpGet("ResetPassword")]
         [AllowAnonymous]
@@ -303,7 +308,6 @@ namespace UI.Web.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                // Güvenlik gereği kullanıcı yoksa bile çaktırmadan Ana Sayfaya yönlendiriyoruz
                 TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir.";
                 return RedirectToAction("Index", "Home");
             }
@@ -312,7 +316,6 @@ namespace UI.Web.Controllers
 
             if (result.Succeeded)
             {
-                // İşlem başarılıysa Ana Sayfaya (Home/Index) yönlendiriyoruz
                 TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir. Yeni şifrenizle giriş yapabilirsiniz.";
                 return RedirectToAction("Index", "Home");
             }
@@ -325,7 +328,6 @@ namespace UI.Web.Controllers
             return View(model);
         }
 
-        // --- YARDIMCI METOTLAR ---
 
         private IActionResult RedirectToLocal(string returnUrl)
         {
