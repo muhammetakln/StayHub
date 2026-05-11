@@ -182,7 +182,7 @@ namespace Data.Contexts
                 entity.Property(r => r.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                entity.HasMany(r => r.AddOnServices)
+                entity.HasMany(r => r.SelectedServices)
                     .WithOne(ras => ras.Reservation)
                     .HasForeignKey(ras => ras.ReservationId)
                     .OnDelete(DeleteBehavior.Cascade);

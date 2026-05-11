@@ -197,7 +197,7 @@ namespace Core.Concretes.DTOs
         [Range(0.01, 1000000, ErrorMessage = "Geçerli bir fiyat giriniz")]
         [Display(Name = "Toplam Fiyat")]
         public decimal TotalPrice { get; set; }
-        public List<int> SelectedServiceIds { get; set; } = new();
+        public List<int> SelectedServiceIds { get; set; } = new List<int>();
     }
 }
 

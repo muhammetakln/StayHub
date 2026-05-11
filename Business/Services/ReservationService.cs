@@ -47,6 +47,8 @@ namespace Business.Services
                 if (isOccupied) throw new Exception("Oda bu tarihlerde dolu.");
 
                 int nights = (int)(dto.CheckOutDate - dto.CheckInDate).TotalDays;
+
+                // Temel oda fiyatı hesaplama
                 decimal totalPrice = (room.Price * nights) + (dto.NumberOf > 1 ? (dto.NumberOf - 1) * 150 : 0);
 
                 var reservation = new Reservation
@@ -59,30 +61,39 @@ namespace Business.Services
                     NumberOf = dto.NumberOf,
                     NumberOfNights = nights,
                     PricePerNights = room.Price,
-                    TotalPrice = totalPrice,
+                    TotalPrice = totalPrice, // İlk başta sadece oda fiyatı
                     Status = ReservationStatus.Pending,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 await _context.Reservations.AddAsync(reservation);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // ID oluşması için kaydediyoruz
 
-                if (dto.SelectedServiceIds?.Any() == true)
+                // ✅ EK HİZMETLERİ İŞLEME VE TOPLAM FİYATA EKLEME
+                if (dto.SelectedServiceIds != null && dto.SelectedServiceIds.Any())
                 {
                     foreach (var sId in dto.SelectedServiceIds)
                     {
-                        var service = await _context.AddOnServices.FindAsync(sId);
+                        var service = await _context.AddOnServices
+                            .FirstOrDefaultAsync(s => s.Id == sId && !s.IsDeleted && s.IsActive);
+
                         if (service == null) continue;
+
+                        // Toplam fiyata hizmet bedelini ekle
                         reservation.TotalPrice += service.Price;
+
+                        // Ara tabloya (ReservationAddOnService) kaydet
                         await _context.ReservationAddOnServices.AddAsync(new ReservationAddOnService
                         {
                             ReservationId = reservation.Id,
                             AddOnServiceId = sId,
                             Quantity = 1,
-                            Price = service.Price,
+                            Price = service.Price, // O anki fiyatı sabitliyoruz
                             CreatedAt = DateTime.UtcNow
                         });
                     }
+
+                    // Toplam fiyat ve hizmetler için son bir save
                     await _context.SaveChangesAsync();
                 }
 
@@ -100,7 +111,7 @@ namespace Business.Services
             }
         }
 
-        public async Task SendNotificationToHotel(Hotel hotel, Reservation res, Room room, IdentityUser<int> guest) 
+        public async Task SendNotificationToHotel(Hotel hotel, Reservation res, Room room, IdentityUser<int> guest)
         {
             try
             {
@@ -175,7 +186,7 @@ namespace Business.Services
                     Res = r,
                     RoomData = r.Room,
                     HotelData = r.Room.Hotel,
-                    AddOns = r.AddOnServices.Select(ras => ras.AddOnService)
+                    AddOns = r.SelectedServices.Select(ras => ras.AddOnService)
                 })
                 .FirstOrDefaultAsync();
 
@@ -194,7 +205,6 @@ namespace Business.Services
 
             return dto;
         }
-
 
         public async Task<IResult> CancelReservationAsync(int id)
         {
@@ -235,7 +245,7 @@ namespace Business.Services
 
         public async Task SendInvoiceEmail(Guest guest, Reservation res, Room room)
         {
-           
+
         }
     }
 }
