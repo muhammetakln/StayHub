@@ -25,10 +25,10 @@
                         </div>
                     }
 
-                    <form asp-action="Create" method="post">
+                    @* ✅ Dosya yükleme için enctype eklendi *@
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
 
-                        @* DTO içindeki özellikleri doğrudan gizli alan olarak taşıyoruz *@
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="HotelId" />
 
@@ -100,6 +100,16 @@
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
+                        @* ✅ YENİ: FOTOĞRAF YÜKLEME ALANI *@
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-bold"><i class="bi bi-images me-2"></i>Oda Fotoğrafları</label>
+                            <input type="file" name="Images" id="imageInput" class="form-control" accept=".jpg,.jpeg,.png,.webp" multiple>
+                            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3">
+                                @* Önizlemeler buraya gelecek *@
+                            </div>
+                            <div class="form-text small text-muted">Birden fazla dosya seçebilirsiniz (.jpg, .png, .webp)</div>
+                        </div>
+
                         <div class="mb-4 form-check form-switch fs-5">
                             <input class="form-check-input" type="checkbox" asp-for="IsActive" id="activeSwitch">
                             <label class="form-check-label fw-bold" for="activeSwitch">Oda Satışa Açık (Aktif)</label>
@@ -120,4 +130,28 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    @* ✅ YENİ: GÖRSEL ÖNİZLEME SCRIPT *@
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+
+            const files = e.target.files;
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const imgWrapper = document.createElement('div');
+                        imgWrapper.className = 'position-relative';
+                        imgWrapper.innerHTML = `
+                            <img src="${event.target.result}" class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #dee2e6;">
+                        `;
+                        container.appendChild(imgWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    </script>
 }

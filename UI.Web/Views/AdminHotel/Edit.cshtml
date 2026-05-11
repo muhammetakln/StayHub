@@ -18,15 +18,12 @@
                 </div>
                 <div class="card-body p-4 p-lg-5">
 
-                    @* ✅ BAŞARI VE HATA MESAJLARI BURADA GÖRÜNECEK *@
                     @if (TempData["SuccessMessage"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Başarılı!</strong> @TempData["SuccessMessage"]
-                                </div>
+                                <div><strong>Başarılı!</strong> @TempData["SuccessMessage"]</div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
@@ -37,15 +34,14 @@
                         <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Hata!</strong> @TempData["ErrorMessage"]
-                                </div>
+                                <div><strong>Hata!</strong> @TempData["ErrorMessage"]</div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
 
-                    <form method="post">
+                    @* ✅ Dosya yükleme desteği eklendi *@
+                    <form method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
 
@@ -107,7 +103,17 @@
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Kapak Görseli URL</label>
-                            <input type="text" class="form-control" asp-for="CoverImageUrl">
+                            <input type="text" class="form-control" asp-for="CoverImageUrl" placeholder="https://...">
+                        </div>
+
+                        @* ✅ YENİ: FOTOĞRAF YÜKLEME ALANI *@
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-bold"><i class="bi bi-images me-2"></i>Yeni Otel Fotoğrafları Yükle</label>
+                            <input type="file" name="HotelImages" id="imageInput" class="form-control shadow-sm" accept=".jpg,.jpeg,.png,.webp" multiple>
+                            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3">
+                                @* Önizlemeler buraya gelecek *@
+                            </div>
+                            <div class="form-text small text-muted">Galeriyi güncellemek için birden fazla dosya seçebilirsiniz.</div>
                         </div>
 
                         <div class="mb-4">
@@ -133,7 +139,6 @@
                                 {
                                     <div class="row g-2 mb-2 service-row align-items-center">
                                         <input type="hidden" name="AddOnServices[@i].Id" value="@Model.AddOnServices[i].Id" />
-
                                         <div class="col-md-4">
                                             <input type="text" name="AddOnServices[@i].Name" value="@Model.AddOnServices[i].Name" class="form-control" placeholder="Hizmet Adı" required />
                                         </div>
@@ -162,7 +167,7 @@
                             </button>
                         </div>
 
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5">
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5 pt-3 border-top">
                             <a href="/admin/hotel" class="btn btn-light px-4 rounded-pill border">İptal</a>
                             <button type="submit" class="btn btn-warning px-5 fw-bold rounded-pill shadow-sm">
                                 Değişiklikleri Kaydet
@@ -174,22 +179,22 @@
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 rounded-4 mb-4">
-                <div class="card-body p-4 text-center">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 text-center">
+                <div class="card-body p-4">
                     <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
                         <i class="bi bi-door-open text-primary fs-3"></i>
                     </div>
                     <h5 class="fw-bold">Oda Yönetimi</h5>
-                    <p class="text-muted small">Otelinizin odalarını ekleyin, fiyatlandırın ve durumlarını güncelleyin.</p>
+                    <p class="text-muted small">Otelinizin odalarını ekleyin ve fiyatlandırın.</p>
                     <a href="/admin/room/index/@Model.Id" class="btn btn-outline-primary w-100 rounded-pill">
                         <i class="bi bi-gear-fill me-2"></i> Odaları Yönet
                     </a>
                 </div>
             </div>
 
-            <div class="alert alert-info border-0 rounded-4 p-4">
-                <h6 class="fw-bold"><i class="bi bi-lightbulb me-2"></i>İpucu</h6>
-                <p class="small mb-0">Ek hizmetleri sildikten sonra mutlaka <strong>"Değişiklikleri Kaydet"</strong> butonuna basın.</p>
+            <div class="alert alert-info border-0 rounded-4 p-4 shadow-sm">
+                <h6 class="fw-bold text-dark"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Bilgi</h6>
+                <p class="small mb-0 text-muted">Kapak görselini hem URL olarak girebilir hem de aşağıdaki alandan yeni dosyalar yükleyerek galerinizi güncelleyebilirsiniz.</p>
             </div>
         </div>
     </div>
@@ -198,6 +203,28 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // ✅ GÖRSEL ÖNİZLEME SCRIPT
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+
+            const files = e.target.files;
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const imgWrapper = document.createElement('div');
+                        imgWrapper.innerHTML = `
+                            <img src="${event.target.result}" class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #dee2e6;">
+                        `;
+                        container.appendChild(imgWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        // HİZMET YÖNETİMİ SCRIPT
         let serviceIndex = @(Model.AddOnServices?.Count ?? 0);
 
         function addServiceRow() {
@@ -221,11 +248,10 @@
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-outline-danger w-100" onclick="removeService(this)">
-                        <i class="bi bi-trash"></i> Sil
+                        <i class="bi bi-trash"></i>
                     </button>
                 </div>
             `;
-
             container.appendChild(row);
             serviceIndex++;
         }

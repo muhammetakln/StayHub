@@ -8,38 +8,34 @@ using Microsoft.EntityFrameworkCore;
 using Utils.Models;
 using Utils.Helpers;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// --- 1. GUEST SERVICES & IDENTITY AYARLARI ---
 builder.Services.AddGuestServices(builder.Configuration);
 
-// 🔥 EKLENEN GÜVENLİK AYARLARI: Var olmayan mail ve hesap güvenliği
 builder.Services.Configure<IdentityOptions>(options =>
 {
-    // E-posta benzersiz olmalı (Aynı maille 2. kayıt yapılamaz)
     options.User.RequireUniqueEmail = true;
-
-    // Şüpheli Giriş Denemeleri (Brute Force Korunması)
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); // 15 dakika kilitle
-    options.Lockout.MaxFailedAccessAttempts = 5; // 5 hatalı denemede bloke et
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 
-    // Şifre kuralları (İsteğe bağlı olarak daha da sıkılaştırabilirsin)
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
 });
 
-// --- 2. COOKIE VE OTOMATİK ÇIKIŞ AYARLARI ---
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/account/login";
     options.LogoutPath = "/account/logout";
     options.AccessDeniedPath = "/account/login";
 
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(10); // 10 Dakika hareketsizlikte oturum düşer
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
     options.SlidingExpiration = true;
 
     options.Cookie.HttpOnly = true;
@@ -52,7 +48,7 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
-// --- 3. VERİTABANI MİGRASYON VE SEEDER (Admin Ekleme Burada Yapılıyor) ---
+// Configure the HTTP request pipeline.
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -63,7 +59,6 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
         context.Database.Migrate();
-        // 🔥 RoleSeeder artık ilk Admin'i de oluşturacak (Bir sonraki adımda dosyasını güncelleyeceğiz)
         await RoleSeeder.SeedRolesAsync(userManager, roleManager, context);
         HotelSeeder.SeedHotels(context);
     }
@@ -81,9 +76,24 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+else
+{
+    // ✅ Geliştirme modunda hataları daha detaylı görebilmek için eklendi
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// ✅ Kültür yapılandırması eklendi (Fiyat ve Tarih formatları için)
+var supportedCultures = new[] { new CultureInfo("tr-TR") };
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("tr-TR"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
+
 app.UseRouting();
 
 app.UseAuthentication();

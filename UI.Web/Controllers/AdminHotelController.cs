@@ -57,7 +57,11 @@ namespace UI.Web.Controllers
                         hotelDetail.Rooms ??= new List<RoomDto>();
                         hotelDetail.AddOnServices ??= new List<AddOnServiceDto>();
 
-                        // ✅ 1. Aylık Ciro (Onaylanmış rezervasyonlar)
+                        // ✅ DİNAMİK VERİ HESAPLAMALARI (SQLite & Format Uyumlu)
+                        var today = DateTime.Today;
+                        var tomorrow = today.AddDays(1);
+
+                        // 1. Aylık Ciro (SQLite decimal SUM hatası için ToList ile bellek üzerinden hesaplama)
                         var reservations = await _context.Reservations
                             .Where(r => r.Room.HotelId == user.HotelId &&
                                         r.Status == Core.Concretes.Enum.ReservationStatus.Confirmed &&
@@ -66,29 +70,26 @@ namespace UI.Web.Controllers
                             .ToListAsync();
                         hotelDetail.MonthlyEarning = reservations.Sum();
 
-                        // ✅ 2. Bugün Giriş Bekleyenler (Tarih Aralığı Sorgusu - SQLite Güvenli)
-                        var today = DateTime.Today;
-                        var tomorrow = today.AddDays(1);
+                        // 2. Bugün Giriş Bekleyenler (Güvenli tarih aralığı sorgusu)
                         hotelDetail.TodayCheckIns = await _context.Reservations
                             .CountAsync(r => r.Room.HotelId == user.HotelId &&
-                                             r.CheckInDate >= today &&
-                                             r.CheckInDate < tomorrow &&
+                                             r.CheckInDate >= today && r.CheckInDate < tomorrow &&
                                              !r.IsDeleted);
 
-                        // ✅ 3. Şu An Otelde Konaklayanlar
+                        // 3. Şu An Otelde Konaklayanlar (Status: CheckedIn)
                         hotelDetail.ActiveReservations = await _context.Reservations
                             .CountAsync(r => r.Room.HotelId == user.HotelId &&
                                              r.Status == Core.Concretes.Enum.ReservationStatus.CheckedIn &&
                                              !r.IsDeleted);
 
-                        // ✅ 4. Misafir Puanı ve Yorum Sayısı (Hesaplama Eklenmiştir)
-                        var hotelReviews = await _context.Reviews
+                        // 4. Misafir Puanı ve Toplam Yorum Sayısı (Anlık Hesaplama)
+                        var ratings = await _context.Reviews
                             .Where(r => r.HotelId == user.HotelId && !r.IsDeleted)
                             .Select(r => r.Rating)
                             .ToListAsync();
 
-                        hotelDetail.ReviewCount = hotelReviews.Count;
-                        hotelDetail.AverageRating = hotelReviews.Any() ? hotelReviews.Average() : 0;
+                        hotelDetail.ReviewCount = ratings.Count;
+                        hotelDetail.AverageRating = ratings.Any() ? Math.Round(ratings.Average(), 1) : 0;
 
                         return View(hotelDetail);
                     }
@@ -157,7 +158,7 @@ namespace UI.Web.Controllers
 
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateHotelDto dto)
+        public async Task<IActionResult> Create(CreateHotelDto dto, List<IFormFile> HotelImages)
         {
             try
             {
@@ -167,6 +168,22 @@ namespace UI.Web.Controllers
                 if (user == null) return RedirectToAction("Login", "Account");
 
                 int createdHotelId = await _hotelService.CreateHotelAsync(dto);
+
+                if (createdHotelId > 0 && HotelImages != null && HotelImages.Count > 0)
+                {
+                    string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "hotels");
+                    if (!Directory.Exists(uploadFolder)) Directory.CreateDirectory(uploadFolder);
+
+                    foreach (var file in HotelImages)
+                    {
+                        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                        string filePath = Path.Combine(uploadFolder, fileName);
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+                    }
+                }
 
                 if (createdHotelId > 0 && !user.HotelId.HasValue)
                 {
@@ -226,15 +243,9 @@ namespace UI.Web.Controllers
 
         [HttpPost("edit/{id}")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> Edit(int id, UpdateHotelDto dto)
+        public async Task<IActionResult> Edit(int id, UpdateHotelDto dto, List<IFormFile> HotelImages)
         {
-            if (!ModelState.IsValid)
-            {
-                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                _logger.LogWarning("Otel güncellenirken validasyon hatası: {Errors}", errors);
-                return View(dto);
-            }
+            if (!ModelState.IsValid) return View(dto);
 
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && (user == null || user.HotelId != id)) return Forbid();
@@ -242,13 +253,12 @@ namespace UI.Web.Controllers
             try
             {
                 await _hotelService.UpdateHotelAsync(id, dto);
-                TempData["SuccessMessage"] = "Otel bilgileri ve ek hizmetler başarıyla güncellendi!";
+                TempData["SuccessMessage"] = "Otel bilgileri başarıyla güncellendi!";
                 return RedirectToAction(nameof(Edit), new { id = id });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Otel güncellenirken hata oluştu.");
-                TempData["ErrorMessage"] = "Sistemsel bir hata oluştu, lütfen tekrar deneyin.";
                 return View(dto);
             }
         }
