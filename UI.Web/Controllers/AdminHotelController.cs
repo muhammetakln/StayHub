@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Data.Contexts;
+using Microsoft.EntityFrameworkCore;
 
 namespace UI.Web.Controllers
 {
@@ -16,17 +18,20 @@ namespace UI.Web.Controllers
         private readonly UserManager<Guest> _userManager;
         private readonly SignInManager<Guest> _signInManager;
         private readonly ILogger<AdminHotelController> _logger;
+        private readonly StayHubContext _context;
 
         public AdminHotelController(
             IHotelService hotelService,
             UserManager<Guest> userManager,
             SignInManager<Guest> signInManager,
-            ILogger<AdminHotelController> logger)
+            ILogger<AdminHotelController> logger,
+            StayHubContext context)
         {
             _hotelService = hotelService;
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         [HttpGet("")]
@@ -51,6 +56,40 @@ namespace UI.Web.Controllers
                     {
                         hotelDetail.Rooms ??= new List<RoomDto>();
                         hotelDetail.AddOnServices ??= new List<AddOnServiceDto>();
+
+                        // ✅ 1. Aylık Ciro (Onaylanmış rezervasyonlar)
+                        var reservations = await _context.Reservations
+                            .Where(r => r.Room.HotelId == user.HotelId &&
+                                        r.Status == Core.Concretes.Enum.ReservationStatus.Confirmed &&
+                                        r.CreatedAt >= DateTime.Now.AddDays(-30) && !r.IsDeleted)
+                            .Select(r => r.TotalPrice)
+                            .ToListAsync();
+                        hotelDetail.MonthlyEarning = reservations.Sum();
+
+                        // ✅ 2. Bugün Giriş Bekleyenler (Tarih Aralığı Sorgusu - SQLite Güvenli)
+                        var today = DateTime.Today;
+                        var tomorrow = today.AddDays(1);
+                        hotelDetail.TodayCheckIns = await _context.Reservations
+                            .CountAsync(r => r.Room.HotelId == user.HotelId &&
+                                             r.CheckInDate >= today &&
+                                             r.CheckInDate < tomorrow &&
+                                             !r.IsDeleted);
+
+                        // ✅ 3. Şu An Otelde Konaklayanlar
+                        hotelDetail.ActiveReservations = await _context.Reservations
+                            .CountAsync(r => r.Room.HotelId == user.HotelId &&
+                                             r.Status == Core.Concretes.Enum.ReservationStatus.CheckedIn &&
+                                             !r.IsDeleted);
+
+                        // ✅ 4. Misafir Puanı ve Yorum Sayısı (Hesaplama Eklenmiştir)
+                        var hotelReviews = await _context.Reviews
+                            .Where(r => r.HotelId == user.HotelId && !r.IsDeleted)
+                            .Select(r => r.Rating)
+                            .ToListAsync();
+
+                        hotelDetail.ReviewCount = hotelReviews.Count;
+                        hotelDetail.AverageRating = hotelReviews.Any() ? hotelReviews.Average() : 0;
+
                         return View(hotelDetail);
                     }
                 }
@@ -77,6 +116,33 @@ namespace UI.Web.Controllers
                 _logger.LogError(ex, "Yönetim paneli Index metodu sırasında hata!");
                 return RedirectToAction("Index", "Home");
             }
+        }
+
+        // ✅ YORUM SİLME (AJAX)
+        [HttpPost("delete-review/{id}")]
+        public async Task<IActionResult> DeleteReview(int id)
+        {
+            var review = await _context.Reviews.FindAsync(id);
+            if (review == null) return NotFound();
+
+            review.IsDeleted = true;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
+        }
+
+        // ✅ YORUMA YANIT VERME (AJAX)
+        [HttpPost("reply-review")]
+        public async Task<IActionResult> ReplyReview(int reviewId, string replyText)
+        {
+            var review = await _context.Reviews.FindAsync(reviewId);
+            if (review == null) return NotFound();
+
+            review.OwnerReply = replyText;
+            review.OwnerReplyDate = DateTime.Now;
+            review.IsReplied = true;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true });
         }
 
         [HttpGet("create")]
@@ -176,8 +242,6 @@ namespace UI.Web.Controllers
             try
             {
                 await _hotelService.UpdateHotelAsync(id, dto);
-
-                // ✅ DEĞİŞİKLİK BURADA: Başarılı mesajı set ediliyor ve AYNI SAYFAYA yönlendiriliyor
                 TempData["SuccessMessage"] = "Otel bilgileri ve ek hizmetler başarıyla güncellendi!";
                 return RedirectToAction(nameof(Edit), new { id = id });
             }

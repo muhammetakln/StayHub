@@ -23,7 +23,6 @@
         </div>
         <div class="col-md-5 text-md-end">
             <div class="d-flex gap-2 justify-content-md-end">
-                @* ✅ ROTA DÜZELTİLDİ: /reservation/list *@
                 <a href="/reservation/list" class="btn btn-primary rounded-pill px-4 shadow-sm">
                     <i class="bi bi-calendar3 me-2"></i> Rezervasyonlarım
                 </a>
@@ -86,7 +85,9 @@
 
                             <div class="position-absolute top-0 end-0 m-3">
                                 <span class="badge bg-dark bg-opacity-75 px-3 py-2 rounded-pill">
-                                    <i class="bi bi-star-fill text-warning me-1"></i> @(string.IsNullOrEmpty(hotel.Rating) ? "N/A" : hotel.Rating)
+                                    <i class="bi bi-star-fill text-warning me-1"></i>
+                                    @* ✅ GÜNCELLEME: Rating değeri null veya 0 ise 0.0 göster *@
+                                    @(string.IsNullOrEmpty(hotel.Rating) || hotel.Rating == "0" ? "0.0" : hotel.Rating)
                                 </span>
                             </div>
                         </div>

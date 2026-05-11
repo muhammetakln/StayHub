@@ -95,16 +95,17 @@
                     <div class="collapse mb-5" id="reviewFormCollapse">
                         <div class="bg-light p-4 rounded-4 border border-primary border-opacity-25">
                             <h5 class="fw-bold mb-3">Deneyiminizi Paylaşın</h5>
-                            <form action="/hotel/addreview" method="post">
-                                <input type="hidden" name="HotelId" value="@Model.Id" />
+                            <form id="reviewForm">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="HotelId" id="revHotelId" value="@Model.Id" />
                                 <div class="row g-3">
                                     <div class="col-md-8">
                                         <label class="form-label small fw-bold">Başlık</label>
-                                        <input type="text" name="Title" class="form-control shadow-sm" placeholder="Örn: Harika bir konaklama" required>
+                                        <input type="text" name="Title" id="revTitle" class="form-control shadow-sm" placeholder="Örn: Harika bir konaklama" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small fw-bold">Puanınız</label>
-                                        <select name="Rating" class="form-select shadow-sm" required>
+                                        <select name="Rating" id="revRating" class="form-select shadow-sm" required>
                                             <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
                                             <option value="4">⭐⭐⭐⭐ (4/5)</option>
                                             <option value="3">⭐⭐⭐ (3/5)</option>
@@ -114,45 +115,64 @@
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label small fw-bold">Yorumunuz</label>
-                                        <textarea name="Content" class="form-control shadow-sm" rows="3" placeholder="Görüşlerinizi buraya yazın..." required></textarea>
+                                        <textarea name="Content" id="revContent" class="form-control shadow-sm" rows="3" placeholder="Görüşlerinizi buraya yazın..." required></textarea>
                                     </div>
                                     <div class="col-12 text-end">
-                                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow">Yorumu Gönder</button>
+                                        <button type="button" onclick="submitReview()" class="btn btn-primary rounded-pill px-4 shadow">Yorumu Gönder</button>
                                     </div>
                                 </div>
                             </form>
                         </div>
                     </div>
 
-                    @if (Model.Reviews != null && Model.Reviews.Any())
-                    {
-                        @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
+                    <div id="reviewsList">
+                        @if (Model.Reviews != null && Model.Reviews.Any())
                         {
-                            <div class="border-bottom pb-4 mb-4">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <span class="fw-bold fs-5 d-block">@review.GuestName</span>
-                                        <h6 class="text-primary mt-1">@review.Title</h6>
+                            @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
+                            {
+                                <div class="border-bottom pb-4 mb-4">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="fw-bold fs-5 d-block">@review.GuestName</span>
+                                            <h6 class="text-primary mt-1">@review.Title</h6>
+                                        </div>
+                                        <span class="text-warning fs-5">
+                                            @for (int i = 0; i < review.Rating; i++)
+                                            {
+                                                <span>⭐</span>
+                                            }
+                                        </span>
                                     </div>
-                                    <span class="text-warning fs-5">
-                                        @for (int i = 0; i < review.Rating; i++)
-                                        {
-                                            <span>⭐</span>
-                                        }
-                                    </span>
+                                    <p class="text-muted mt-2">@review.Content</p>
+                                    <small class="text-secondary opacity-75">📅 @review.CreatedAt.ToString("dd MMMM yyyy", new CultureInfo("tr-TR"))</small>
+
+                                    @* ✅ ADMİN CEVABI ALANI EKLENDİ *@
+                                    @if (review.IsReplied && !string.IsNullOrEmpty(review.OwnerReply))
+                                    {
+                                        <div class="bg-light p-3 rounded-3 border-start border-4 border-primary ms-4 mt-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="fw-bold text-primary">
+                                                    <i class="bi bi-reply-fill"></i> Otel Yönetiminin Yanıtı
+                                                </small>
+                                                @if (review.OwnerReplyDate.HasValue)
+                                                {
+                                                    <small class="text-muted" style="font-size: 0.75rem;">@review.OwnerReplyDate.Value.ToString("dd.MM.yyyy")</small>
+                                                }
+                                            </div>
+                                            <p class="mb-0 text-dark small italic">@review.OwnerReply</p>
+                                        </div>
+                                    }
                                 </div>
-                                <p class="text-muted mt-2">@review.Content</p>
-                                <small class="text-secondary opacity-75">📅 @review.CreatedAt.ToString("dd MMMM yyyy", new CultureInfo("tr-TR"))</small>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-5" id="noReviewText">
+                                <i class="bi bi-chat-dots fs-1 text-light"></i>
+                                <p class="text-muted mt-3 italic">Henüz yorum yapılmamış. İlk yorumu siz yapın!</p>
                             </div>
                         }
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <i class="bi bi-chat-dots fs-1 text-light"></i>
-                            <p class="text-muted mt-3 italic">Henüz yorum yapılmamış.</p>
-                        </div>
-                    }
+                    </div>
                 </div>
             </div>
 
@@ -256,15 +276,72 @@
         if(document.getElementById('CheckOutDate')) document.getElementById('CheckOutDate').min = today;
     });
 
+    // ✅ YORUM GÖNDERME FONKSİYONU (AJAX)
+    function submitReview() {
+        const hotelId = $("#revHotelId").val();
+        const rating = $("#revRating").val();
+        const title = $("#revTitle").val();
+        const content = $("#revContent").val();
+        const token = $('input[name="__RequestVerificationToken"]').val();
+
+        if (!title || !content) {
+            alert("Lütfen tüm alanları doldurun.");
+            return;
+        }
+
+        $.ajax({
+            url: '/hotel/add-review',
+            type: 'POST',
+            data: {
+                hotelId: hotelId,
+                rating: rating,
+                title: title,
+                Content: content,
+                __RequestVerificationToken: token
+            },
+            success: function (response) {
+                if (response.success) {
+                    $("#reviewForm")[0].reset();
+                    bootstrap.Collapse.getInstance(document.getElementById('reviewFormCollapse')).hide();
+
+                    let starsHtml = "";
+                    for(let i=0; i<rating; i++) { starsHtml += "<span>⭐</span>"; }
+                    const today = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                    const newReview = `
+                        <div class="border-bottom pb-4 mb-4" style="display:none;">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="fw-bold fs-5 d-block">@User.Identity?.Name</span>
+                                    <h6 class="text-primary mt-1">${title}</h6>
+                                </div>
+                                <span class="text-warning fs-5">${starsHtml}</span>
+                            </div>
+                            <p class="text-muted mt-2">${content}</p>
+                            <small class="text-secondary opacity-75">📅 ${today}</small>
+                        </div>
+                    `;
+
+                    if($("#noReviewText").length) $("#noReviewText").remove();
+                    const $newEl = $(newReview).prependTo("#reviewsList");
+                    $newEl.fadeIn(800);
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (xhr) {
+                alert("Bir hata oluştu. Giriş yapmamış olabilirsiniz.");
+            }
+        });
+    }
+
     function handleRoomChange() {
         const roomSelect = document.getElementById("RoomSelect");
         const carouselInner = document.getElementById("mainCarouselInner");
         const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
-
         const items = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
         items.forEach(item => item.remove());
-
         hotelPrimaryItem.classList.add('active');
 
         if (roomSelect.selectedIndex > 0) {
@@ -350,5 +427,9 @@
         background-color: rgba(0,0,0,0.5);
         border-radius: 50%;
         padding: 20px;
+    }
+
+    .italic {
+        font-style: italic;
     }
 </style>

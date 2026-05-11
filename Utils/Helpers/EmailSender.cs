@@ -3,20 +3,26 @@ using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 using Utils.Models;
+using Microsoft.Extensions.Logging; // ✅ Logger eklendi
 
 namespace Utils.Helpers
 {
     public class EmailSender : IEmailSender
     {
         private readonly EmailSettings settings;
+        private readonly ILogger<EmailSender> _logger; // ✅ Console.WriteLine yerine Logger kullanımı profesyoneldir
 
-        public EmailSender(IOptions<EmailSettings> options)
+        public EmailSender(IOptions<EmailSettings> options, ILogger<EmailSender> logger)
         {
             settings = options.Value;
+            _logger = logger;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
+            // E-posta adresi boşsa boşuna işlem yapma
+            if (string.IsNullOrEmpty(email)) return;
+
             try
             {
                 string safeDisplayName = string.IsNullOrWhiteSpace(settings.DisplayName) || settings.DisplayName.Contains("@")
@@ -29,7 +35,7 @@ namespace Utils.Helpers
                     EnableSsl = settings.EnableSSL,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
-                    Timeout = 10000
+                    Timeout = 20000 // ✅ 10 saniye bazen SMTP sunucuları için kısa gelebilir, 20 yaptık.
                 };
 
                 using var mailMessage = new MailMessage
@@ -44,16 +50,15 @@ namespace Utils.Helpers
 
                 await client.SendMailAsync(mailMessage);
 
-                Console.WriteLine(">>>>>> E-POSTA BAŞARIYLA GÖNDERİLDİ: " + email);
+                _logger.LogInformation(">>>>>> E-POSTA BAŞARIYLA GÖNDERİLDİ: {Email}", email);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("!!!!!! E-POSTA HATASI !!!!!!");
-                Console.WriteLine("Mesaj: " + ex.Message);
-                if (ex.InnerException != null)
-                    Console.WriteLine("İç Hata: " + ex.InnerException.Message);
+                _logger.LogError(ex, "!!!!!! E-POSTA GÖNDERİM HATASI: {Email} !!!!!!", email);
 
-                throw new Exception($"SMTP Gönderim Hatası: {ex.Message}", ex);
+                // ⚠️ KRİTİK: Buradaki 'throw'u kaldırıyoruz veya kontrollü fırlatıyoruz. 
+                // Çünkü mail gitmedi diye rezervasyonun kaydedilmemesini istemeyiz.
+                // Log tutmak yeterlidir.
             }
         }
     }

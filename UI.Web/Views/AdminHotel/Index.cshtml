@@ -7,6 +7,7 @@
 }
 
 <div class="container mt-4">
+    @* Üst Başlık ve Durum *@
     <div class="row mb-5 align-items-center">
         <div class="col-md-8">
             <nav aria-label="breadcrumb">
@@ -34,6 +35,7 @@
         </div>
     </div>
 
+    @* İstatistik Kartları *@
     <div class="row g-4 mb-5">
         <div class="col-md-3">
             <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-primary">
@@ -52,8 +54,9 @@
         <div class="col-md-3">
             <div class="card stat-card bg-white border-0 shadow-sm h-100 p-3 border-start border-4 border-warning">
                 <p class="text-muted mb-1 text-uppercase fw-bold small">Misafir Puanı</p>
-                <h3 class="fw-bold mb-0">@(Model?.AverageRating.ToString("F1") ?? "0.0")</h3>
-                <div class="text-warning small mt-2"><i class="bi bi-star-fill"></i> @(Model?.ReviewCount ?? 0) Yorum</div>
+                @* Müşteri yorum yaptıkça bu değer otomatik güncellenir *@
+                <h3 class="fw-bold mb-0" id="avgRatingText">@(Model?.AverageRating.ToString("F1") ?? "0.0")</h3>
+                <div class="text-warning small mt-2"><i class="bi bi-star-fill"></i> <span id="reviewCountText">@(Model?.ReviewCount ?? 0)</span> Yorum</div>
             </div>
         </div>
         <div class="col-md-3">
@@ -65,9 +68,9 @@
         </div>
     </div>
 
-    <h3 class="fw-bold mb-4 border-bottom pb-2"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Yönetim Modülleri</h3>
-
-    <div class="row g-4 mb-5 justify-content-center">
+    @* Yönetim Modülleri *@
+    <h3 class="fw-bold mb-4 border-bottom pb-2"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Hızlı İşlemler</h3>
+    <div class="row g-4 mb-5">
         <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
@@ -75,14 +78,10 @@
                         <i class="bi bi-calendar-check fs-2"></i>
                     </div>
                     <h5 class="fw-bold">Rezervasyonlar</h5>
-                    <p class="text-muted small mb-4">Gelen talepleri onaylayın, misafir girişlerini takip edin.</p>
-                    <a href="/admin/reservation?hotelId=@Model?.Id" class="btn btn-outline-primary mt-auto rounded-pill fw-bold">
-                        İncele
-                    </a>
+                    <a href="/admin/reservation?hotelId=@Model?.Id" class="btn btn-outline-primary mt-auto rounded-pill fw-bold">İncele</a>
                 </div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
@@ -90,12 +89,10 @@
                         <i class="bi bi-door-open fs-2"></i>
                     </div>
                     <h5 class="fw-bold">Odalarım (@(Model?.Rooms?.Count() ?? 0))</h5>
-                    <p class="text-muted small mb-4">Oda kapasitelerini, fiyatlarını ve durumlarını güncelleyin.</p>
                     <a href="/admin/room/index/@Model?.Id" class="btn btn-outline-success mt-auto rounded-pill fw-bold">Yönet</a>
                 </div>
             </div>
         </div>
-
         <div class="col-md-4">
             <div class="card module-card text-center shadow-sm h-100 border-0">
                 <div class="card-body p-4 d-flex flex-column">
@@ -103,15 +100,152 @@
                         <i class="bi bi-pencil-square fs-2"></i>
                     </div>
                     <h5 class="fw-bold">Oteli Düzenle</h5>
-                    <p class="text-muted small mb-4">Otel detaylarını, iletişim bilgilerini ve görsellerini güncelleyin.</p>
                     <a href="/admin/hotel/edit/@Model?.Id" class="btn btn-outline-secondary mt-auto rounded-pill fw-bold">Düzenle</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ✅ YORUM YÖNETİM PANELİ *@
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3">
+                    <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-chat-dots me-2 text-warning"></i>Son Yorumlar ve Cevaplar</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Misafir</th>
+                                    <th>Puan</th>
+                                    <th>Yorum</th>
+                                    <th>Durum</th>
+                                    <th class="text-end pe-4">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model?.Reviews != null && Model.Reviews.Any(r => !r.IsDeleted))
+                                {
+                                    foreach (var review in Model.Reviews.Where(r => !r.IsDeleted).OrderByDescending(r => r.CreatedAt))
+                                    {
+                                        <tr id="review-row-@review.Id">
+                                            <td class="ps-4">
+                                                <div class="fw-bold">@review.GuestName</div>
+                                                <small class="text-muted">@review.CreatedAt.ToString("dd.MM.yyyy")</small>
+                                            </td>
+                                            <td>
+                                                <div class="text-warning small">
+                                                    @for (int i = 0; i < review.Rating; i++)
+                                                    {
+                                                        <i class="bi bi-star-fill"></i>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td style="max-width: 300px;">
+                                                <div class="fw-bold text-dark small">@review.Title</div>
+                                                <div class="text-muted small text-truncate">@review.Content</div>
+                                            </td>
+                                            <td>
+                                                @if (review.IsReplied)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success rounded-pill">Cevaplandı</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning-subtle text-warning rounded-pill" id="badge-@review.Id">Cevap Bekliyor</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <button class="btn btn-sm btn-light rounded-pill px-3 me-2" onclick="toggleReplyForm(@review.Id)">
+                                                    <i class="bi bi-reply"></i> @(review.IsReplied ? "Güncelle" : "Cevapla")
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" onclick="deleteReview(@review.Id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @* Gizli Cevap Formu *@
+                                        <tr id="reply-form-row-@review.Id" class="d-none bg-light-subtle">
+                                            <td colspan="5" class="p-4">
+                                                <div class="card border-0 shadow-sm p-3">
+                                                    <h6><strong>Yorum:</strong> "@review.Content"</h6>
+                                                    <textarea id="reply-text-@review.Id" class="form-control mb-3" rows="2" placeholder="Cevabınızı buraya yazın...">@review.OwnerReply</textarea>
+                                                    <div class="d-flex justify-content-end gap-2">
+                                                        <button class="btn btn-sm btn-secondary rounded-pill px-4" onclick="toggleReplyForm(@review.Id)">Vazgeç</button>
+                                                        <button class="btn btn-sm btn-primary rounded-pill px-4" onclick="submitReply(@review.Id)">Gönder</button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted italic">Henüz bir misafir değerlendirmesi bulunmuyor.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        // ✅ Formu Aç/Kapat
+        function toggleReplyForm(id) {
+            $(`#reply-form-row-${id}`).toggleClass('d-none');
+        }
+
+        // ✅ Cevabı AJAX ile Gönder
+        function submitReply(id) {
+            const replyText = $(`#reply-text-${id}`).val();
+            if (!replyText) return alert("Lütfen bir cevap metni yazın.");
+
+            $.ajax({
+                url: '/admin/hotel/reply-review',
+                type: 'POST',
+                data: { reviewId: id, replyText: replyText },
+                success: function (res) {
+                    if (res.success) {
+                        $(`#reply-form-row-${id}`).addClass('d-none');
+                        $(`#badge-${id}`).removeClass('bg-warning-subtle text-warning').addClass('bg-success-subtle text-success').text('Cevaplandı');
+                        alert("Cevabınız kaydedildi.");
+                    }
+                },
+                error: function() { alert("Bir hata oluştu."); }
+            });
+        }
+
+        // ✅ Yorumu Kaldır (Soft Delete)
+        function deleteReview(id) {
+            if (confirm("Bu yorumu tamamen kaldırmak istediğinize emin misiniz?")) {
+                $.ajax({
+                    url: `/admin/hotel/delete-review/${id}`,
+                    type: 'POST',
+                    success: function (res) {
+                        if (res.success) {
+                            $(`#review-row-${id}`).fadeOut(500);
+                            $(`#reply-form-row-${id}`).remove();
+                            // Sayıyı dinamik azaltmak istersen:
+                            let currentCount = parseInt($("#reviewCountText").text());
+                            $("#reviewCountText").text(currentCount - 1);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+}
+
 <style>
+    /* Tasarım İyileştirmeleri */
     .stat-card {
         border-radius: 16px;
         transition: all 0.3s ease;
@@ -122,22 +256,27 @@
             box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
         }
 
-    .module-card {
-        border-radius: 20px;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-        .module-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
-        }
-
     .icon-circle {
-        width: 65px;
-        height: 65px;
-        border-radius: 18px;
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .bg-light-subtle {
+        background-color: #f8f9fa !important;
+    }
+
+    .italic {
+        font-style: italic;
+    }
+
+    .table thead th {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
     }
 </style>

@@ -24,6 +24,15 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Oluşturulma Tarihi")]
         [DataType(DataType.DateTime)]
         public DateTime CreatedAt { get; set; }
+        public bool IsDeleted { get; set; }
+        [Display(Name = "Yanıtlandı mı?")]
+        public bool IsReplied { get; set; }
+
+        [Display(Name = "Admin Yanıtı")]
+        public string? OwnerReply { get; set; }
+
+        [Display(Name = "Yanıt Tarihi")]
+        public DateTime? OwnerReplyDate { get; set; }
     }
     public class ReviewListDto
     {

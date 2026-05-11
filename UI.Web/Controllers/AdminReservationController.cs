@@ -1,12 +1,14 @@
 ﻿using Core.Abstracts.Interfaces;
 using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
+using Core.Concretes.Enum; // ✅ Enum'lar için eklendi
 using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Microsoft.AspNetCore.Identity.UI.Services; // ✅ IEmailSender için eklendi
 
 namespace UI.Web.Controllers
 {
@@ -18,17 +20,20 @@ namespace UI.Web.Controllers
         private readonly UserManager<Guest> _userManager;
         private readonly StayHubContext _context;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender; // ✅ Eklendi
 
         public AdminReservationController(
             IReservationService reservationService,
             UserManager<Guest> userManager,
             StayHubContext context,
-            IMapper mapper)
+            IMapper mapper,
+            IEmailSender emailSender) // ✅ Constructor'a eklendi
         {
             _reservationService = reservationService;
             _userManager = userManager;
             _context = context;
             _mapper = mapper;
+            _emailSender = emailSender; // ✅ Eklendi
         }
 
         [HttpGet("")]
@@ -98,17 +103,45 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, string status)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
+            // ✅ Mail gönderebilmek için Guest ve Hotel bilgilerini de çekiyoruz
+            var reservation = await _context.Reservations
+                .Include(r => r.Guest)
+                .Include(r => r.Room)
+                    .ThenInclude(h => h.Hotel)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
             if (reservation == null) return NotFound();
 
-            // ✅ GÜNCELLEME: String olarak gelen status değerini Enum tipine dönüştürüyoruz.
-            if (Enum.TryParse<Core.Concretes.Enum.ReservationStatus>(status, out var parsedStatus))
+            if (Enum.TryParse<ReservationStatus>(status, out var parsedStatus))
             {
                 reservation.Status = parsedStatus;
                 reservation.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Rezervasyon durumu güncellendi.";
+
+                // ✅ MAİL BİLGİLENDİRMESİ
+                if (reservation.Guest != null && !string.IsNullOrEmpty(reservation.Guest.Email))
+                {
+                    string statusText = parsedStatus switch
+                    {
+                        ReservationStatus.Confirmed => "Onaylandı",
+                        ReservationStatus.Cancelled => "İptal Edildi",
+                        ReservationStatus.CheckedIn => "Giriş Yapıldı",
+                        ReservationStatus.CheckedOut => "Çıkış Yapıldı",
+                        ReservationStatus.NoShow => "Gelmedi Olarak İşaretlendi",
+                        _ => "Güncellendi"
+                    };
+
+                    string subject = $"Rezervasyon Bilgilendirmesi: #{reservation.ReservationNumber}";
+                    string body = $@"
+                        <h3>Sayın {reservation.Guest.FirstName} {reservation.Guest.LastName},</h3>
+                        <p><strong>{reservation.Room?.Hotel?.Name}</strong> bünyesindeki <strong>#{reservation.ReservationNumber}</strong> numaralı rezervasyonunuzun durumu güncellenmiştir.</p>
+                        <p>Yeni Durum: <strong style='color: #0d6efd;'>{statusText}</strong></p>
+                        <p>İyi günler dileriz.</p>";
+
+                    await _emailSender.SendEmailAsync(reservation.Guest.Email, subject, body);
+                }
             }
             else
             {

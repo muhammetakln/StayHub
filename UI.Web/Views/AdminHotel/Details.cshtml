@@ -2,7 +2,8 @@
 @model HotelDetailDto
 
 @{
-    ViewData["Title"] = "Otel Detayı";
+    ViewData["Title"] = "Otel Yönetim Paneli";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="container mt-5 mb-5">
@@ -10,22 +11,19 @@
         <div class="col-md-10 offset-md-1">
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
                 @* Üst Bölüm: Kapak Görseli ve Başlık *@
-                <div class="position-relative" style="height: 250px; background: url('@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "/images/default-hotel.jpg" : Model.CoverImageUrl)') center/cover no-repeat;">
-                    <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(transparent, rgba(0,0,0,0.8));">
+                <div class="position-relative" style="height: 300px; background: url('@(string.IsNullOrEmpty(Model.CoverImageUrl) ? "/images/default-hotel.jpg" : Model.CoverImageUrl)') center/cover no-repeat;">
+                    <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(transparent, rgba(0,0,0,0.9));">
                         <div class="d-flex justify-content-between align-items-end text-white">
                             <div>
                                 <h1 class="fw-bold mb-0">@Model.Name</h1>
                                 <p class="mb-0 opacity-75"><i class="bi bi-geo-alt"></i> @Model.City, @Model.Country</p>
                             </div>
                             <div class="text-end">
-                                @if (Model.IsActive)
-                                {
-                                    <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm">✓ Aktif Yönetim</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm">✗ Pasif Mod</span>
-                                }
+                                <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger") px-3 py-2 rounded-pill shadow-sm mb-2 d-block">
+                                    @(Model.IsActive ? "✓ Yayında" : "✗ Yayında Değil")
+                                </span>
+                                <h2 class="fw-bold mb-0 text-warning" id="monthlyEarningDisplay">@Model.MonthlyEarning.ToString("C0")</h2>
+                                <small class="text-white-50">Son 30 Günlük Ciro</small>
                             </div>
                         </div>
                     </div>
@@ -33,7 +31,6 @@
 
                 <div class="card-body p-4 p-lg-5">
                     <div class="row g-4">
-                        @* Sol Sütun: Temel Bilgiler *@
                         <div class="col-md-7">
                             <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-info-circle"></i> Genel Açıklama</h5>
                             <p class="text-secondary leading-relaxed">
@@ -41,104 +38,207 @@
                             </p>
 
                             <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4 text-primary"><i class="bi bi-telephone"></i> İletişim & Adres</h5>
-                            <div class="bg-light p-3 rounded-3">
-                                <p class="mb-2"><strong>📍 Tam Adres:</strong> @Model.Address</p>
-                                <p class="mb-2"><strong>📞 Telefon:</strong> @Model.PhoneNumber</p>
-                                <p class="mb-0"><strong>✉️ Email:</strong> @Model.Email</p>
+                            <div class="bg-light p-3 rounded-3 border-start border-4 border-primary">
+                                <p class="mb-2"><strong>📍 Adres:</strong> @Model.Address</p>
+                                <p class="mb-2"><strong>📞 Tel:</strong> @Model.PhoneNumber</p>
+                                <p class="mb-0"><strong>✉️ E-posta:</strong> @Model.Email</p>
                             </div>
                         </div>
 
-                        @* Sağ Sütun: İstatistikler ve Saatler *@
                         <div class="col-md-5">
-                            <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-clock"></i> Operasyonel Bilgiler</h5>
-                            <div class="list-group list-group-flush shadow-sm rounded-3 overflow-hidden">
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Puan / Rating</span>
-                                    <span class="badge bg-warning text-dark fw-bold">⭐ @Model.Rating / 5</span>
+                            <h5 class="fw-bold border-bottom pb-2 mb-3 text-primary"><i class="bi bi-lightning-charge"></i> Hızlı Yönetim</h5>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="p-3 border rounded-3 text-center bg-white shadow-sm h-100">
+                                        <h4 class="fw-bold mb-0 text-primary">@(Model.Rooms?.Count() ?? 0)</h4>
+                                        <small class="text-muted">Toplam Oda</small>
+                                        <a href="/admin/room/index/@Model.Id" class="stretched-link"></a>
+                                    </div>
                                 </div>
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Otel Türü</span>
-                                    <span class="badge bg-info text-dark">@Model.HotelType</span>
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Check-in Saati</span>
-                                    <span class="fw-bold text-success">@Model.CheckInTime</span>
-                                </div>
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Check-out Saati</span>
-                                    <span class="fw-bold text-danger">@Model.CheckOutTime</span>
+                                <div class="col-6">
+                                    <div class="p-3 border rounded-3 text-center bg-white shadow-sm h-100">
+                                        <h4 class="fw-bold mb-0 text-success">@Model.ActiveReservations</h4>
+                                        <small class="text-muted">Aktif Rez.</small>
+                                        <a href="/admin/reservation?hotelId=@Model.Id" class="stretched-link"></a>
+                                    </div>
                                 </div>
                             </div>
-
-                            @* Hızlı Erişim Butonları *@
-                            <div class="mt-4">
-                                <a href="/admin/room?hotelId=@Model.Id" class="btn btn-outline-primary w-100 mb-2 py-2">
-                                    <i class="bi bi-door-open"></i> Odaları Yönet
-                                </a>
-                                <a href="/admin/reservation?hotelId=@Model.Id" class="btn btn-outline-dark w-100 py-2">
-                                    <i class="bi bi-calendar-check"></i> Rezervasyonları Gör
-                                </a>
+                            <div class="mt-4 bg-dark text-white p-3 rounded-4 shadow-sm">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-gear"></i> Otel Ayarları</h6>
+                                <div class="d-grid gap-2">
+                                    <a href="/admin/hotel/edit/@Model.Id" class="btn btn-warning btn-sm fw-bold text-dark">Profili Düzenle</a>
+                                    <a href="/admin/reservation?hotelId=@Model.Id" class="btn btn-outline-light btn-sm">Tüm Rezervasyonlar</a>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <hr class="my-5">
 
-                    @* Alt Bölüm: İşlem Butonları *@
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                        <a href="/admin/hotel" class="btn btn-secondary px-4 py-2 rounded-pill">
-                            <i class="bi bi-arrow-left"></i> Listeye Dön
+                    @* ✅ YORUM YÖNETİM MODÜLÜ - DTO GÜNCELLEMESİ *@
+                    <h3 class="fw-bold mb-4"><i class="bi bi-chat-square-dots text-primary"></i> Misafir Yorumlarını Yönet</h3>
+                    <div id="adminReviewsList">
+                        @if (Model.Reviews != null && Model.Reviews.Any(r => !r.IsDeleted))
+                        {
+                            foreach (var review in Model.Reviews.Where(r => !r.IsDeleted).OrderByDescending(r => r.CreatedAt))
+                            {
+                                <div class="review-item border rounded-4 p-4 mb-4 shadow-sm bg-white" id="review-row-@review.Id">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="d-flex align-items-center">
+                                            @* DTO: GuestName *@
+                                            <div class="avatar-circle bg-primary text-white me-3">@(review.GuestName?.Substring(0, 1) ?? "G")</div>
+                                            <div>
+                                                <h6 class="fw-bold mb-0">@review.GuestName</h6>
+                                                <small class="text-muted">📅 @review.CreatedAt.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="text-warning mb-1">
+                                                @* DTO: Rating *@
+                                                @for (int i = 0; i < review.Rating; i++)
+                                                {
+                                                    <i class="bi bi-star-fill"></i>
+                                                }
+                                            </div>
+                                            <span class="badge bg-light text-dark border">#@review.Id</span>
+                                        </div>
+                                    </div>
+
+                                    @* DTO: Title ve Content *@
+                                    <h6 class="fw-bold text-dark">@review.Title</h6>
+                                    <p class="text-secondary">@review.Content</p>
+
+                                    @* Admin Yanıtı Alanı *@
+                                    <div id="reply-container-@review.Id">
+                                        @if (review.IsReplied)
+                                        {
+                                            <div class="bg-primary bg-opacity-10 p-3 rounded-3 border-start border-4 border-primary mt-3">
+                                                <small class="fw-bold d-block text-primary"><i class="bi bi-reply-all-fill"></i> Sizin Yanıtınız (@review.OwnerReplyDate?.ToString("dd.MM.yyyy"))</small>
+                                                <p class="mb-0 text-dark small italic">@review.OwnerReply</p>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @* Aksiyon Butonları *@
+                                    <div class="mt-4 d-flex justify-content-end gap-2 border-top pt-3">
+                                        @if (!review.IsReplied)
+                                        {
+                                            <button class="btn btn-sm btn-primary rounded-pill px-4" onclick="toggleReplyBox(@review.Id)" id="btn-reply-@review.Id">
+                                                <i class="bi bi-pencil-square"></i> Yanıtla
+                                            </button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-4" onclick="deleteReview(@review.Id)">
+                                            <i class="bi bi-trash3"></i> Kaldır
+                                        </button>
+                                    </div>
+
+                                    @* Yanıt Formu *@
+                                    <div class="mt-3 d-none animate__animated animate__fadeIn" id="reply-form-@review.Id">
+                                        <textarea class="form-control mb-2 shadow-sm border-2" id="reply-text-@review.Id" rows="3" placeholder="Misafirinize bir yanıt yazın..."></textarea>
+                                        <div class="text-end">
+                                            <button class="btn btn-sm btn-link text-muted me-2" onclick="toggleReplyBox(@review.Id)">Vazgeç</button>
+                                            <button class="btn btn-sm btn-success rounded-pill px-4 shadow-sm" onclick="submitReply(@review.Id)">Yanıtı Gönder</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-5 bg-light rounded-4 border border-dashed">
+                                <i class="bi bi-chat-left-dots fs-1 text-muted opacity-25"></i>
+                                <p class="text-muted mt-2">Henüz değerlendirme bulunmuyor.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-5 d-flex justify-content-center">
+                        <a href="/admin/hotel" class="btn btn-outline-secondary px-5 py-2 rounded-pill">
+                            <i class="bi bi-arrow-left"></i> Geri Dön
                         </a>
-                        <div class="d-flex gap-2">
-                            <a href="/admin/hotel/edit/@Model.Id" class="btn btn-warning px-4 py-2 rounded-pill fw-bold text-dark shadow-sm">
-                                <i class="bi bi-pencil"></i> Düzenle
-                            </a>
-                            <a href="/admin/hotel/delete/@Model.Id" class="btn btn-danger px-4 py-2 rounded-pill fw-bold shadow-sm" onclick="return confirm('Bu oteli silmek istediğinize emin misiniz?')">
-                                <i class="bi bi-trash"></i> Oteli Sil
-                            </a>
-                        </div>
                     </div>
                 </div>
             </div>
-
-            <p class="text-center mt-4 text-muted small">Kayıt ID: #@Model.Id | Son Güncelleme: @DateTime.Now.ToShortDateString()</p>
         </div>
     </div>
 </div>
 
+@section Scripts {
+    <script>
+        function toggleReplyBox(id) {
+            const form = $(`#reply-form-${id}`);
+            form.toggleClass('d-none');
+            $(`#btn-reply-${id}`).toggle(form.hasClass('d-none'));
+        }
+
+        function submitReply(id) {
+            const replyText = $(`#reply-text-${id}`).val();
+            if (!replyText) { alert("Lütfen bir metin girin."); return; }
+
+            $.ajax({
+                url: '/admin/hotel/reply-review',
+                type: 'POST',
+                data: { reviewId: id, replyText: replyText },
+                success: function (res) {
+                    if (res.success) {
+                        const now = new Date().toLocaleDateString('tr-TR');
+                        const replyHtml = `
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-3 border-start border-4 border-primary mt-3">
+                                <small class="fw-bold d-block text-primary"><i class="bi bi-reply-all-fill"></i> Sizin Yanıtınız (${now})</small>
+                                <p class="mb-0 text-dark small italic">${replyText}</p>
+                            </div>`;
+                        $(`#reply-container-${id}`).html(replyHtml);
+                        $(`#reply-form-${id}`).addClass('d-none');
+                        $(`#btn-reply-${id}`).remove();
+                    }
+                }
+            });
+        }
+
+        function deleteReview(id) {
+            if (confirm("Bu yorumu silmek istediğinize emin misiniz?")) {
+                $.ajax({
+                    url: `/admin/hotel/delete-review/${id}`,
+                    type: 'POST',
+                    success: function (res) {
+                        if (res.success) {
+                            $(`#review-row-${id}`).slideUp(500);
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+}
+
 <style>
-    .card {
-        border-radius: 20px !important;
+    .avatar-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
     }
 
-    .rounded-4 {
-        border-radius: 20px !important;
+    .review-item {
+        transition: all 0.3s ease;
+        border: 1px solid #eee;
     }
 
-    /* Buton Tasarımları */
-    .btn-warning {
-        background: linear-gradient(135deg, #ffc107, #ff9800);
-        border: none;
-    }
-
-        .btn-warning:hover {
-            background: linear-gradient(135deg, #ff9800, #fb8c00);
+        .review-item:hover {
+            border-color: #0d6efd;
             transform: translateY(-2px);
         }
 
-    .btn-danger {
-        background: linear-gradient(135deg, #dc3545, #c82333);
-        border: none;
+    .bg-primary.bg-opacity-10 {
+        background-color: rgba(13, 110, 253, 0.08) !important;
     }
 
-        .btn-danger:hover {
-            background: linear-gradient(135deg, #c82333, #bd2130);
-            transform: translateY(-2px);
-        }
-
-    .btn-secondary {
-        background: linear-gradient(135deg, #6c757d, #495057);
-        border: none;
+    .italic {
+        font-style: italic;
     }
 
     .leading-relaxed {
