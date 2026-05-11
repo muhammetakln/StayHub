@@ -299,7 +299,6 @@ namespace Business.Services
 
                 hotel.UpdatedAt = DateTime.UtcNow;
 
-                // 5. Tüm değişiklikleri tek seferde kaydet
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Otel ID {id} ve ek hizmetleri başarıyla güncellendi.");
