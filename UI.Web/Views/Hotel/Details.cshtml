@@ -192,11 +192,10 @@
                                     {
                                         foreach (var room in Model.Rooms)
                                         {
-                                            @* ✅ Görsel listesini serialize ederken IUrlHelper veya mutlak yol kullanımı için hazırlık *@
                                             var roomImagesJson = System.Text.Json.JsonSerializer.Serialize(room.RoomImage?.Select(i => i.ImageUrl) ?? new List<string>());
                                             <option value="@room.Id"
                                                     data-price="@room.Price.ToString(CultureInfo.InvariantCulture)"
-                                                    data-images='@roomImagesJson'
+                                                    data-images='@Html.Raw(roomImagesJson)'
                                                     data-name="@room.Name">
                                                 @room.Name (@room.Price.ToString("N0") TL / Gece)
                                             </option>
@@ -302,7 +301,7 @@
                 if (response.success) {
                     $("#reviewForm")[0].reset();
                     bootstrap.Collapse.getInstance(document.getElementById('reviewFormCollapse')).hide();
-                    location.reload(); // Puan ortalaması için sayfayı yenilemek en sağlıklısı
+                    location.reload();
                 } else {
                     alert(response.message);
                 }
@@ -310,37 +309,41 @@
         });
     }
 
+    // ✅ DÜZELTİLMİŞ ODA SEÇİM VE RESİM DEĞİŞTİRME FONKSİYONU
     function handleRoomChange() {
         const roomSelect = document.getElementById("RoomSelect");
         const carouselInner = document.getElementById("mainCarouselInner");
         const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
 
-        // Önceki oda resimlerini temizle
+        // 1. Önceki seçilmiş odaya ait resimleri temizle
         const extraItems = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
         extraItems.forEach(item => item.remove());
-
-        // Ana resmi aktif et
-        hotelPrimaryItem.classList.add('active');
 
         if (roomSelect.selectedIndex > 0) {
             let images = [];
             try {
+                // Tırnak hatalarını önlemek için güvenli parse
                 const data = selectedOption.getAttribute("data-images");
                 images = JSON.parse(data || "[]");
             } catch (e) {
-                console.error("Görsel verisi okunurken hata oluştu.");
+                console.error("Görsel verisi okunurken hata oluştu:", e);
             }
 
             const roomName = selectedOption.getAttribute("data-name");
 
             if (images.length > 0) {
-                images.forEach((img) => {
-                    const div = document.createElement('div');
-                    div.className = 'carousel-item';
+                // Ana otel resmini pasif yapıyoruz
+                hotelPrimaryItem.classList.remove('active');
 
-                    // ✅ Görsel yolu kontrolü (Başa / ekleme)
-                    const src = img.startsWith('/') ? img : '/' + img;
+                images.forEach((img, index) => {
+                    const div = document.createElement('div');
+                    // İlk oda resmini direkt "active" yapıyoruz (Siyah ekran çökmesini engeller)
+                    div.className = index === 0 ? 'carousel-item active' : 'carousel-item';
+
+                    // Windows dosya yollarındaki ters bölüleri (\) normal bölüye (/) çeviriyoruz
+                    let imgUrl = img.replace(/\\/g, '/');
+                    const src = (imgUrl.startsWith('/') || imgUrl.startsWith('http')) ? imgUrl : '/' + imgUrl;
 
                     div.innerHTML = `
                         <img src="${src}" class="gallery-img" loading="lazy" onerror="this.src='/images/default-hotel.jpg'">
@@ -351,13 +354,15 @@
                     `;
                     carouselInner.appendChild(div);
                 });
-
-                // İlk oda görseline odaklan (index 1 çünkü 0 ana otel resmi)
-                setTimeout(() => { myCarousel.to(1); }, 150);
+            } else {
+                // Eğer odanın resmi yoksa, otelin ana resmine geri dön
+                hotelPrimaryItem.classList.add('active');
             }
         } else {
-            myCarousel.to(0);
+            // Seçim iptal edildiyse (Müsait Odalar seçiliyse) otelin ana resmine geri dön
+            hotelPrimaryItem.classList.add('active');
         }
+
         updatePrice();
     }
 

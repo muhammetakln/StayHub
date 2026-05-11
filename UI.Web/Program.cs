@@ -48,6 +48,11 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
+// ✅ [EKLEME] UYGULAMA SEVİYESİNDE KÜLTÜRÜ TÜRKÇE YAP (Decimal/Nokta-Virgül Sorunu İçin)
+var turkishCulture = new CultureInfo("tr-TR");
+CultureInfo.DefaultThreadCurrentCulture = turkishCulture;
+CultureInfo.DefaultThreadCurrentUICulture = turkishCulture;
+
 // Configure the HTTP request pipeline.
 using (var scope = app.Services.CreateScope())
 {
@@ -78,15 +83,14 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // ✅ Geliştirme modunda hataları daha detaylı görebilmek için eklendi
     app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-// ✅ Kültür yapılandırması eklendi (Fiyat ve Tarih formatları için)
-var supportedCultures = new[] { new CultureInfo("tr-TR") };
+// ✅ Kültür yapılandırması (Request bazlı)
+var supportedCultures = new[] { turkishCulture };
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture("tr-TR"),

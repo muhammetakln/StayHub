@@ -85,8 +85,8 @@ namespace Business.Services
                 if (!string.IsNullOrEmpty(dto.SearchKeyword))
                 {
                     query = query.Where(h => h.Name.Contains(dto.SearchKeyword) ||
-                                             h.City.Contains(dto.SearchKeyword) ||
-                                             h.Country.Contains(dto.SearchKeyword));
+                                               h.City.Contains(dto.SearchKeyword) ||
+                                               h.Country.Contains(dto.SearchKeyword));
                 }
 
                 if (!string.IsNullOrEmpty(dto.City))
@@ -128,7 +128,8 @@ namespace Business.Services
                     .Take(dto.PageSize)
                     .ToListAsync();
 
-                return _mapper.Map<List<HotelDto>>(hotels);
+                // ✅ GÜNCELLEME: Dinamik puanı hesapla
+                return CalculateDynamicRatings(hotels);
             }
             catch (Exception ex)
             {
@@ -147,7 +148,6 @@ namespace Business.Services
                     .Include(h => h.Amenities)
                     .Include(h => h.Reviews)
                     .Include(h => h.AddOnServices)
-                    // ✅ GÜNCELLEME: Sadece silinmemiş odaların gelmesi için filtre eklendi.
                     .Include(h => h.Rooms.Where(r => !r.IsDeleted))
                         .ThenInclude(r => r.RoomImage)
                     .AsSplitQuery()
@@ -160,7 +160,23 @@ namespace Business.Services
                 }
 
                 _logger.LogInformation($"Otel başarıyla yüklendi: {hotel.Name}");
-                return _mapper.Map<HotelDetailDto>(hotel);
+
+                var dto = _mapper.Map<HotelDetailDto>(hotel);
+
+                // ✅ GÜNCELLEME: Detay sayfası için aktif yorumların puan ortalamasını hesapla
+                var activeReviews = hotel.Reviews?.Where(r => !r.IsDeleted).ToList();
+                if (activeReviews != null && activeReviews.Any())
+                {
+                    dto.AverageRating = Math.Round(activeReviews.Average(r => (double)r.Rating), 1);
+                    dto.ReviewCount = activeReviews.Count;
+                }
+                else
+                {
+                    dto.AverageRating = 0;
+                    dto.ReviewCount = 0;
+                }
+
+                return dto;
             }
             catch (Exception ex)
             {
@@ -183,7 +199,9 @@ namespace Business.Services
                     .ToListAsync();
 
                 _logger.LogInformation($"Toplam {hotels.Count} otel getirildi");
-                return _mapper.Map<List<HotelDto>>(hotels);
+
+                // ✅ GÜNCELLEME: Dinamik puanı hesapla
+                return CalculateDynamicRatings(hotels);
             }
             catch (Exception ex)
             {
@@ -206,7 +224,8 @@ namespace Business.Services
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
 
-                return _mapper.Map<List<HotelDto>>(hotels);
+                // ✅ GÜNCELLEME: Dinamik puanı hesapla
+                return CalculateDynamicRatings(hotels);
             }
             catch (Exception ex)
             {
@@ -231,7 +250,8 @@ namespace Business.Services
                     .OrderByDescending(h => h.Reviews.Average(r => (double?)r.Rating) ?? 0)
                     .ToListAsync();
 
-                return _mapper.Map<List<HotelDto>>(hotels);
+                // ✅ GÜNCELLEME: Dinamik puanı hesapla
+                return CalculateDynamicRatings(hotels);
             }
             catch (Exception ex)
             {
@@ -264,7 +284,6 @@ namespace Business.Services
         {
             try
             {
-                // 1. Oteli ve hizmetleri takip (track) ederek çekiyoruz
                 var hotel = await _context.Hotels
                     .Include(h => h.AddOnServices)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
@@ -272,49 +291,41 @@ namespace Business.Services
                 if (hotel == null)
                     throw new KeyNotFoundException($"Otel bulunamadı: {id}");
 
-                // 2. Temel otel bilgilerini güncelle
+                // Temel bilgileri güncelle
                 _mapper.Map(dto, hotel);
 
-                // 3. 🔥 AKILLI EK HİZMET YÖNETİMİ (FOREIGN KEY VE TRACKING HATASI ÇÖZÜMÜ)
+                // ✅ EK HİZMETLERİ AKILLI GÜNCELLEME (Price Değişim Kontrolü Eklendi)
                 if (dto.AddOnServices != null)
                 {
-                    // A. Silinenleri belirle (DTO'da olmayıp DB'de olanlar)
                     var dtoIds = dto.AddOnServices.Where(x => x.Id > 0).Select(x => x.Id).ToList();
                     var servicesToRemove = hotel.AddOnServices.Where(s => !dtoIds.Contains(s.Id)).ToList();
 
                     foreach (var s in servicesToRemove)
                     {
-                        // Eğer hizmet geçmişte bir rezervasyonda kullanılmışsa fiziksel silme yapma, IsDeleted işaretle
                         bool isUsed = await _context.ReservationAddOnServices.AnyAsync(ra => ra.AddOnServiceId == s.Id);
-                        if (isUsed)
-                        {
-                            s.IsDeleted = true;
-                            s.IsActive = false;
-                        }
-                        else
-                        {
-                            _context.AddOnServices.Remove(s);
-                        }
+                        if (isUsed) { s.IsDeleted = true; s.IsActive = false; }
+                        else { _context.AddOnServices.Remove(s); }
                     }
 
-                    // B. Mevcutları GÜNCELLE veya yenileri EKLE
                     foreach (var sDto in dto.AddOnServices.Where(x => !string.IsNullOrWhiteSpace(x.Name)))
                     {
                         if (sDto.Id > 0)
                         {
-                            // Mevcut olanı bul ve güncelle
                             var existing = hotel.AddOnServices.FirstOrDefault(x => x.Id == sDto.Id);
                             if (existing != null)
                             {
-                                existing.Name = sDto.Name;
-                                existing.Price = sDto.Price;
-                                existing.Unit = sDto.Unit;
-                                existing.UpdatedAt = DateTime.UtcNow;
+                                // ✅ Sadece bir veri değişmişse UPDATE yap ve fiyatı direkt ata (Convert kullanma)
+                                if (existing.Name != sDto.Name || existing.Price != sDto.Price || existing.Unit != sDto.Unit)
+                                {
+                                    existing.Name = sDto.Name;
+                                    existing.Price = sDto.Price;
+                                    existing.Unit = sDto.Unit;
+                                    existing.UpdatedAt = DateTime.UtcNow;
+                                }
                             }
                         }
                         else
                         {
-                            // Tamamen yeni bir hizmet ekle
                             hotel.AddOnServices.Add(new AddOnService
                             {
                                 Name = sDto.Name,
@@ -330,14 +341,34 @@ namespace Business.Services
 
                 hotel.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Otel ID {id} ve ek hizmetleri başarıyla güncellendi.");
+                _logger.LogInformation($"Otel ID {id} başarıyla güncellendi.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "UpdateHotelAsync içinde hata oluştu!");
+                _logger.LogError(ex, "UpdateHotelAsync hatası");
                 throw;
             }
+        }
+
+        // ✅ YENİ: Listelerde puanı dinamik hesaplayan yardımcı metod
+        private List<HotelDto> CalculateDynamicRatings(List<Hotel> hotels)
+        {
+            var dtos = _mapper.Map<List<HotelDto>>(hotels);
+            foreach (var dto in dtos)
+            {
+                var entity = hotels.First(h => h.Id == dto.Id);
+                var activeReviews = entity.Reviews?.Where(r => !r.IsDeleted).ToList();
+
+                if (activeReviews != null && activeReviews.Any())
+                {
+                    dto.AverageRating = Math.Round(activeReviews.Average(r => (double)r.Rating), 1);
+                }
+                else
+                {
+                    dto.AverageRating = 0;
+                }
+            }
+            return dtos;
         }
     }
 }

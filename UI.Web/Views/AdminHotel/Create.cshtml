@@ -43,22 +43,36 @@
                 <div class="card-body p-4 p-md-5">
                     <div asp-validation-summary="All" class="alert alert-danger d-none" id="errorSummary"></div>
 
-                    @* ✅ Dosya yükleme için enctype eklendi *@
-                    <form asp-controller="AdminHotel" asp-action="Create" method="post" enctype="multipart/form-data">
+                    <form asp-controller="AdminHotel" asp-action="Create" method="post" enctype="multipart/form-data" id="hotelCreateForm">
                         @Html.AntiForgeryToken()
+
+                        @* ✅ Kapak URL'si backend'de set edilecek *@
+                        <input type="hidden" asp-for="CoverImageUrl" />
 
                         <h5 class="text-primary fw-bold mb-4 border-bottom pb-2"><i class="bi bi-info-circle me-2"></i>Genel Bilgiler</h5>
 
                         <div class="mb-4">
                             <label asp-for="Name" class="form-label fw-bold">Otel Adı *</label>
-                            <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="StayHub Otel">
+                            <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="StayHub Otel" required>
                             <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Yıldız Sayısı *</label>
+                            <select class="form-select" asp-for="StarRating" required>
+                                <option value="1">1 Yıldız</option>
+                                <option value="2">2 Yıldız</option>
+                                <option value="3">3 Yıldız</option>
+                                <option value="4">4 Yıldız</option>
+                                <option value="5" selected>5 Yıldız</option>
+                            </select>
+                            <span asp-validation-for="StarRating" class="text-danger small"></span>
                         </div>
 
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label asp-for="City" class="form-label fw-bold">Şehir *</label>
-                                <input type="text" class="form-control" asp-for="City" placeholder="İstanbul">
+                                <input type="text" class="form-control" asp-for="City" placeholder="İstanbul" required>
                                 <span asp-validation-for="City" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
@@ -67,7 +81,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label asp-for="Country" class="form-label fw-bold">Ülke *</label>
-                                <input type="text" class="form-control" asp-for="Country" value="Türkiye">
+                                <input type="text" class="form-control" asp-for="Country" value="Türkiye" required>
                             </div>
                         </div>
 
@@ -76,12 +90,12 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label asp-for="Email" class="form-label fw-bold">E-Posta *</label>
-                                <input type="email" class="form-control" asp-for="Email" placeholder="info@otel.com">
+                                <input type="email" class="form-control" asp-for="Email" placeholder="info@otel.com" required>
                                 <span asp-validation-for="Email" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
                                 <label asp-for="PhoneNumber" class="form-label fw-bold">Telefon *</label>
-                                <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="0212...">
+                                <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="0212..." required>
                                 <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                             </div>
                         </div>
@@ -95,51 +109,46 @@
                                     <option value="Business">Şehir Oteli</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label asp-for="StarRating" class="form-label fw-bold">Yıldız Sayısı</label>
-                                <select class="form-select" asp-for="StarRating">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        <option value="@i">@i Yıldız</option>
-                                    }
-                                </select>
-                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Address" class="form-label fw-bold">Açık Adres *</label>
+                            <input type="text" class="form-control" asp-for="Address" required>
                         </div>
 
                         <div class="mb-4">
                             <label asp-for="Description" class="form-label fw-bold">Otel Açıklaması *</label>
-                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Otelinizin sunduğu ayrıcalıkları anlatın..."></textarea>
+                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Otelinizin sunduğu ayrıcalıkları anlatın..." required></textarea>
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
                         <div class="row g-3 bg-light p-3 rounded-3 mb-4 border">
                             <div class="col-md-6">
-                                <label asp-for="CoverImageUrl" class="form-label fw-bold">Kapak Resmi URL</label>
-                                <input type="url" class="form-control" asp-for="CoverImageUrl" placeholder="https://...">
+                                <label asp-for="CheckInTime" class="form-label fw-bold">Giriş Saati (Check-in)</label>
+                                <input type="time" class="form-control" asp-for="CheckInTime" value="14:00" required>
                             </div>
-                            <div class="col-md-3">
-                                <label asp-for="CheckInTime" class="form-label fw-bold">Giriş Saati</label>
-                                <input type="time" class="form-control" asp-for="CheckInTime" value="14:00">
-                            </div>
-                            <div class="col-md-3">
-                                <label asp-for="CheckOutTime" class="form-label fw-bold">Çıkış Saati</label>
-                                <input type="time" class="form-control" asp-for="CheckOutTime" value="12:00">
+                            <div class="col-md-6">
+                                <label asp-for="CheckOutTime" class="form-label fw-bold">Çıkış Saati (Check-out)</label>
+                                <input type="time" class="form-control" asp-for="CheckOutTime" value="12:00" required>
                             </div>
                         </div>
 
-                        @* ✅ YENİ: FOTOĞRAF YÜKLEME ALANI *@
-                        <div class="mb-5 p-3 bg-light rounded-3 border">
+                        @* ✅ YENİ FOTOĞRAF YÜKLEME ALANI *@
+                        <div class="mb-5 p-4 bg-light rounded-3 border">
                             <label class="form-label fw-bold"><i class="bi bi-images me-2 text-primary"></i>Otel Fotoğrafları Yükle</label>
-                            <input type="file" name="HotelImages" id="imageInput" class="form-control" accept=".jpg,.jpeg,.png,.webp" multiple>
-                            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3">
-                                @* Önizlemeler buraya gelecek *@
-                            </div>
-                            <div class="form-text small text-muted">Galeriniz için birden fazla fotoğraf seçebilirsiniz.</div>
+                            <input type="file" name="HotelImages" id="imageInput" class="form-control shadow-sm" accept=".jpg,.jpeg,.png,.webp" multiple>
+                            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-3 mt-3 px-2 py-1"></div>
+                            <div class="form-text small text-muted mt-2">Kapak resmi olmasını istediğiniz fotoğrafın altındaki seçeneği işaretleyiniz.</div>
                         </div>
 
                         <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5">
                             <i class="bi bi-box-seam me-2"></i>Ek Hizmetler (Opsiyonel)
                         </h5>
+
+                        <div class="alert alert-info border-0 rounded-4 p-3 shadow-sm mb-4">
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Bilgi</h6>
+                            <p class="small mb-0 text-muted">Fiyatları girerken kuruş ayırıcı olarak <strong>virgül (,)</strong> kullanınız. Örneğin: 150,50</p>
+                        </div>
 
                         <div id="addOnServicesContainer" class="mb-3">
                             <div class="row g-2 mb-2 service-row align-items-center">
@@ -149,7 +158,8 @@
                                 <div class="col-md-3">
                                     <div class="input-group">
                                         <span class="input-group-text">₺</span>
-                                        <input type="number" step="0.01" name="AddOnServices[0].Price" class="form-control" placeholder="Fiyat" />
+                                        @* ✅ Fiyat girişi text yapıldı *@
+                                        <input type="text" name="AddOnServices[0].Price" class="form-control text-end price-input" placeholder="0,00" />
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -192,27 +202,6 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Görsel Önizleme
-        document.getElementById('imageInput').addEventListener('change', function (e) {
-            const container = document.getElementById('imagePreviewContainer');
-            container.innerHTML = '';
-
-            const files = e.target.files;
-            for (const file of files) {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        const imgWrapper = document.createElement('div');
-                        imgWrapper.innerHTML = `
-                            <img src="${event.target.result}" class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #dee2e6;">
-                        `;
-                        container.appendChild(imgWrapper);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-        });
-
         // Hata Özeti Kontrolü
         document.addEventListener('DOMContentLoaded', function () {
             var summary = document.querySelector('#errorSummary ul');
@@ -221,7 +210,68 @@
             }
         });
 
-        // Ek Hizmetler
+        // ✅ GELİŞMİŞ FOTOĞRAF ÖNİZLEME, SİLME VE KAPAK SEÇME İŞLEMİ
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('imagePreviewContainer');
+
+        imageInput.addEventListener('change', function () {
+            renderPreviews();
+        });
+
+        function renderPreviews() {
+            previewContainer.innerHTML = '';
+            const files = imageInput.files;
+
+            Array.from(files).forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const imgWrapper = document.createElement('div');
+                        imgWrapper.className = 'position-relative d-inline-block mt-2 text-center p-1 border rounded bg-white shadow-sm';
+                        imgWrapper.innerHTML = `
+                            <img src="${event.target.result}" class="rounded" style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #dee2e6;">
+                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle shadow"
+                                    style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;"
+                                    onclick="removeSelectedImage(${index})">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                            <div class="form-check mt-2 small d-flex justify-content-center align-items-center">
+                                <input class="form-check-input me-1 cover-radio" type="radio" name="coverImageIndex" id="cover_${index}" value="${index}" ${index === 0 ? 'checked' : ''} style="margin-top: 0; cursor: pointer;">
+                                <label class="form-check-label text-muted fw-bold" for="cover_${index}" style="cursor: pointer; font-size: 11px;">Kapak Yap</label>
+                            </div>
+                        `;
+                        previewContainer.appendChild(imgWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        window.removeSelectedImage = function(index) {
+            const dt = new DataTransfer();
+            const files = imageInput.files;
+            let coverIndexChanged = false;
+
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                } else {
+                    coverIndexChanged = true;
+                }
+            }
+
+            imageInput.files = dt.files;
+            renderPreviews();
+
+            if (coverIndexChanged && imageInput.files.length > 0) {
+                 setTimeout(() => {
+                    const firstRadio = document.querySelector('.cover-radio');
+                    if (firstRadio) firstRadio.checked = true;
+                 }, 50);
+            }
+        }
+
+        // HİZMET YÖNETİMİ
         let serviceIndex = 1;
         function addServiceRow() {
             const container = document.getElementById('addOnServicesContainer');
@@ -234,7 +284,7 @@
                 <div class="col-md-3">
                     <div class="input-group">
                         <span class="input-group-text">₺</span>
-                        <input type="number" step="0.01" name="AddOnServices[${serviceIndex}].Price" class="form-control" placeholder="Fiyat" />
+                        <input type="text" name="AddOnServices[${serviceIndex}].Price" class="form-control text-end price-input" placeholder="0,00" />
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -253,5 +303,37 @@
         function removeService(btn) {
             btn.closest('.service-row').remove();
         }
+
+        // ✅ FORMU GÖNDERMEDEN ÖNCE VİRGÜLLERİ NOKTAYA ÇEVİR
+        document.getElementById('hotelCreateForm').addEventListener('submit', function (e) {
+            document.querySelectorAll('.price-input').forEach(function (input) {
+                if(input.value) {
+                    input.value = input.value.replace(',', '.');
+                }
+            });
+
+            // Resim eklendiyse kapak seçilmiş mi kontrolü
+            const files = imageInput.files;
+            if(files.length > 0) {
+                const selectedCover = document.querySelector('input[name="coverImageIndex"]:checked');
+                if(!selectedCover) {
+                    alert("Lütfen yeni yüklediğiniz resimlerden birini kapak resmi olarak seçiniz.");
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
     </script>
 }
+
+<style>
+    .cover-radio:checked {
+        background-color: #ffc107;
+        border-color: #ffc107;
+    }
+
+    .cover-radio:focus {
+        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+        border-color: #ffc107;
+    }
+</style>
