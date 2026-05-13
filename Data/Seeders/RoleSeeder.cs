@@ -16,7 +16,6 @@ namespace Data.Seeders
         {
             try
             {
-                // 1. ROLLERİ OLUŞTUR (SuperAdmin, Admin, Guest)
                 string[] roleNames = { "SuperAdmin", "Admin", "Guest" };
                 foreach (var roleName in roleNames)
                 {
@@ -27,7 +26,6 @@ namespace Data.Seeders
                     }
                 }
 
-                // 2. ANA SUPER ADMIN OLUŞTUR (admin@stayhub.com)
                 var superAdminEmail = "admin@stayhub.com";
                 var superAdminUser = await userManager.FindByEmailAsync(superAdminEmail);
 
@@ -42,25 +40,23 @@ namespace Data.Seeders
                         PhoneNumber = "5550000000",
                         Country = "Turkey",
                         Address = "Merkez Ofis",
-                        IdentificationNumber = "00000000000", // Sistem hesabı
+                        IdentificationNumber = "00000000000", 
                         DateOfBirth = new DateTime(1985, 1, 1),
                         IsActive = true,
                         EmailConfirmed = true,
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    // Şifreyi biraz daha güçlendirdik
                     var result = await userManager.CreateAsync(superAdmin, "Admin*123456");
 
                     if (result.Succeeded)
                     {
                         await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
-                        await userManager.AddToRoleAsync(superAdmin, "Admin"); // Hem Super hem normal Admin
+                        await userManager.AddToRoleAsync(superAdmin, "Admin"); 
                         Console.WriteLine($"🚀 ANA SUPER ADMIN OLUŞTURULDU: {superAdminEmail}");
                     }
                 }
 
-                // 3. İKİNCİ BİR ÖRNEK ADMİN (Opsiyonel - Panel testi için)
                 var managerEmail = "manager@stayhub.com";
                 if (await userManager.FindByEmailAsync(managerEmail) == null)
                 {
@@ -88,7 +84,6 @@ namespace Data.Seeders
                     }
                 }
 
-                // 4. TEST MÜŞTERİSİ (guest@stayhub.com)
                 var guestUserEmail = "guest@stayhub.com";
                 var guestUser = await userManager.FindByEmailAsync(guestUserEmail);
 

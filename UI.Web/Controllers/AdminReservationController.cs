@@ -108,6 +108,10 @@ namespace UI.Web.Controllers
                 case "checkouts":
                     query = query.Where(r => r.CheckOutDate >= today && r.CheckOutDate < tomorrow);
                     break;
+                // ✅ EKLENEN KISIM: Bekleyen (Pending) rezervasyonları listelemek için eklendi.
+                case "pending":
+                    query = query.Where(r => r.Status == ReservationStatus.Pending);
+                    break;
             }
 
             var results = await query.OrderBy(r => r.CreatedAt).ToListAsync();

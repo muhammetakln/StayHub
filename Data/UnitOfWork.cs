@@ -50,13 +50,11 @@ namespace Data
         private IReservationRepository? _reservationRepository;
         public IReservationRepository ReservationRepository => _reservationRepository ??= new ReservationRepository(_context);
 
-        // ========== METHOD 1: BeginTransactionAsync ==========
         public async Task BeginTransactionAsync()
         {
             _transaction = await _context.Database.BeginTransactionAsync();
         }
 
-        // ========== METHOD 2: CommitTransactionAsync ==========
         public async Task CommitTransactionAsync()
         {
             try
@@ -78,7 +76,6 @@ namespace Data
             }
         }
 
-        // ========== METHOD 3: RollbackAsync ==========
         public async Task RollbackAsync()
         {
             try
@@ -95,7 +92,6 @@ namespace Data
             }
         }
 
-        // ========== METHOD 4: CommitAsync ==========
         public async Task<IResult> CommitAsync()
         {
             try
@@ -117,14 +113,11 @@ namespace Data
             }
         }
 
-        // ✅ DÜZELTME: Interface'iniz ile birebir aynı yapıldı (Task<int> yerine Task dönüyor)
-        // ========== METHOD 5: SaveChangesAsync ==========
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
         }
 
-        // ========== METHOD 6: CloseConnectionAsync ==========
         public async Task CloseConnectionAsync()
         {
             if (_context.Database.GetDbConnection().State == ConnectionState.Open)
@@ -133,22 +126,20 @@ namespace Data
             }
         }
 
-        // ========== METHOD 7: DisposeAsync ==========
         public async ValueTask DisposeAsync()
         {
             try
             {
                 if (_transaction != null)
+                {
                     await _transaction.DisposeAsync();
+                    _transaction = null;
+                }
             }
             catch { }
 
-            try
-            {
-                if (_context != null)
-                    await _context.DisposeAsync();
-            }
-            catch { }
+            // DI (Dependency Injection) Context'i kendisi kapatacağı için _context.Dispose() işlemi buradan silindi.
+            // Bu sayede sistem girişlerinde yaşanan kilitlenme (Timeout/Kasma) sorunu çözülmüş oldu.
 
             GC.SuppressFinalize(this);
         }
