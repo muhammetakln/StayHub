@@ -72,6 +72,16 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Şifre Tekrarı")]
         [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor")]
         public string ConfirmPassword { get; set; } = null!;
+
+        [Required(ErrorMessage = "T.C. Kimlik Numarası gereklidir")]
+        [StringLength(11, MinimumLength = 11, ErrorMessage = "T.C. Kimlik Numarası 11 hane olmalıdır")]
+        [Display(Name = "T.C. Kimlik No")]
+        public string IdentificationNumber { get; set; } = null!;
+
+        [Required(ErrorMessage = "Doğum tarihi gereklidir")]
+        [DataType(DataType.Date)]
+        [Display(Name = "Doğum Tarihi")]
+        public DateTime DateOfBirth { get; set; }
     }
 
     public class AuthDto

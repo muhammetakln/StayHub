@@ -81,6 +81,33 @@
                     <p class="text-secondary lh-lg" style="font-size: 1.1rem;">@Model.Description</p>
                 </div>
 
+                @* ✅ EKLENDİ: TESİS OLANAKLARI (AMENITIES) *@
+                <div class="card border-0 shadow-sm p-4 mb-4 rounded-4">
+                    <h3 class="fw-bold mb-4 text-dark"><i class="bi bi-stars me-2 text-warning"></i>Tesis Olanakları</h3>
+                    <div class="row g-4">
+                        @if (Model.Amenities != null && Model.Amenities.Any())
+                        {
+                            foreach (var amenity in Model.Amenities)
+                            {
+                                <div class="col-md-4 col-6">
+                                    <div class="d-flex align-items-center p-3 rounded-3 bg-light border-start border-4 border-warning h-100 transition-hover">
+                                        <div class="me-3 text-warning fs-4">
+                                            <i class="bi @(string.IsNullOrEmpty(amenity.IconUrl) ? "bi-check-circle" : amenity.IconUrl)"></i>
+                                        </div>
+                                        <span class="fw-bold text-dark">@amenity.Name</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-12 text-center py-4">
+                                <p class="text-muted italic">Bu otel için henüz özellik belirtilmemiş.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm p-4 rounded-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="fw-bold mb-0">💬 Misafir Deneyimleri (@(Model.Reviews?.Count() ?? 0))</h3>
@@ -178,6 +205,21 @@
             <div class="col-lg-4">
                 <div class="card border-0 shadow-lg p-4 rounded-4 position-sticky" style="top: 20px;">
                     <h3 class="fw-bold mb-4 text-center border-bottom pb-3">🛏️ Rezervasyon Yap</h3>
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle-fill"></i> Hata:</strong> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                            <strong><i class="bi bi-check-circle-fill"></i> Başarılı:</strong> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
 
                     @if (User.Identity?.IsAuthenticated == true)
                     {
@@ -309,21 +351,18 @@
         });
     }
 
-    // ✅ DÜZELTİLMİŞ ODA SEÇİM VE RESİM DEĞİŞTİRME FONKSİYONU
     function handleRoomChange() {
         const roomSelect = document.getElementById("RoomSelect");
         const carouselInner = document.getElementById("mainCarouselInner");
         const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
 
-        // 1. Önceki seçilmiş odaya ait resimleri temizle
         const extraItems = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
         extraItems.forEach(item => item.remove());
 
         if (roomSelect.selectedIndex > 0) {
             let images = [];
             try {
-                // Tırnak hatalarını önlemek için güvenli parse
                 const data = selectedOption.getAttribute("data-images");
                 images = JSON.parse(data || "[]");
             } catch (e) {
@@ -333,15 +372,12 @@
             const roomName = selectedOption.getAttribute("data-name");
 
             if (images.length > 0) {
-                // Ana otel resmini pasif yapıyoruz
                 hotelPrimaryItem.classList.remove('active');
 
                 images.forEach((img, index) => {
                     const div = document.createElement('div');
-                    // İlk oda resmini direkt "active" yapıyoruz (Siyah ekran çökmesini engeller)
                     div.className = index === 0 ? 'carousel-item active' : 'carousel-item';
 
-                    // Windows dosya yollarındaki ters bölüleri (\) normal bölüye (/) çeviriyoruz
                     let imgUrl = img.replace(/\\/g, '/');
                     const src = (imgUrl.startsWith('/') || imgUrl.startsWith('http')) ? imgUrl : '/' + imgUrl;
 
@@ -355,11 +391,9 @@
                     carouselInner.appendChild(div);
                 });
             } else {
-                // Eğer odanın resmi yoksa, otelin ana resmine geri dön
                 hotelPrimaryItem.classList.add('active');
             }
         } else {
-            // Seçim iptal edildiyse (Müsait Odalar seçiliyse) otelin ana resmine geri dön
             hotelPrimaryItem.classList.add('active');
         }
 
@@ -428,4 +462,15 @@
     .italic {
         font-style: italic;
     }
+
+    /* ✅ YENİ: OLANAK KARTI TASARIMI */
+    .transition-hover {
+        transition: all 0.3s ease;
+    }
+
+        .transition-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            background-color: #fff !important;
+        }
 </style>

@@ -2,6 +2,10 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Kayıt Ol";
+
+    // ✅ GÜVENLİK GÜNCELLEMESİ: 18 yaş sınırını Frontend tarafında hesaplıyoruz
+    // Bu kod kullanıcının takvimde bugün reşit olduğu tarihten sonrasını seçmesini engeller.
+    string maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
 }
 
 @model RegisterDto
@@ -14,14 +18,11 @@
                     <h3 class="mb-0">📝 Kayıt Ol</h3>
                 </div>
                 <div class="card-body">
-                    <!-- Validation Summary -->
                     <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
 
                     <form method="post" action="/account/register">
-                        <!-- ✅ ANTIFORGERY TOKEN -->
                         @Html.AntiForgeryToken()
 
-                        <!-- First Name -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">👤 Adı *</label>
                             <input type="text"
@@ -32,7 +33,6 @@
                             <span asp-validation-for="FirstName" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Last Name -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">👥 Soyadı *</label>
                             <input type="text"
@@ -43,7 +43,29 @@
                             <span asp-validation-for="LastName" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">🆔 T.C. Kimlik No *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   asp-for="IdentificationNumber"
+                                   placeholder="11 haneli T.C. No girin"
+                                   maxlength="11"
+                                   required>
+                            <span asp-validation-for="IdentificationNumber" class="text-danger d-block"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📅 Doğum Tarihi *</label>
+                            @* ✅ GÜNCELLEME: max="@maxDate" eklenerek 18 yaş altı seçim engellendi *@
+                            <input type="date"
+                                   class="form-control"
+                                   asp-for="DateOfBirth"
+                                   max="@maxDate"
+                                   required>
+                            <small class="text-muted">StayHub'a katılmak için en az 18 yaşında olmalısınız.</small>
+                            <span asp-validation-for="DateOfBirth" class="text-danger d-block"></span>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label fw-bold">📧 Email Adresi *</label>
                             <input type="email"
@@ -54,7 +76,6 @@
                             <span asp-validation-for="Email" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Phone Number -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">📱 Telefon Numarası</label>
                             <input type="tel"
@@ -64,7 +85,6 @@
                             <span asp-validation-for="PhoneNumber" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Country -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">🌍 Ülke</label>
                             <input type="text"
@@ -74,7 +94,6 @@
                                    value="Turkey">
                         </div>
 
-                        <!-- Address -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">📍 Adres</label>
                             <input type="text"
@@ -83,10 +102,6 @@
                                    placeholder="Sokak, Cadde, Mahalle">
                         </div>
 
-                        
-                        
-
-                        <!-- Password -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">🔑 Şifre *</label>
                             <input type="password"
@@ -100,7 +115,6 @@
                             <span asp-validation-for="Password" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Confirm Password -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">🔑 Şifre Tekrar *</label>
                             <input type="password"
@@ -111,7 +125,6 @@
                             <span asp-validation-for="ConfirmPassword" class="text-danger d-block"></span>
                         </div>
 
-                        <!-- Register Button -->
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-success btn-lg">
                                 ✓ Kayıt Ol
@@ -120,7 +133,6 @@
 
                         <hr class="my-4">
 
-                        <!-- Login Link -->
                         <div class="text-center">
                             <p>
                                 Zaten hesabınız var mı?

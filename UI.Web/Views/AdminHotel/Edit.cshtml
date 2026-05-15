@@ -29,17 +29,6 @@
                         </div>
                     }
 
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
-                                <div><strong>Hata!</strong> @TempData["ErrorMessage"]</div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-
                     <form method="post" enctype="multipart/form-data" id="hotelEditForm">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
@@ -48,7 +37,6 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold">Otel Adı *</label>
                             <input type="text" class="form-control form-control-lg" asp-for="Name" required>
-                            <span asp-validation-for="Name" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
@@ -60,7 +48,6 @@
                                 <option value="4">4 Yıldız</option>
                                 <option value="5">5 Yıldız</option>
                             </select>
-                            <span asp-validation-for="StarRating" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
@@ -90,6 +77,12 @@
                             </div>
                         </div>
 
+                        <div class="mb-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25">
+                            <label class="form-label fw-bold text-primary">Yönetici Şifresi Belirleyin *</label>
+                            <input type="password" class="form-control" asp-for="HotelPassword" minlength="6">
+                            <div class="form-text">Mevcut şifreyi değiştirmek istemiyorsanız boş bırakın.</div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-bold">Giriş Saati (Check-in)</label>
@@ -112,9 +105,7 @@
                                     <img src="@Model.CoverImageUrl" class="rounded" style="width: 120px; height: 120px; object-fit: cover; border: 2px solid #ffc107;">
                                 </div>
                             }
-
                             <div id="imagePreviewContainer" class="d-flex flex-wrap gap-3 mt-3 px-2 py-1"></div>
-                            <div class="form-text small text-muted mt-2">Kapak resmi olmasını istediğiniz fotoğrafın altındaki seçeneği işaretleyiniz.</div>
                         </div>
 
                         <div class="mb-4">
@@ -129,35 +120,61 @@
                             </div>
                         </div>
 
-                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5">
-                            <i class="bi bi-box-seam me-2"></i>Ek Hizmetleri Yönet
+                        @* --- AMENITIES SECTION --- *@
+                        <h5 class="text-warning fw-bold mb-4 border-bottom pb-2 mt-5">
+                            <i class="bi bi-stars me-2"></i>Otel Olanakları (Ücretsiz)
                         </h5>
+                        <div id="amenitiesContainer" class="mb-3">
+                            @if (Model.Amenities != null)
+                            {
+                                for (int i = 0; i < Model.Amenities.Count; i++)
+                                {
+                                    <div class="row g-2 mb-2 amenity-row align-items-center">
+                                        <input type="hidden" class="amenity-id" value="@Model.Amenities[i].Id" />
+                                        <div class="col-md-5">
+                                            <input type="text" value="@Model.Amenities[i].Name" class="form-control amenity-name" placeholder="Olanak Adı" required />
+                                        </div>
+                                        <div class="col-md-5">
+                                            <input type="text" value="@Model.Amenities[i].IconUrl" class="form-control amenity-icon" placeholder="İkon (bi-wifi)" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <div class="mb-4">
+                            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3" onclick="addAmenityRow()">
+                                <i class="bi bi-plus-circle me-1"></i> Yeni Olanak Ekle
+                            </button>
+                        </div>
 
+                        @* --- ADD-ON SERVICES SECTION --- *@
+                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5">
+                            <i class="bi bi-box-seam me-2"></i>Ek Hizmetleri Yönet (Ücretli)
+                        </h5>
                         <div id="addOnServicesContainer" class="mb-3">
                             @if (Model.AddOnServices != null)
                             {
                                 for (int i = 0; i < Model.AddOnServices.Count; i++)
                                 {
                                     <div class="row g-2 mb-2 service-row align-items-center">
-                                        <input type="hidden" name="AddOnServices[@i].Id" value="@Model.AddOnServices[i].Id" />
+                                        <input type="hidden" class="service-id" value="@Model.AddOnServices[i].Id" />
                                         <div class="col-md-4">
-                                            <input type="text" name="AddOnServices[@i].Name" value="@Model.AddOnServices[i].Name" class="form-control" placeholder="Hizmet Adı" required />
+                                            <input type="text" value="@Model.AddOnServices[i].Name" class="form-control service-name" placeholder="Hizmet Adı" required />
                                         </div>
                                         <div class="col-md-3">
                                             <div class="input-group">
                                                 <span class="input-group-text">₺</span>
-                                                <input type="text" name="AddOnServices[@i].Price"
-                                                       value="@Model.AddOnServices[i].Price.ToString("F2")"
-                                                       class="form-control text-end price-input" placeholder="0,00" required />
+                                                <input type="text" value="@Model.AddOnServices[i].Price.ToString("F2")" class="form-control text-end service-price price-input" placeholder="0,00" required />
                                             </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <input type="text" name="AddOnServices[@i].Unit" value="@Model.AddOnServices[i].Unit" class="form-control" placeholder="Birim" required />
+                                            <input type="text" value="@(string.IsNullOrEmpty(Model.AddOnServices[i].Unit) ? "Adet" : Model.AddOnServices[i].Unit)" class="form-control service-unit" placeholder="Birim" />
                                         </div>
                                         <div class="col-md-2">
-                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeService(this)">
-                                                <i class="bi bi-trash"></i> Sil
-                                            </button>
+                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)"><i class="bi bi-trash"></i></button>
                                         </div>
                                     </div>
                                 }
@@ -172,9 +189,7 @@
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5 pt-3 border-top">
                             <a href="/admin/hotel" class="btn btn-light px-4 rounded-pill border">İptal</a>
-                            <button type="submit" class="btn btn-warning px-5 fw-bold rounded-pill shadow-sm">
-                                Değişiklikleri Kaydet
-                            </button>
+                            <button type="submit" class="btn btn-warning px-5 fw-bold rounded-pill shadow-sm">Değişiklikleri Kaydet</button>
                         </div>
                     </form>
                 </div>
@@ -194,11 +209,6 @@
                     </a>
                 </div>
             </div>
-
-            <div class="alert alert-info border-0 rounded-4 p-4 shadow-sm">
-                <h6 class="fw-bold text-dark"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Bilgi</h6>
-                <p class="small mb-0 text-muted">Müşteri arayüzünde otel kartında görünecek kapak resmini, yüklediğiniz fotoğraflar arasından <strong>"Kapak Yap"</strong> seçeneği ile belirleyebilirsiniz.</p>
-            </div>
         </div>
     </div>
 </div>
@@ -209,14 +219,11 @@
         const imageInput = document.getElementById('imageInput');
         const previewContainer = document.getElementById('imagePreviewContainer');
 
-        imageInput.addEventListener('change', function () {
-            renderPreviews();
-        });
+        imageInput.addEventListener('change', function () { renderPreviews(); });
 
         function renderPreviews() {
             previewContainer.innerHTML = '';
             const files = imageInput.files;
-
             Array.from(files).forEach((file, index) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
@@ -227,14 +234,11 @@
                             <img src="${event.target.result}" class="rounded" style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #dee2e6;">
                             <button type="button" class="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle shadow"
                                     style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;"
-                                    onclick="removeSelectedImage(${index})">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                                    onclick="removeSelectedImage(${index})"><i class="bi bi-x-lg"></i></button>
                             <div class="form-check mt-2 small d-flex justify-content-center align-items-center">
                                 <input class="form-check-input me-1 cover-radio" type="radio" name="coverImageIndex" id="cover_${index}" value="${index}" ${index === 0 ? 'checked' : ''} style="margin-top: 0; cursor: pointer;">
                                 <label class="form-check-label text-muted fw-bold" for="cover_${index}" style="cursor: pointer; font-size: 11px;">Kapak Yap</label>
-                            </div>
-                        `;
+                            </div>`;
                         previewContainer.appendChild(imgWrapper);
                     };
                     reader.readAsDataURL(file);
@@ -245,95 +249,96 @@
         window.removeSelectedImage = function(index) {
             const dt = new DataTransfer();
             const files = imageInput.files;
-            let coverIndexChanged = false;
-
-            for (let i = 0; i < files.length; i++) {
-                if (i !== index) {
-                    dt.items.add(files[i]);
-                } else {
-                    coverIndexChanged = true;
-                }
-            }
-
+            for (let i = 0; i < files.length; i++) { if (i !== index) dt.items.add(files[i]); }
             imageInput.files = dt.files;
             renderPreviews();
-
-            if (coverIndexChanged && imageInput.files.length > 0) {
-                 setTimeout(() => {
-                    const firstRadio = document.querySelector('.cover-radio');
-                    if (firstRadio) firstRadio.checked = true;
-                 }, 50);
-            }
         }
-
-        let serviceIndex = @(Model.AddOnServices?.Count ?? 0);
 
         function addServiceRow() {
             const container = document.getElementById('addOnServicesContainer');
             const row = document.createElement('div');
             row.className = 'row g-2 mb-2 service-row align-items-center';
-
             row.innerHTML = `
-                <input type="hidden" name="AddOnServices[${serviceIndex}].Id" value="0" />
-                <div class="col-md-4">
-                    <input type="text" name="AddOnServices[${serviceIndex}].Name" class="form-control" placeholder="Hizmet Adı" required />
-                </div>
-                <div class="col-md-3">
-                    <div class="input-group">
-                        <span class="input-group-text">₺</span>
-                        <input type="text" name="AddOnServices[${serviceIndex}].Price" class="form-control text-end price-input" placeholder="0,00" required />
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <input type="text" name="AddOnServices[${serviceIndex}].Unit" class="form-control" placeholder="Birim" required />
-                </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeService(this)">
-                        <i class="bi bi-trash"></i> Sil
-                    </button>
-                </div>
-            `;
+                <input type="hidden" class="service-id" value="0" />
+                <div class="col-md-4"><input type="text" class="form-control service-name" placeholder="Hizmet Adı" required /></div>
+                <div class="col-md-3"><div class="input-group"><span class="input-group-text">₺</span><input type="text" class="form-control text-end service-price price-input" placeholder="0,00" required /></div></div>
+                <div class="col-md-3"><input type="text" class="form-control service-unit" value="Adet" /></div>
+                <div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></div>`;
             container.appendChild(row);
-            serviceIndex++;
         }
 
-        function removeService(btn) {
-            btn.closest('.service-row').remove();
+        function addAmenityRow() {
+            const container = document.getElementById('amenitiesContainer');
+            const row = document.createElement('div');
+            row.className = 'row g-2 mb-2 amenity-row align-items-center';
+            row.innerHTML = `
+                <input type="hidden" class="amenity-id" value="0" />
+                <div class="col-md-5"><input type="text" class="form-control amenity-name" placeholder="Olanak Adı" required /></div>
+                <div class="col-md-5"><input type="text" class="form-control amenity-icon" placeholder="bi-wifi" /></div>
+                <div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)"><i class="bi bi-trash"></i></button></div>`;
+            container.appendChild(row);
         }
+
+        function removeRow(btn) { btn.closest('.row').remove(); }
 
         document.getElementById('hotelEditForm').addEventListener('submit', function (e) {
-            // ✅ Noktaya çevirme işlemi KALDIRILDI. Artık veriler virgül ile gidecek.
 
-            const files = imageInput.files;
-            if(files.length > 0) {
-                const selectedCover = document.querySelector('input[name="coverImageIndex"]:checked');
-                if(!selectedCover) {
-                    alert("Lütfen yeni yüklediğiniz resimlerden birini kapak resmi olarak seçiniz.");
-                    e.preventDefault();
-                    return false;
+            // ✅ DÜZELTME 1: Sadece boşlukları ve noktaları (binlik ayraçları) temizle, virgül kalsın!
+            document.querySelectorAll('.price-input').forEach(function (input) {
+                if (input.value) {
+                    // Sadece boşlukları ve binlik ayraç olan noktaları kaldırıyoruz.
+                    // Virgülü (,) ellemeyin, C# onu ondalık ayraç olarak okuyacak.
+                    let cleanValue = input.value.trim().replace(/\s+/g, '').replace(/\./g, '');
+                    input.value = cleanValue;
                 }
-            }
+            });
+
+            // ✅ DÜZELTME 2: Olanakları İndeksle
+            let amenityIndex = 0;
+            document.querySelectorAll('.amenity-row').forEach((row) => {
+                const amenityId = row.querySelector('.amenity-id');
+                const amenityName = row.querySelector('.amenity-name');
+                const amenityIcon = row.querySelector('.amenity-icon');
+
+                // Sadece dolu satırları gönder
+                if (amenityName.value.trim()) {
+                    amenityId.name = `Amenities[${amenityIndex}].Id`;
+                    amenityName.name = `Amenities[${amenityIndex}].Name`;
+                    amenityIcon.name = `Amenities[${amenityIndex}].IconUrl`;
+                    amenityIndex++;
+                }
+            });
+
+            // ✅ DÜZELTME 3: Ek Hizmetleri İndeksle - Boş satırları filtrele
+            let serviceIndex = 0;
+            document.querySelectorAll('.service-row').forEach((row) => {
+                const serviceId = row.querySelector('.service-id');
+                const serviceName = row.querySelector('.service-name');
+                const servicePrice = row.querySelector('.service-price');
+                const serviceUnit = row.querySelector('.service-unit');
+
+                // Sadece dolu satırları gönder (ad veya fiyat varsa)
+                if (serviceName.value.trim() || servicePrice.value.trim()) {
+                    serviceId.name = `AddOnServices[${serviceIndex}].Id`;
+                    serviceName.name = `AddOnServices[${serviceIndex}].Name`;
+                    servicePrice.name = `AddOnServices[${serviceIndex}].Price`;
+                    serviceUnit.name = `AddOnServices[${serviceIndex}].Unit`;
+                    serviceIndex++;
+                }
+            });
         });
     </script>
 }
 
 <style>
-    .icon-circle {
-        width: 60px;
-        height: 60px;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+            .cover-radio:checked {
+                        background-color: #ffc107;
+                        border-color: #ffc107;
+
     }
 
-    .cover-radio:checked {
-        background-color: #ffc107;
-        border-color: #ffc107;
-    }
+            .cover-radio:focus {
+                        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
 
-    .cover-radio:focus {
-        box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
-        border-color: #ffc107;
     }
 </style>

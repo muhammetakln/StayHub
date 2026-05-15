@@ -1,12 +1,13 @@
-﻿using Core.Abstracts.IServices;
+﻿using Core.Abstracts.Interfaces;
+using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
-using Core.Concretes.Entities;
-using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace UI.Web.Controllers
 {
@@ -14,29 +15,45 @@ namespace UI.Web.Controllers
     public class HotelController : Controller
     {
         private readonly IHotelService _hotelService;
+        private readonly IReviewService _reviewService;
+        private readonly IReservationService _reservationService;
         private readonly ILogger<HotelController> _logger;
 
-        public HotelController(IHotelService hotelService, ILogger<HotelController> logger)
+        public HotelController(
+            IHotelService hotelService,
+            IReviewService reviewService,
+            IReservationService reservationService,
+            ILogger<HotelController> logger)
         {
             _hotelService = hotelService;
+            _reviewService = reviewService;
+            _reservationService = reservationService;
             _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? city)
+        public async Task<IActionResult> Index(string? city, string? searchTerm)
         {
-            List<HotelDto> hotels;
-            if (!string.IsNullOrWhiteSpace(city))
+            // ✅ PROFESYONEL DOKUNUŞ: Tarayıcı ve sunucu tarafındaki form geçmişi çakışmalarını
+            // engellemek için ModelState temizlenir. Bu sayede farklı hesap girişlerinde
+            // eski filtre değerleri kutucuklarda asılı kalmaz.
+            ModelState.Clear();
+
+            var filter = new HotelSearchFilterDto
             {
-                hotels = await _hotelService.GetHotelsByCityAsync(city);
-                ViewBag.City = city;
-                ViewBag.ResultCount = hotels.Count;
-            }
-            else
-            {
-                hotels = await _hotelService.GetHotelsAsync();
-                ViewBag.City = null;
-            }
+                City = city,
+                SearchKeyword = searchTerm,
+                PageNumber = 1,
+                PageSize = 50
+            };
+
+            var hotels = await _hotelService.FilterHotelsAsync(filter);
+
+            // Değerler boşsa null set ederek arayüzün temiz kalmasını sağlıyoruz
+            ViewBag.City = string.IsNullOrWhiteSpace(city) ? null : city;
+            ViewBag.SearchKeyword = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm;
+            ViewBag.ResultCount = hotels.Count;
+
             return View(hotels);
         }
 
@@ -62,7 +79,7 @@ namespace UI.Web.Controllers
         [HttpPost("add-review")]
         [Authorize(Roles = "Guest")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddReview([FromServices] StayHubContext context, int hotelId, int rating, string title, string Content)
+        public async Task<IActionResult> AddReview(int hotelId, int rating, string title, string Content)
         {
             try
             {
@@ -70,71 +87,45 @@ namespace UI.Web.Controllers
                 if (!int.TryParse(guestIdStr, out int guestId))
                     return Unauthorized(new { message = "Giriş yapmalısınız." });
 
-                var review = new Review
-                {
-                    HotelId = hotelId,
-                    GuestId = guestId,
-                    Rating = rating,
-                    Title = title,
-                    Comment = Content,
-                    CreatedAt = DateTime.Now,
-                    IsPublished = true,
-                    IsDeleted = false
-                };
+                var result = await _reviewService.AddReviewAsync(hotelId, guestId, rating, title, Content);
 
-                context.Reviews.Add(review);
-                await context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Yorum eklendi." });
+                if (result.IsSuccess)
+                    return Ok(new { success = true, message = "Yorum eklendi." });
+                else
+                    return StatusCode(500, new { success = false, message = result.Message });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Yorum ekleme hatası.");
                 return StatusCode(500, new { success = false });
             }
         }
 
-        // ✅ YENİ: YORUM SİLME (Admin/SuperAdmin)
         [HttpPost("delete-review/{id}")]
         [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> DeleteReview([FromServices] StayHubContext context, int id)
+        public async Task<IActionResult> DeleteReview(int id)
         {
-            var review = await context.Reviews.FindAsync(id);
-            if (review == null) return NotFound();
+            var result = await _reviewService.DeleteReviewAsync(id);
+            if (!result.IsSuccess) return NotFound();
 
-            review.IsDeleted = true; // Soft delete
-            await context.SaveChangesAsync();
             return Ok(new { success = true });
         }
 
-        // ✅ YENİ: YORUMA YANIT VERME (Admin/SuperAdmin)
         [HttpPost("reply-review")]
         [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> ReplyReview([FromServices] StayHubContext context, int reviewId, string replyText)
+        public async Task<IActionResult> ReplyReview(int reviewId, string replyText)
         {
-            var review = await context.Reviews.FindAsync(reviewId);
-            if (review == null) return NotFound();
+            var result = await _reviewService.ReplyReviewAsync(reviewId, replyText);
+            if (!result.IsSuccess) return NotFound();
 
-            review.OwnerReply = replyText;
-            review.OwnerReplyDate = DateTime.Now;
-            review.IsReplied = true;
-
-            await context.SaveChangesAsync();
             return Ok(new { success = true });
         }
 
-        // ✅ YENİ: CİRO HESAPLAMA (Admin Paneli İçin)
         [HttpGet("get-revenue/{hotelId}")]
         [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> GetRevenue([FromServices] StayHubContext context, int hotelId)
+        public async Task<IActionResult> GetRevenue(int hotelId)
         {
-            // Son 30 gündeki onaylanmış (Confirmed) rezervasyonların toplamı
-            var revenue = await context.Reservations
-                .Where(r => r.Room.HotelId == hotelId &&
-                            r.Status == Core.Concretes.Enum.ReservationStatus.Confirmed &&
-                            !r.IsDeleted &&
-                            r.CreatedAt >= DateTime.Now.AddDays(-30))
-                .SumAsync(r => r.TotalPrice);
-
+            var revenue = await _reservationService.GetMonthlyRevenueByHotelIdAsync(hotelId);
             return Ok(new { hotelId, monthlyRevenue = revenue });
         }
 
@@ -143,13 +134,6 @@ namespace UI.Web.Controllers
         public async Task<IActionResult> Book(int hotelId, [FromForm] CreateReservationDto dto)
         {
             return RedirectToAction("Create", "Reservation", new { hotelId = hotelId, dto = dto });
-        }
-
-        [HttpGet("search")]
-        public async Task<IActionResult> Search(HotelSearchFilterDto dto)
-        {
-            var hotels = await _hotelService.FilterHotelsAsync(dto);
-            return View("Index", hotels);
         }
     }
 }

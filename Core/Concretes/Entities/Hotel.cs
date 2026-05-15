@@ -12,7 +12,7 @@ namespace Core.Concretes.Entities
         public string? HotelType { get; set; }
         public string? Region { get; set; }
         public string Address { get; set; } = null!;
-       
+        public string HotelPassword { get; set; } = null!; 
         public string PhoneNumber { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string? Website { get; set; } 

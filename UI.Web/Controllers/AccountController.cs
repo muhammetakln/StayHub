@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Text.Encodings.Web;
+using System.Security.Claims;
 using UI.Web.Models;
 using UI.Web.ViewModels;
 
@@ -20,19 +21,21 @@ namespace UI.Web.Controllers
         private readonly UserManager<Guest> _userManager;
         private readonly ILogger<AccountController> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly IAuthService _authService;
 
         public AccountController(
-            SignInManager<Guest> signInManager,
-            UserManager<Guest> userManager,
-            ILogger<AccountController> logger,
-            IEmailSender emailSender)
+          SignInManager<Guest> signInManager,
+          UserManager<Guest> userManager,
+          ILogger<AccountController> logger,
+          IEmailSender emailSender,
+          IAuthService authService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _logger = logger;
             _emailSender = emailSender;
+            _authService = authService;
         }
-
 
         [HttpGet("profile")]
         [Authorize]
@@ -95,7 +98,6 @@ namespace UI.Web.Controllers
             return RedirectToAction(nameof(Profile));
         }
 
-
         [HttpGet("login")]
         [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
@@ -116,49 +118,47 @@ namespace UI.Web.Controllers
         {
             if (!ModelState.IsValid) return View(dto);
 
-            var user = await _userManager.FindByEmailAsync(dto.Email)
-                       ?? await _userManager.FindByNameAsync(dto.Email);
+            // ÖNCE e-posta ile kullanıcıyı bulmaya çalışıyoruz
+            var user = await _userManager.FindByEmailAsync(dto.Email);
 
-            if (user == null || !user.IsActive)
+            // Eğer e-posta ile bulamazsak, girilen değeri KULLANICI ADI (UserName) olarak arıyoruz
+            if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Geçersiz giriş denemesi.");
+                user = await _userManager.FindByNameAsync(dto.Email);
+            }
+
+            // İki türlü de bulunamadıysa hata dönüyoruz
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "E-posta/Kullanıcı Adı veya şifre hatalı.");
                 return View(dto);
             }
 
-            var roles = await _userManager.GetRolesAsync(user);
-            bool isAdminUser = roles.Contains("Admin") || roles.Contains("SuperAdmin");
-
-            // ✅ GÜVENLİK DÜZELTMESİ: Çift Yönlü Kesin Ayrım
-            // 1. Admin formundan müşteri girmeye çalışırsa engelle
-            if (dto.UserType == "Admin" && !isAdminUser)
+            // Kullanıcı bulundu, e-posta onay durumunu kontrol ediyoruz
+            if (!await _userManager.IsEmailConfirmedAsync(user))
             {
-                ModelState.AddModelError(string.Empty, "Bu ekrandan yalnızca otel yetkilileri giriş yapabilir.");
+                ModelState.AddModelError(string.Empty, "Lütfen giriş yapmadan önce e-posta adresinizi onaylayın.");
                 return View(dto);
             }
 
-            // 2. Müşteri formundan Admin girmeye çalışırsa engelle
-            if (dto.UserType == "Guest" && isAdminUser)
-            {
-                ModelState.AddModelError(string.Empty, "Yetkili hesapları müşteri ekranından giriş yapamaz. Lütfen yetkili girişini kullanın.");
-                return View(dto);
-            }
+            // DTO içindeki 'Email' alanını, veritabanındaki asıl e-posta ile eziyoruz. 
+            // Böylece Auth Service, kullanıcı adıyla girilmiş olsa bile doğru e-posta üzerinden giriş işlemini yapabilir.
+            dto.Email = user.Email!;
 
-            var result = await _signInManager.PasswordSignInAsync(user, dto.Password, dto.RememberMe, lockoutOnFailure: true);
+            var response = await _authService.LoginAsync(dto);
 
-            if (result.Succeeded)
+            if (response.Success && response.User != null)
             {
-                _logger.LogInformation("Kullanıcı giriş yaptı: {Email}", user.Email);
+                var roles = await _userManager.GetRolesAsync(user!);
+                bool isAdminUser = roles.Contains("Admin") || roles.Contains("SuperAdmin");
+
+                _logger.LogInformation("Kullanıcı giriş yaptı: {Email}", user!.Email);
+
                 if (isAdminUser) return Redirect("/admin/hotel");
                 return RedirectToLocal(returnUrl ?? "/hotel");
             }
 
-            if (result.IsLockedOut)
-            {
-                ModelState.AddModelError(string.Empty, "Çok fazla hatalı deneme. Hesabınız geçici olarak kilitlendi.");
-                return View(dto);
-            }
-
-            ModelState.AddModelError(string.Empty, "E-posta veya şifre hatalı.");
+            ModelState.AddModelError(string.Empty, response.Message ?? "E-posta/Kullanıcı Adı veya şifre hatalı.");
             return View(dto);
         }
 
@@ -171,7 +171,6 @@ namespace UI.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-
         [HttpGet("register")]
         [AllowAnonymous]
         public IActionResult Register() => View();
@@ -183,116 +182,95 @@ namespace UI.Web.Controllers
         {
             if (!ModelState.IsValid) return View(dto);
 
-            var user = new Guest
+            var response = await _authService.RegisterAsync(dto);
+
+            if (response.Success && response.UserId.HasValue)
             {
-                UserName = dto.Email,
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
+                var user = await _userManager.FindByIdAsync(response.UserId.Value.ToString());
 
-                IdentificationNumber = "00000000000",
-                Address = "Belirtilmedi",
-                Country = "Türkiye",
-                DateOfBirth = DateTime.Now.AddYears(-18)
-            };
+                // ✅ 18 Yaş kontrolü politikası için doğum tarihini Claim olarak ekliyoruz
+                await _userManager.AddClaimAsync(user!, new Claim("DateOfBirth", dto.DateOfBirth.ToString("yyyy-MM-dd")));
 
-            try
-            {
-                var result = await _userManager.CreateAsync(user, dto.Password);
-                if (result.Succeeded)
-                {
-                    await _userManager.AddToRoleAsync(user, "Guest");
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Hotel");
-                }
+                // ✅ E-posta onay token'ı oluşturma ve gönderme
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(user!);
+                var callbackUrl = Url.Action(
+                  "ConfirmEmail",
+                  "Account",
+                  new { userId = user!.Id, token = code },
+                  protocol: Request.Scheme);
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                await _emailSender.SendEmailAsync(dto.Email, "StayHub - Hesabınızı Onaylayın",
+                  $"Lütfen hesabınızı onaylamak için <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>buraya tıklayın</a>.");
+
+                TempData["SuccessMessage"] = "Kayıt başarılı! Lütfen giriş yapabilmek için e-posta adresinize gönderilen onay bağlantısına tıklayın.";
+                return RedirectToAction(nameof(Login));
             }
-            catch (Exception ex)
+
+            ModelState.AddModelError(string.Empty, response.Message);
+            if (!string.IsNullOrEmpty(response.ErrorDetails))
             {
-                _logger.LogError(ex, "Kayıt esnasında veritabanı hatası oluştu.");
-                ModelState.AddModelError(string.Empty, "Sistemsel bir hata oluştu. Lütfen bilgilerinizi kontrol edin.");
+                _logger.LogWarning("Kayıt Hatası: {Details}", response.ErrorDetails);
             }
 
             return View(dto);
         }
 
+        [HttpGet("ConfirmEmail")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (userId == null || token == null) return RedirectToAction("Index", "Home");
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound($"ID'si '{userId}' olan kullanıcı bulunamadı.");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "E-posta adresiniz başarıyla onaylandı. Artık giriş yapabilirsiniz.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            return BadRequest("E-posta onaylanırken bir hata oluştu.");
+        }
 
         [HttpGet("forgot-password")]
         [AllowAnonymous]
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
+        public IActionResult ForgotPassword() => View();
 
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-
-            if (user == null)
-            {
-                return RedirectToAction(nameof(ForgotPasswordConfirmation));
-            }
+            if (user == null) return RedirectToAction(nameof(ForgotPasswordConfirmation));
 
             var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: Request.Scheme);
 
-            var callbackUrl = Url.Action(
-                "ResetPassword",
-                "Account",
-                new { userId = user.Id, code = code },
-                protocol: Request.Scheme);
-
-            await _emailSender.SendEmailAsync(
-                model.Email,
-                "StayHub - Şifre Sıfırlama Talebi",
-                $"Hesabınızın şifresini sıfırlamak için lütfen <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>buraya tıklayın</a>.");
+            await _emailSender.SendEmailAsync(model.Email, "StayHub - Şifre Sıfırlama Talebi",
+              $"Hesabınızın şifresini sıfırlamak için lütfen <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>buraya tıklayın</a>.");
 
             return RedirectToAction(nameof(ForgotPasswordConfirmation));
         }
 
         [HttpGet("forgot-password-confirmation")]
         [AllowAnonymous]
-        public IActionResult ForgotPasswordConfirmation()
-        {
-            return View();
-        }
-
+        public IActionResult ForgotPasswordConfirmation() => View();
 
         [HttpGet("ResetPassword")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword(string userId, string code)
         {
-            if (userId == null || code == null)
-            {
-                return BadRequest("Geçersiz veya eksik şifre sıfırlama bağlantısı.");
-            }
+            if (userId == null || code == null) return BadRequest("Geçersiz veya eksik şifre sıfırlama bağlantısı.");
 
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return BadRequest("Kullanıcı bulunamadı.");
-            }
+            if (user == null) return BadRequest("Kullanıcı bulunamadı.");
 
-            var model = new ResetPasswordViewModel
-            {
-                Token = code,
-                Email = user.Email
-            };
-
-            return View(model);
+            return View(new ResetPasswordViewModel { Token = code, Email = user.Email! });
         }
 
         [HttpPost("ResetPassword")]
@@ -300,34 +278,21 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
+            if (user == null) return RedirectToAction("Index", "Home");
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+            if (result.Succeeded)
             {
                 TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir.";
                 return RedirectToAction("Index", "Home");
             }
 
-            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
-
-            if (result.Succeeded)
-            {
-                TempData["SuccessMessage"] = "Şifreniz başarıyla güncellenmiştir. Yeni şifrenizle giriş yapabilirsiniz.";
-                return RedirectToAction("Index", "Home");
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
+            foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
             return View(model);
         }
-
 
         private IActionResult RedirectToLocal(string returnUrl)
         {

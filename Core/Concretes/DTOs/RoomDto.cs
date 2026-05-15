@@ -36,6 +36,7 @@ namespace Core.Concretes.DTOs
 
         [Display(Name = "Oda Resmi")]
         public string? ImageUrl { get; set; }
+        public bool IsDeleted { get; set; }
     }
 
     public class RoomDetailDto

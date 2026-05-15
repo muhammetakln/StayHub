@@ -36,6 +36,7 @@ namespace UI.Web.Controllers
         }
 
         [HttpGet("")]
+        [HttpGet("dashboard/{id?}")]
         public async Task<IActionResult> Index()
         {
             try
@@ -49,13 +50,18 @@ namespace UI.Web.Controllers
 
                 bool isSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
 
+                if (isSuperAdmin)
+                {
+                    return RedirectToAction(nameof(Create));
+                }
+
                 if (user.HotelId.HasValue)
                 {
                     var hotelDetail = await _hotelService.GetHotelByIdAsync(user.HotelId.Value);
 
                     if (hotelDetail != null)
                     {
-                        hotelDetail.Rooms ??= new List<RoomDto>();
+                        hotelDetail.Rooms = hotelDetail.Rooms?.Where(r => !r.IsDeleted).ToList() ?? new List<RoomDto>();
                         hotelDetail.AddOnServices ??= new List<AddOnServiceDto>();
 
                         var today = DateTime.Today;
@@ -71,13 +77,13 @@ namespace UI.Web.Controllers
 
                         hotelDetail.TodayCheckIns = await _context.Reservations
                             .CountAsync(r => r.Room.HotelId == user.HotelId &&
-                                             r.CheckInDate >= today && r.CheckInDate < tomorrow &&
-                                             !r.IsDeleted);
+                                               r.CheckInDate >= today && r.CheckInDate < tomorrow &&
+                                               !r.IsDeleted);
 
                         hotelDetail.ActiveReservations = await _context.Reservations
                             .CountAsync(r => r.Room.HotelId == user.HotelId &&
-                                             r.Status == Core.Concretes.Enum.ReservationStatus.CheckedIn &&
-                                             !r.IsDeleted);
+                                               r.Status == Core.Concretes.Enum.ReservationStatus.CheckedIn &&
+                                               !r.IsDeleted);
 
                         var ratings = await _context.Reviews
                             .Where(r => r.HotelId == user.HotelId && !r.IsDeleted)
@@ -91,22 +97,7 @@ namespace UI.Web.Controllers
                     }
                 }
 
-                if (!isSuperAdmin)
-                {
-                    _logger.LogInformation("Admin kullanıcısının oteli yok, oluşturma sayfasına yönlendiriliyor.");
-                    return RedirectToAction(nameof(Create));
-                }
-
-                return View(new HotelDetailDto
-                {
-                    Name = "Sistem Yönetim Paneli",
-                    Rooms = new List<RoomDto>(),
-                    AddOnServices = new List<AddOnServiceDto>(),
-                    TodayCheckIns = 0,
-                    TodayCheckOuts = 0,
-                    ActiveReservations = 0,
-                    MonthlyEarning = 0
-                });
+                return RedirectToAction(nameof(Create));
             }
             catch (Exception ex)
             {
@@ -150,13 +141,32 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateHotelDto dto, List<IFormFile> HotelImages, int? coverImageIndex)
         {
-            // ✅ Kültürü NET bir şekilde Türkçeye zorluyoruz. Formdan virgül gelecek ve bunu kuruş sayacak.
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("tr-TR");
-            CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("tr-TR");
+            var culture = new CultureInfo("tr-TR");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
 
             try
             {
-                if (!ModelState.IsValid) return View(dto);
+                if (dto.AddOnServices != null)
+                {
+                    for (int i = 0; i < dto.AddOnServices.Count; i++)
+                    {
+                        ModelState.Remove($"AddOnServices[{i}].Description");
+                    }
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    foreach (var state in ModelState)
+                    {
+                        foreach (var error in state.Value.Errors)
+                        {
+                            _logger.LogWarning("Validation Hatası - Alan: {Field}, Mesaj: {Error}", state.Key, error.ErrorMessage);
+                        }
+                    }
+                    return View(dto);
+                }
+
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null) return RedirectToAction("Login", "Account");
 
@@ -194,8 +204,11 @@ namespace UI.Web.Controllers
                     await _signInManager.RefreshSignInAsync(user);
                 }
 
-                TempData["SuccessMessage"] = "Oteliniz başarıyla oluşturuldu.";
-                return RedirectToAction(nameof(Index));
+                TempData["SuccessMessage"] = "Oteliniz başarıyla oluşturuldu. Şimdi odaları ekleyebilirsiniz.";
+
+                // ✅ DÜZELTME: Dashboard yerine doğrudan Odalar sayfasına (Step 2) yönlendiriyoruz
+                // Route yapınıza göre '/admin/room/index/{id}' sayfasına gider
+                return Redirect($"/admin/room/index/{createdHotelId}");
             }
             catch (Exception ex)
             {
@@ -228,13 +241,24 @@ namespace UI.Web.Controllers
                 CoverImageUrl = hotel.CoverImageUrl,
                 CheckInTime = hotel.CheckInTime,
                 CheckOutTime = hotel.CheckOutTime,
+
+                Amenities = hotel.Amenities.Select(a => new UpdateAmenityDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    IconUrl = a.IconUrl,
+                    Description = a.Description
+                }).ToList() ?? new List<UpdateAmenityDto>(),
+
                 AddOnServices = hotel.AddOnServices?.Select(s => new UpdateAddOnServiceDto
                 {
                     Id = s.Id,
                     Name = s.Name,
                     Price = s.Price,
+                    Unit = s.Unit
                 }).ToList() ?? new List<UpdateAddOnServiceDto>()
             };
+
             return View(updateDto);
         }
 
@@ -242,11 +266,30 @@ namespace UI.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, UpdateHotelDto dto, List<IFormFile> HotelImages, int? coverImageIndex)
         {
-            // ✅ Kültürü NET bir şekilde Türkçeye zorluyoruz. 
-            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("tr-TR");
-            CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("tr-TR");
+            var culture = new CultureInfo("tr-TR");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-            if (!ModelState.IsValid) return View(dto);
+            ModelState.Remove("HotelPassword");
+            if (dto.Amenities != null)
+            {
+                for (int i = 0; i < dto.Amenities.Count; i++)
+                {
+                    ModelState.Remove($"Amenities[{i}].IconUrl");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        _logger.LogWarning("Düzenleme Hatası - Alan: {Field}, Mesaj: {Error}", state.Key, error.ErrorMessage);
+                    }
+                }
+                return View(dto);
+            }
 
             var user = await _userManager.GetUserAsync(User);
             if (!User.IsInRole("SuperAdmin") && (user == null || user.HotelId != id)) return Forbid();
@@ -274,7 +317,6 @@ namespace UI.Web.Controllers
                         if (i == selectedIndex)
                         {
                             dto.CoverImageUrl = relativePath;
-                            _logger.LogInformation($"Otel ID {id} için yeni kapak resmi set edildi: {relativePath}");
                         }
                     }
                 }
@@ -287,7 +329,6 @@ namespace UI.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Otel güncellenirken hata oluştu.");
-                TempData["ErrorMessage"] = "Otel güncellenirken teknik bir hata oluştu.";
                 return View(dto);
             }
         }

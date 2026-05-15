@@ -4,12 +4,10 @@ using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Data.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Utils.Responses;
 
@@ -32,67 +30,36 @@ namespace Business.Services
         {
             try
             {
-                logger.LogInformation($"[REVİEW] Yorum yazılıyor:Guest={guestId},Hotel={dto.HotelId}");
+                logger.LogInformation($"[REVIEW] Yorum yazılıyor:Guest={guestId},Hotel={dto.HotelId}");
                 var hotelExists = await context.Hotels.AnyAsync(h => h.Id == dto.HotelId && !h.IsDeleted);
                 if (!hotelExists)
                 {
-                    logger.LogWarning($"[REVİEW] Yorum yazılamadı:Hotel bulunamadı:Hotel={dto.HotelId}");
-                    return Result<ReviewDto>.Failure("Hotel bulunamadı", statusCode: 404);
+                    logger.LogWarning($"[REVIEW] Yorum yazılamadı:Hotel bulunamadı:Hotel={dto.HotelId}");
+                    return Result<ReviewDto>.Failure("Otel bulunamadı");
                 }
                 var review = mapper.Map<Review>(dto);
                 review.GuestId = guestId;
                 review.CreatedAt = DateTime.UtcNow;
-                await context.Reviews.AddAsync(review);
+                review.IsPublished = true;
+                review.IsDeleted = false;
+
+                context.Reviews.Add(review);
                 await context.SaveChangesAsync();
-                logger.LogInformation($"[REVİEW] Yorum başarıyla yazıldı:ReviewId={review.Id}");
-                return Result<ReviewDto>.Success(mapper.Map<ReviewDto>(review));
+
+                return Result<ReviewDto>.Success(mapper.Map<ReviewDto>(review), "Yorum başarıyla eklendi.");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "[REVİEW] Yorum yazılırken bir hata oluştu");
-                return Result<ReviewDto>.Failure("Yorum yazılırken bir hata oluştu");
+                logger.LogError(ex, "CreateReviewAsync hatası");
+                return Result<ReviewDto>.Failure("Yorum eklenirken hata oluştu");
             }
         }
 
-        public async Task<IResult> DeleteReviewAsync(int id)
-        {
-            try
-            {
-                logger.LogInformation($"[REVIEW] Yorum siliniyor: ID={id}");
-                var review = await context.Reviews.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
-                if (review == null)
-                {
-                    logger.LogWarning($"[REVIEW] Yorum bulunamadı: {id}");
-                    return Result.Failure("Yorum bulunamadı");
-                }
-
-                review.IsDeleted = true;
-                review.UpdatedAt = DateTime.UtcNow;
-
-                context.Reviews.Update(review);
-                await context.SaveChangesAsync();
-
-                logger.LogInformation($"[REVIEW] Yorum silindi: ID={id}");
-                return Result.Success("Yorum silindi");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "[REVIEW] DeleteReviewAsync hatası");
-                return Result.Failure("Yorum silinirken hata oluştu");
-            }
-        }
-
-       
         public async Task<ReviewListDto?> GetReviewByIdAsync(int id, ReviewListDto dto)
         {
             try
             {
-                logger.LogInformation($"[REVIEW] Tekil yorum alınıyor: ID={id}");
-
-                var review = await context.Reviews
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
-
+                var review = await context.Reviews.FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
                 if (review == null)
                 {
                     logger.LogWarning($"[REVIEW] Yorum bulunamadı: {id}");
@@ -135,6 +102,75 @@ namespace Business.Services
                 return Result.Failure("Yorum güncellenirken hata oluştu");
             }
         }
-    }
 
+        // ✅ Controller'dan buraya taşınan yeni mimari metotlar:
+        public async Task<IResult> AddReviewAsync(int hotelId, int guestId, int rating, string title, string content)
+        {
+            try
+            {
+                var review = new Review
+                {
+                    HotelId = hotelId,
+                    GuestId = guestId,
+                    Rating = rating,
+                    Title = title,
+                    Comment = content,
+                    CreatedAt = DateTime.UtcNow,
+                    IsPublished = true,
+                    IsDeleted = false
+                };
+
+                context.Reviews.Add(review);
+                await context.SaveChangesAsync();
+
+                return Result.Success("Yorum eklendi.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "AddReviewAsync hatası");
+                return Result.Failure("Yorum eklenemedi.");
+            }
+        }
+
+        public async Task<IResult> DeleteReviewAsync(int id)
+        {
+            try
+            {
+                var review = await context.Reviews.FindAsync(id);
+                if (review == null) return Result.Failure("Yorum bulunamadı.");
+
+                review.IsDeleted = true; // Soft delete
+                await context.SaveChangesAsync();
+
+                return Result.Success("Yorum silindi.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "DeleteReviewAsync hatası");
+                return Result.Failure("Yorum silinemedi.");
+            }
+        }
+
+        public async Task<IResult> ReplyReviewAsync(int reviewId, string replyText)
+        {
+            try
+            {
+                var review = await context.Reviews.FindAsync(reviewId);
+                if (review == null) return Result.Failure("Yorum bulunamadı.");
+
+                review.OwnerReply = replyText;
+                review.OwnerReplyDate = DateTime.UtcNow;
+                review.IsReplied = true;
+
+                await context.SaveChangesAsync();
+
+                return Result.Success("Yanıtlama başarılı.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "ReplyReviewAsync hatası");
+                return Result.Failure("Yanıt eklenemedi.");
+            }
+        }
+    }
 }

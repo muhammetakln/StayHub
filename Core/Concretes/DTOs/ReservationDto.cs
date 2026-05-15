@@ -10,6 +10,8 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Otel ID")]
         public int HotelId { get; set; }
 
+        public string ReservationNumber { get; set; } = null!;
+
         [Required]
         [Display(Name = "Otel Adı")]
         public string HotelName { get; set; } = null!;

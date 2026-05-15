@@ -16,6 +16,7 @@ namespace Data.Seeders
         {
             try
             {
+                // 1. Rolleri Oluştur
                 string[] roleNames = { "SuperAdmin", "Admin", "Guest" };
                 foreach (var roleName in roleNames)
                 {
@@ -26,7 +27,8 @@ namespace Data.Seeders
                     }
                 }
 
-                var superAdminEmail = "admin@stayhub.com";
+                // 2. YENİ ANA SUPER ADMIN TANIMLAMASI
+                var superAdminEmail = "superadmin@stayhub.com"; // Yeni email adresiniz
                 var superAdminUser = await userManager.FindByEmailAsync(superAdminEmail);
 
                 if (superAdminUser == null)
@@ -36,27 +38,30 @@ namespace Data.Seeders
                         UserName = superAdminEmail,
                         Email = superAdminEmail,
                         FirstName = "StayHub",
-                        LastName = "SuperAdmin",
+                        LastName = "Yönetici",
                         PhoneNumber = "5550000000",
                         Country = "Turkey",
-                        Address = "Merkez Ofis",
-                        IdentificationNumber = "00000000000", 
+                        Address = "StayHub Ana Merkez",
+                        IdentificationNumber = "99999999999",
                         DateOfBirth = new DateTime(1985, 1, 1),
                         IsActive = true,
                         EmailConfirmed = true,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        IsDeleted = false
                     };
 
-                    var result = await userManager.CreateAsync(superAdmin, "Admin*123456");
+                    // Yeni Şifre: Admin123!
+                    var result = await userManager.CreateAsync(superAdmin, "Admin123!");
 
                     if (result.Succeeded)
                     {
                         await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
-                        await userManager.AddToRoleAsync(superAdmin, "Admin"); 
-                        Console.WriteLine($"🚀 ANA SUPER ADMIN OLUŞTURULDU: {superAdminEmail}");
+                        await userManager.AddToRoleAsync(superAdmin, "Admin");
+                        Console.WriteLine($"🚀 YENİ SUPER ADMIN OLUŞTURULDU: {superAdminEmail} / Şifre: Admin123!");
                     }
                 }
 
+                // 3. ÖRNEK OTEL YÖNETİCİSİ (ADMIN)
                 var managerEmail = "manager@stayhub.com";
                 if (await userManager.FindByEmailAsync(managerEmail) == null)
                 {
@@ -68,15 +73,16 @@ namespace Data.Seeders
                         LastName = "Yöneticisi",
                         PhoneNumber = "5551111111",
                         Country = "Turkey",
-                        Address = "Yönetim Paneli",
+                        Address = "Otel Yönetim Birimi",
                         IdentificationNumber = "11111111111",
                         DateOfBirth = new DateTime(1990, 5, 20),
                         IsActive = true,
                         EmailConfirmed = true,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        IsDeleted = false
                     };
 
-                    var result = await userManager.CreateAsync(manager, "Manager*123");
+                    var result = await userManager.CreateAsync(manager, "Manager123!");
                     if (result.Succeeded)
                     {
                         await userManager.AddToRoleAsync(manager, "Admin");
@@ -84,10 +90,9 @@ namespace Data.Seeders
                     }
                 }
 
+                // 4. ÖRNEK MÜŞTERİ (GUEST)
                 var guestUserEmail = "guest@stayhub.com";
-                var guestUser = await userManager.FindByEmailAsync(guestUserEmail);
-
-                if (guestUser == null)
+                if (await userManager.FindByEmailAsync(guestUserEmail) == null)
                 {
                     var guest = new Guest
                     {
@@ -97,15 +102,16 @@ namespace Data.Seeders
                         LastName = "Müşteri",
                         PhoneNumber = "5552222222",
                         Country = "Turkey",
-                        Address = "Müşteri Mah.",
+                        Address = "Örnek Mahalle no:1",
                         IdentificationNumber = "22222222222",
                         DateOfBirth = new DateTime(1998, 10, 10),
                         IsActive = true,
                         EmailConfirmed = true,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        IsDeleted = false
                     };
 
-                    var result = await userManager.CreateAsync(guest, "Guest*123");
+                    var result = await userManager.CreateAsync(guest, "Guest123!");
                     if (result.Succeeded)
                     {
                         await userManager.AddToRoleAsync(guest, "Guest");

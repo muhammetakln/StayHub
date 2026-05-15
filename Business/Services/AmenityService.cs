@@ -115,5 +115,25 @@ namespace Business.Services
                 return new List<AmenityDto>();
             }
         }
+        public async Task<IResult> UpdateAmenityAsync(int id, CreateAmenityDto dto)
+        {
+            try
+            {
+                var amenity = await context.Amenities.FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted);
+                if (amenity == null) return Result.Failure("Olanak bulunamadı");
+
+                mapper.Map(dto, amenity);
+                amenity.UpdatedAt = DateTime.UtcNow;
+
+                context.Amenities.Update(amenity);
+                await context.SaveChangesAsync();
+                return Result.Success("Olanak güncellendi");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[AMENITY] UpdateAmenityAsync hatası");
+                return Result.Failure("Güncelleme sırasında hata oluştu");
+            }
+        }
     }
 }

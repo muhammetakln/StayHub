@@ -16,10 +16,40 @@
             StayHub ile dünyanın en seçkin otellerinde, unutulmaz anılar biriktirmeye hazır olun.
             Konfor, lüks ve huzuru tek bir platformda topladık.
         </p>
-        <div class="d-flex justify-content-center gap-3">
-            <a href="/hotel" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg transition-transform hover-scale">
-                Hemen Keşfetmeye Başla <i class="bi bi-arrow-right ms-2"></i>
-            </a>
+
+        @* ✅ GÜNCELLENEN BUTONLAR: Giriş ve Admin Butonları Ayrıldı *@
+        <div class="d-flex flex-wrap justify-content-center gap-3 animate__animated animate__fadeInUp animate__delay-1s">
+            @if (!User.Identity.IsAuthenticated)
+            {
+                @* Müşteri Keşfet Butonu *@
+                <a href="/hotel" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg transition-transform hover-scale">
+                    <i class="bi bi-search me-2"></i> Otelleri Keşfet
+                </a>
+
+                @* Müşteri Giriş Butonu *@
+                <a href="/account/login?userType=Guest" class="btn btn-outline-light btn-lg rounded-pill px-5 py-3 fw-bold transition-transform hover-scale">
+                    <i class="bi bi-person-fill me-2"></i> Giriş Yap
+                </a>
+
+                @* Otel Yönetim Paneli Butonu *@
+                <a href="/account/login?userType=Admin" class="btn btn-warning btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg transition-transform hover-scale text-dark">
+                    <i class="bi bi-building-gear me-2"></i> Otel Yönetimi
+                </a>
+            }
+            else
+            {
+                @* Giriş yapmış kullanıcılar için *@
+                <a href="/hotel" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg">
+                    Hemen Keşfetmeye Başla <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+
+                @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                {
+                    <a href="/admin/hotel" class="btn btn-warning btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg text-dark">
+                        <i class="bi bi-speedometer2 me-2"></i> Yönetim Paneline Git
+                    </a>
+                }
+            }
         </div>
     </div>
 </div>
@@ -68,7 +98,7 @@
     <div class="row g-4">
         @if (Model != null && Model.Any(h => h.IsActive))
         {
-            @foreach (var hotel in Model.Where(h => h.IsActive).Take(4)) @* Ana sayfada en fazla 4 adet gösteriyoruz *@
+            @foreach (var hotel in Model.Where(h => h.IsActive).Take(4))
             {
                 <div class="col-md-6 col-lg-3">
                     <div class="card h-100 border-0 shadow-sm hotel-card rounded-4 overflow-hidden">

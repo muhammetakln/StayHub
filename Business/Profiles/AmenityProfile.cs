@@ -10,6 +10,7 @@ namespace Business.Mappings
         {
             CreateMap<Amenity,AmenityDto>();
             CreateMap<CreateAmenityDto,Amenity>();
+            CreateMap<UpdateAmenityDto,Amenity>();
         }
     }
 }

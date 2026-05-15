@@ -1,8 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-/// <summary>
-/// Pagination Request DTO
-/// List endpoints'te kullanılır
-/// </summary>
+
 public class PaginatedRequestDto
 {
     [Display(Name = "Sayfa Numarası")]

@@ -1,13 +1,10 @@
 ﻿using Core.Abstracts;
 using Core.Abstracts.IRepositories;
-using Core.Concretes.Entities;
 using Data.Contexts;
 using Data.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using System;
 using System.Data;
-using System.Threading.Tasks;
 using Utils.Responses;
 
 namespace Data

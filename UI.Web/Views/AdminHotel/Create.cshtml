@@ -20,176 +20,110 @@
                     <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:40px; height:40px;">2</div>
                     <p class="small mt-2">Odalar</p>
                 </div>
-                <div class="flex-grow-1 border-bottom mb-4 mx-3 opacity-25" style="margin-top:20px;"></div>
-                <div class="text-center opacity-50">
-                    <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width:40px; height:40px;">3</div>
-                    <p class="small mt-2">Tamamla</p>
-                </div>
             </div>
 
-            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-                <div class="card-header border-0 p-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-white bg-opacity-25 rounded-3 p-3 me-3">
-                            <i class="bi bi-building-fill-add text-white fs-2"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0 fw-bold text-white">Yeni Otel Kaydı</h3>
-                            <p class="mb-0 text-white-50">Önce temel bilgileri ve ek hizmetleri kaydedelim.</p>
-                        </div>
-                    </div>
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white p-4 rounded-top-4">
+                    <h3 class="mb-0 fw-bold"><i class="bi bi-plus-circle me-2"></i>Yeni Otel Kaydı</h3>
+                    <small class="opacity-75">Tesisinizi sisteme tanıtın ve yönetmeye başlayın.</small>
                 </div>
+                <div class="card-body p-4 p-lg-5">
 
-                <div class="card-body p-4 p-md-5">
-                    <div asp-validation-summary="All" class="alert alert-danger d-none" id="errorSummary"></div>
-
-                    <form asp-controller="AdminHotel" asp-action="Create" method="post" enctype="multipart/form-data" id="hotelCreateForm">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="hotelCreateForm">
                         @Html.AntiForgeryToken()
 
-                        @* ✅ Kapak URL'si backend'de set edilecek *@
-                        <input type="hidden" asp-for="CoverImageUrl" />
-
-                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2"><i class="bi bi-info-circle me-2"></i>Genel Bilgiler</h5>
-
-                        <div class="mb-4">
-                            <label asp-for="Name" class="form-label fw-bold">Otel Adı *</label>
-                            <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="StayHub Otel" required>
-                            <span asp-validation-for="Name" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Yıldız Sayısı *</label>
-                            <select class="form-select" asp-for="StarRating" required>
-                                <option value="1">1 Yıldız</option>
-                                <option value="2">2 Yıldız</option>
-                                <option value="3">3 Yıldız</option>
-                                <option value="4">4 Yıldız</option>
-                                <option value="5" selected>5 Yıldız</option>
-                            </select>
-                            <span asp-validation-for="StarRating" class="text-danger small"></span>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <label asp-for="City" class="form-label fw-bold">Şehir *</label>
-                                <input type="text" class="form-control" asp-for="City" placeholder="İstanbul" required>
-                                <span asp-validation-for="City" class="text-danger small"></span>
+                        <div class="row">
+                            <div class="col-md-8 mb-4">
+                                <label class="form-label fw-bold">Otel Adı *</label>
+                                <input type="text" class="form-control form-control-lg" asp-for="Name" placeholder="Örn: StayHub Grand Hotel" required>
+                                <span asp-validation-for="Name" class="text-danger small"></span>
                             </div>
-                            <div class="col-md-4">
-                                <label asp-for="Region" class="form-label fw-bold">Bölge</label>
-                                <input type="text" class="form-control" asp-for="Region" placeholder="Karaköy">
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Country" class="form-label fw-bold">Ülke *</label>
-                                <input type="text" class="form-control" asp-for="Country" value="Türkiye" required>
-                            </div>
-                        </div>
-
-                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5"><i class="bi bi-telephone me-2"></i>İletişim & Detaylar</h5>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="Email" class="form-label fw-bold">E-Posta *</label>
-                                <input type="email" class="form-control" asp-for="Email" placeholder="info@otel.com" required>
-                                <span asp-validation-for="Email" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="PhoneNumber" class="form-label fw-bold">Telefon *</label>
-                                <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="0212..." required>
-                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label asp-for="HotelType" class="form-label fw-bold">Otel Türü</label>
-                                <select class="form-select" asp-for="HotelType">
-                                    <option value="Boutique">Butik Otel</option>
-                                    <option value="Resort">Resort</option>
-                                    <option value="Business">Şehir Oteli</option>
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label fw-bold">Yıldız Sayısı *</label>
+                                <select class="form-select form-control-lg" asp-for="StarRating" required>
+                                    <option value="1">1 Yıldız</option>
+                                    <option value="2">2 Yıldız</option>
+                                    <option value="3">3 Yıldız</option>
+                                    <option value="4">4 Yıldız</option>
+                                    <option value="5" selected>5 Yıldız</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label asp-for="Address" class="form-label fw-bold">Açık Adres *</label>
-                            <input type="text" class="form-control" asp-for="Address" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">Şehir *</label>
+                                <input type="text" class="form-control" asp-for="City" placeholder="Örn: İstanbul" required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">Ülke *</label>
+                                <input type="text" class="form-control" asp-for="Country" placeholder="Örn: Türkiye" required>
+                            </div>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Description" class="form-label fw-bold">Otel Açıklaması *</label>
-                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Otelinizin sunduğu ayrıcalıkları anlatın..." required></textarea>
-                            <span asp-validation-for="Description" class="text-danger small"></span>
+                            <label class="form-label fw-bold">Açık Adres *</label>
+                            <input type="text" class="form-control" asp-for="Address" placeholder="Sokak, Mahalle, No..." required>
                         </div>
 
-                        <div class="row g-3 bg-light p-3 rounded-3 mb-4 border">
-                            <div class="col-md-6">
-                                <label asp-for="CheckInTime" class="form-label fw-bold">Giriş Saati (Check-in)</label>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">Telefon *</label>
+                                <input type="tel" class="form-control" asp-for="PhoneNumber" placeholder="05XX XXX XX XX" required>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">E-Posta (Giriş İçin Kullanılacak) *</label>
+                                <input type="email" class="form-control" asp-for="Email" placeholder="hotel@iletisim.com" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25">
+                            <label class="form-label fw-bold text-primary">Yönetici Şifresi Belirleyin *</label>
+                            <input type="password" class="form-control" asp-for="HotelPassword" required minlength="6">
+                            <div class="form-text">Bu şifre ile otel yönetim paneline giriş yapabileceksiniz.</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">Giriş Saati (Check-in)</label>
                                 <input type="time" class="form-control" asp-for="CheckInTime" value="14:00" required>
                             </div>
-                            <div class="col-md-6">
-                                <label asp-for="CheckOutTime" class="form-label fw-bold">Çıkış Saati (Check-out)</label>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-bold">Çıkış Saati (Check-out)</label>
                                 <input type="time" class="form-control" asp-for="CheckOutTime" value="12:00" required>
                             </div>
                         </div>
 
-                        @* ✅ YENİ FOTOĞRAF YÜKLEME ALANI *@
-                        <div class="mb-5 p-4 bg-light rounded-3 border">
-                            <label class="form-label fw-bold"><i class="bi bi-images me-2 text-primary"></i>Otel Fotoğrafları Yükle</label>
-                            <input type="file" name="HotelImages" id="imageInput" class="form-control shadow-sm" accept=".jpg,.jpeg,.png,.webp" multiple>
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-bold"><i class="bi bi-images me-2"></i>Otel Fotoğrafları Yükle</label>
+                            <input type="file" name="HotelImages" id="imageInput" class="form-control shadow-sm" accept=".jpg,.jpeg,.png,.webp" multiple required>
                             <div id="imagePreviewContainer" class="d-flex flex-wrap gap-3 mt-3 px-2 py-1"></div>
-                            <div class="form-text small text-muted mt-2">Kapak resmi olmasını istediğiniz fotoğrafın altındaki seçeneği işaretleyiniz.</div>
+                            <div class="form-text small text-muted mt-2">Lütfen yüklediğiniz resimlerden birini <b>Kapak Resmi</b> olarak işaretleyin.</div>
                         </div>
 
-                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-5">
-                            <i class="bi bi-box-seam me-2"></i>Ek Hizmetler (Opsiyonel)
-                        </h5>
-
-                        <div class="alert alert-info border-0 rounded-4 p-3 shadow-sm mb-4">
-                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Bilgi</h6>
-                            <p class="small mb-0 text-muted">Fiyatları girerken kuruş ayırıcı olarak <strong>virgül (,)</strong> kullanınız. Örneğin: 150,50</p>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Tesis Açıklaması</label>
+                            <textarea class="form-control" asp-for="Description" rows="4" placeholder="Oteliniz hakkında kısa bilgi verin..."></textarea>
                         </div>
 
-                        <div id="addOnServicesContainer" class="mb-3">
-                            <div class="row g-2 mb-2 service-row align-items-center">
-                                <div class="col-md-4">
-                                    <input type="text" name="AddOnServices[0].Name" class="form-control" placeholder="Hizmet Adı" />
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group">
-                                        <span class="input-group-text">₺</span>
-                                        @* ✅ Fiyat girişi text yapıldı *@
-                                        <input type="text" name="AddOnServices[0].Price" class="form-control text-end price-input" placeholder="0,00" />
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <input type="text" name="AddOnServices[0].Unit" class="form-control" placeholder="Birim" />
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeService(this)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        @* Ücretsiz Olanaklar *@
+                        <h5 class="text-warning fw-bold mb-4 border-bottom pb-2 mt-5"><i class="bi bi-stars me-2"></i>Otel Olanakları (Ücretsiz)</h5>
+                        <div id="amenitiesContainer" class="mb-3"></div>
+                        <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3 mb-4" onclick="addAmenityRow()">
+                            <i class="bi bi-plus-circle me-1"></i> Yeni Olanak Ekle
+                        </button>
 
-                        <div class="mb-5">
-                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="addServiceRow()">
-                                <i class="bi bi-plus-circle me-1"></i> Yeni Hizmet Satırı Ekle
-                            </button>
-                        </div>
+                        @* Ücretli Hizmetler *@
+                        <h5 class="text-primary fw-bold mb-4 border-bottom pb-2 mt-4"><i class="bi bi-box-seam me-2"></i>Ek Hizmetleri Yönet (Ücretli)</h5>
+                        <div id="addOnServicesContainer" class="mb-3"></div>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 mb-5" onclick="addServiceRow()">
+                            <i class="bi bi-plus-circle me-1"></i> Yeni Hizmet Satırı Ekle
+                        </button>
 
-                        <div class="alert alert-info border-0 shadow-sm rounded-3 mb-5 d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                            <div>
-                                <strong>Bilgi:</strong> Kayıttan sonra <strong>Oda Ekleme</strong> sayfasına geçeceksiniz.
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="/admin/hotel" class="btn btn-outline-secondary btn-lg px-4 rounded-pill">Vazgeç</a>
-                            <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
-                                Kaydet ve Devam Et <i class="bi bi-arrow-right ms-2"></i>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-5 pt-3 border-top">
+                            <a href="/admin/hotel" class="btn btn-light px-4 rounded-pill border">İptal</a>
+                            <button type="submit" class="btn btn-primary px-5 fw-bold rounded-pill shadow-sm">
+                                Oteli Kaydet ve Devam Et <i class="bi bi-arrow-right ms-2"></i>
                             </button>
                         </div>
                     </form>
@@ -202,18 +136,10 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Hata Özeti Kontrolü
-        document.addEventListener('DOMContentLoaded', function () {
-            var summary = document.querySelector('#errorSummary ul');
-            if (summary && summary.children.length > 0) {
-                document.getElementById('errorSummary').classList.remove('d-none');
-            }
-        });
-
-        // ✅ GELİŞMİŞ FOTOĞRAF ÖNİZLEME, SİLME VE KAPAK SEÇME İŞLEMİ
         const imageInput = document.getElementById('imageInput');
         const previewContainer = document.getElementById('imagePreviewContainer');
 
+        // Fotoğraf Önizleme ve Kapak Seçimi
         imageInput.addEventListener('change', function () {
             renderPreviews();
         });
@@ -229,14 +155,12 @@
                         const imgWrapper = document.createElement('div');
                         imgWrapper.className = 'position-relative d-inline-block mt-2 text-center p-1 border rounded bg-white shadow-sm';
                         imgWrapper.innerHTML = `
-                            <img src="${event.target.result}" class="rounded" style="width: 100px; height: 100px; object-fit: cover; border: 1px solid #dee2e6;">
+                            <img src="${event.target.result}" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             <button type="button" class="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle shadow"
                                     style="width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;"
-                                    onclick="removeSelectedImage(${index})">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                                    onclick="removeSelectedImage(${index})"><i class="bi bi-x-lg"></i></button>
                             <div class="form-check mt-2 small d-flex justify-content-center align-items-center">
-                                <input class="form-check-input me-1 cover-radio" type="radio" name="coverImageIndex" id="cover_${index}" value="${index}" ${index === 0 ? 'checked' : ''} style="margin-top: 0; cursor: pointer;">
+                                <input class="form-check-input me-1 cover-radio" type="radio" name="coverImageIndex" id="cover_${index}" value="${index}" ${index === 0 ? 'checked' : ''} style="cursor: pointer;">
                                 <label class="form-check-label text-muted fw-bold" for="cover_${index}" style="cursor: pointer; font-size: 11px;">Kapak Yap</label>
                             </div>
                         `;
@@ -247,77 +171,101 @@
             });
         }
 
+        // Seçilen resmi input listesinden silme fonksiyonu
         window.removeSelectedImage = function(index) {
             const dt = new DataTransfer();
-            const files = imageInput.files;
-            let coverIndexChanged = false;
+            const { files } = imageInput;
 
             for (let i = 0; i < files.length; i++) {
-                if (i !== index) {
-                    dt.items.add(files[i]);
-                } else {
-                    coverIndexChanged = true;
-                }
+                if (i !== index) dt.items.add(files[i]);
             }
 
-            imageInput.files = dt.files;
-            renderPreviews();
-
-            if (coverIndexChanged && imageInput.files.length > 0) {
-                 setTimeout(() => {
-                    const firstRadio = document.querySelector('.cover-radio');
-                    if (firstRadio) firstRadio.checked = true;
-                 }, 50);
-            }
+            imageInput.files = dt.files; // Inputu güncelle
+            renderPreviews(); // Önizlemeleri tekrar çiz
         }
 
-        // HİZMET YÖNETİMİ
-        let serviceIndex = 1;
+        // Dinamik Hizmet Ekleme
         function addServiceRow() {
             const container = document.getElementById('addOnServicesContainer');
             const row = document.createElement('div');
             row.className = 'row g-2 mb-2 service-row align-items-center';
             row.innerHTML = `
                 <div class="col-md-4">
-                    <input type="text" name="AddOnServices[${serviceIndex}].Name" class="form-control" placeholder="Hizmet Adı" />
+                    <input type="text" class="form-control service-name" placeholder="Hizmet Adı" required />
                 </div>
                 <div class="col-md-3">
                     <div class="input-group">
                         <span class="input-group-text">₺</span>
-                        <input type="text" name="AddOnServices[${serviceIndex}].Price" class="form-control text-end price-input" placeholder="0,00" />
+                        <input type="text" class="form-control text-end service-price price-input" placeholder="0,00" required />
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="AddOnServices[${serviceIndex}].Unit" class="form-control" placeholder="Birim" />
+                    <input type="text" class="form-control service-unit" value="Adet" />
                 </div>
                 <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeService(this)">
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
             `;
             container.appendChild(row);
-            serviceIndex++;
         }
 
-        function removeService(btn) {
-            btn.closest('.service-row').remove();
+        // Dinamik Olanak Ekleme
+        function addAmenityRow() {
+            const container = document.getElementById('amenitiesContainer');
+            const row = document.createElement('div');
+            row.className = 'row g-2 mb-2 amenity-row align-items-center';
+            row.innerHTML = `
+                <div class="col-md-5">
+                    <input type="text" class="form-control amenity-name" placeholder="Olanak Adı (Örn: Wi-Fi)" required />
+                </div>
+                <div class="col-md-5">
+                    <input type="text" class="form-control amenity-icon" placeholder="İkon (Örn: bi-wifi)" />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeRow(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
         }
 
-        // ✅ FORMU GÖNDERMEDEN ÖNCE VİRGÜLLERİ NOKTAYA ÇEVİR
+        function removeRow(btn) {
+            btn.closest('.row').remove();
+        }
+
+        // FORM SUBMIT KONTROLLERİ
         document.getElementById('hotelCreateForm').addEventListener('submit', function (e) {
-            document.querySelectorAll('.price-input').forEach(function (input) {
-                if(input.value) {
-                    input.value = input.value.replace(',', '.');
+            // 1. Olanakları (Amenities) İndeksle
+            document.querySelectorAll('.amenity-row').forEach((row, index) => {
+                row.querySelector('.amenity-name').name = `Amenities[${index}].Name`;
+                row.querySelector('.amenity-icon').name = `Amenities[${index}].IconUrl`;
+            });
+
+            // 2. Hizmetleri (AddOnServices) İndeksle ve Fiyat Formatını Düzelt
+            document.querySelectorAll('.service-row').forEach((row, index) => {
+                const nameInput = row.querySelector('.service-name');
+                const priceInput = row.querySelector('.service-price');
+                const unitInput = row.querySelector('.service-unit');
+
+                nameInput.name = `AddOnServices[${index}].Name`;
+                priceInput.name = `AddOnServices[${index}].Price`;
+                unitInput.name = `AddOnServices[${index}].Unit`;
+
+                if (priceInput.value) {
+                    let cleanValue = priceInput.value.trim().replace(/\s+/g, '').replace(/\./g, '');
+                    priceInput.value = cleanValue;
                 }
             });
 
-            // Resim eklendiyse kapak seçilmiş mi kontrolü
+            // 3. Kapak Resmi Kontrolü
             const files = imageInput.files;
             if(files.length > 0) {
                 const selectedCover = document.querySelector('input[name="coverImageIndex"]:checked');
                 if(!selectedCover) {
-                    alert("Lütfen yeni yüklediğiniz resimlerden birini kapak resmi olarak seçiniz.");
+                    alert("Lütfen yüklediğiniz resimlerden birini kapak resmi olarak seçiniz.");
                     e.preventDefault();
                     return false;
                 }
@@ -334,6 +282,5 @@
 
     .cover-radio:focus {
         box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
-        border-color: #ffc107;
     }
 </style>

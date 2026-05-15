@@ -25,8 +25,7 @@
                         </div>
                     }
 
-                    @* ✅ Dosya yükleme için enctype eklendi *@
-                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="roomCreateForm">
                         @Html.AntiForgeryToken()
 
                         <input type="hidden" asp-for="Id" />
@@ -100,18 +99,28 @@
                             <span asp-validation-for="Description" class="text-danger small"></span>
                         </div>
 
-                        @* ✅ YENİ: FOTOĞRAF YÜKLEME ALANI *@
-                        <div class="mb-4 p-3 bg-light rounded-3 border">
-                            <label class="form-label fw-bold"><i class="bi bi-images me-2"></i>Oda Fotoğrafları</label>
-                            <input type="file" name="Images" id="imageInput" class="form-control" accept=".jpg,.jpeg,.png,.webp" multiple>
-                            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3">
-                                @* Önizlemeler buraya gelecek *@
+                        @* ✅ GELİŞMİŞ ÇOKLU FOTOĞRAF YÜKLEME ALANI *@
+                        <div class="mb-4 p-4 bg-light rounded-4 border shadow-sm">
+                            <label class="form-label fw-bold d-block mb-3">
+                                <i class="bi bi-images me-2 text-info"></i>Oda Fotoğrafları Yönetimi
+                            </label>
+
+                            <div class="upload-area border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-white"
+                                 style="cursor:pointer;" onclick="document.getElementById('imageInput').click()">
+                                <i class="bi bi-cloud-arrow-up fs-1 text-info"></i>
+                                <p class="mt-2 mb-0 fw-bold">Dosyaları seçmek için tıklayın</p>
+                                <span class="text-muted small">Birden fazla görsel seçebilirsiniz</span>
                             </div>
-                            <div class="form-text small text-muted">Birden fazla dosya seçebilirsiniz (.jpg, .png, .webp)</div>
+
+                            <input type="file" name="Images" id="imageInput" class="d-none" accept=".jpg,.jpeg,.png,.webp" multiple>
+
+                            <div id="imagePreviewContainer" class="row g-3">
+                                @* Önizlemeler dinamik olarak buraya gelecek *@
+                            </div>
                         </div>
 
                         <div class="mb-4 form-check form-switch fs-5">
-                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="activeSwitch">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" id="activeSwitch" checked>
                             <label class="form-check-label fw-bold" for="activeSwitch">Oda Satışa Açık (Aktif)</label>
                         </div>
 
@@ -131,27 +140,90 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    @* ✅ YENİ: GÖRSEL ÖNİZLEME SCRIPT *@
     <script>
-        document.getElementById('imageInput').addEventListener('change', function (e) {
-            const container = document.getElementById('imagePreviewContainer');
-            container.innerHTML = '';
+        // Dosyaları saklamak için DataTransfer objesi kullanıyoruz
+        // Böylece tek tek silme işlemi yapabiliriz
+        let selectedFiles = new DataTransfer();
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('imagePreviewContainer');
 
+        imageInput.addEventListener('change', function (e) {
             const files = e.target.files;
-            for (const file of files) {
+
+            for (let i = 0; i < files.length; i++) {
+                // Listeye yeni dosyaları ekle
+                selectedFiles.items.add(files[i]);
+            }
+
+            // Inputu güncelle
+            imageInput.files = selectedFiles.files;
+            renderPreviews();
+        });
+
+        function renderPreviews() {
+            previewContainer.innerHTML = '';
+            const files = selectedFiles.files;
+
+            Array.from(files).forEach((file, index) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = function (event) {
-                        const imgWrapper = document.createElement('div');
-                        imgWrapper.className = 'position-relative';
-                        imgWrapper.innerHTML = `
-                            <img src="${event.target.result}" class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #dee2e6;">
+                        const col = document.createElement('div');
+                        col.className = 'col-6 col-md-3';
+                        col.innerHTML = `
+                            <div class="position-relative border rounded-3 overflow-hidden shadow-sm bg-white" style="height: 120px;">
+                                <img src="${event.target.result}" class="w-100 h-100" style="object-fit: cover;">
+                                <button type="button"
+                                        class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle"
+                                        style="padding: 2px 6px; font-size: 12px; line-height: 1.5;"
+                                        onclick="removeImage(${index})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-50 text-white text-truncate p-1 small" style="font-size: 10px;">
+                                    ${file.name}
+                                </div>
+                            </div>
                         `;
-                        container.appendChild(imgWrapper);
+                        previewContainer.appendChild(col);
                     };
                     reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        window.removeImage = function(index) {
+            const newDt = new DataTransfer();
+            const files = selectedFiles.files;
+
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    newDt.items.add(files[i]);
+                }
+            }
+
+            selectedFiles = newDt;
+            imageInput.files = selectedFiles.files;
+            renderPreviews();
+        };
+
+        // Form gönderilmeden önce son kontrol
+        document.getElementById('roomCreateForm').addEventListener('submit', function (e) {
+            if (selectedFiles.files.length === 0) {
+                if(!confirm("Hiç fotoğraf seçmediniz. Devam etmek istiyor musunuz?")) {
+                    e.preventDefault();
                 }
             }
         });
     </script>
 }
+
+<style>
+    .border-dashed {
+        border-style: dashed !important;
+    }
+
+    .upload-area:hover {
+        background-color: #f8f9fa !important;
+        border-color: #0dcaf0 !important;
+    }
+</style>

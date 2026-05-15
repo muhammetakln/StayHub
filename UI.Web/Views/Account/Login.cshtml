@@ -1,7 +1,12 @@
 ﻿@using Core.Concretes.DTOs
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = "Giriş Yap";
+
+    // ✅ Ana sayfadan gelen veya formdan dönen UserType bilgisini alıyoruz
+    var requestedUserType = Context.Request.Query["userType"].ToString();
+    var currentUserType = !string.IsNullOrEmpty(requestedUserType) ? requestedUserType : (Model?.UserType ?? "Guest");
+
+    ViewData["Title"] = (currentUserType == "Admin") ? "Otel Yönetim Girişi" : "Giriş Yap";
 }
 
 @model LoginDto
@@ -10,8 +15,12 @@
     <div class="row">
         <div class="col-md-6 offset-md-3">
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-                <div class="card-header bg-primary text-white p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">
-                    <h3 class="mb-0 fw-bold text-center">🔐 Giriş Yap</h3>
+                @* ✅ Başlık ve Renk Dinamik Yapıldı *@
+                <div class="card-header text-white p-4 text-center"
+                     style="background: @(currentUserType == "Admin" ? "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)") !important;">
+                    <h3 class="mb-0 fw-bold">
+                        @(currentUserType == "Admin" ? "👨‍💼 Otel Yönetimi" : "🔐 Giriş Yap")
+                    </h3>
                 </div>
                 <div class="card-body p-4 p-sm-5">
 
@@ -33,16 +42,14 @@
                     <form method="post" action="/account/login">
                         @Html.AntiForgeryToken()
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold" style="color: #2c3e50;">👥 Giriş Türü Seçin *</label>
-                            <div class="btn-group w-100 shadow-sm" role="group">
-                                @* ✅ name özelliği kaldırıldı, checked durumu dinamik yapıldı *@
-                                <input type="radio" class="btn-check" id="guestOption" value="Guest" asp-for="UserType" checked="@(string.IsNullOrEmpty(Model?.UserType) || Model?.UserType == "Guest")">
-                                <label class="btn btn-outline-primary w-50 fw-semibold py-2" for="guestOption">🏨 Müşteri</label>
+                        @* ✅ Kullanıcı Türü Seçimi (Hidden olarak tutuluyor ve Radio butonlar kaldırıldı) *@
+                        <input type="hidden" asp-for="UserType" value="@currentUserType" />
 
-                                <input type="radio" class="btn-check" id="adminOption" value="Admin" asp-for="UserType" checked="@(Model?.UserType == "Admin")">
-                                <label class="btn btn-outline-danger w-50 fw-semibold py-2" for="adminOption">👨‍💼 Admin</label>
-                            </div>
+                        @* Eğer yanlış sayfadaysa geçiş yapabilmesi için küçük bir link *@
+                        <div class="text-end mb-3">
+                            <a href="/account/login?userType=@(currentUserType == "Admin" ? "Guest" : "Admin")" class="small text-decoration-none text-muted">
+                                <i class="bi bi-arrow-left-right me-1"></i> @(currentUserType == "Admin" ? "Müşteri Girişine Geç" : "Otel Yönetimine Geç")
+                            </a>
                         </div>
 
                         <div class="mb-3">
@@ -74,19 +81,21 @@
                         </div>
 
                         <div class="d-grid gap-2 mb-4">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill shadow-sm">
+                            <button type="submit" class="btn @(currentUserType == "Admin" ? "btn-danger" : "btn-primary") btn-lg fw-bold rounded-pill shadow-sm">
                                 🔓 Giriş Yap
                             </button>
                         </div>
 
-                        <hr class="my-4 text-muted">
-
-                        <div class="text-center" id="guestRegisterLink">
-                            <p class="mb-0 text-muted">
-                                Hesabınız yok mu?
-                                <a href="/account/register" class="text-decoration-none fw-bold ms-1" style="color: #0a58ca;">Hemen Kaydol</a>
-                            </p>
-                        </div>
+                        @if (currentUserType == "Guest")
+                        {
+                            <hr class="my-4 text-muted">
+                            <div class="text-center" id="guestRegisterLink">
+                                <p class="mb-0 text-muted">
+                                    Hesabınız yok mu?
+                                    <a href="/account/register" class="text-decoration-none fw-bold ms-1" style="color: #0a58ca;">Hemen Kaydol</a>
+                                </p>
+                            </div>
+                        }
                     </form>
                 </div>
             </div>
@@ -113,33 +122,14 @@
         transition: all 0.3s ease;
     }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3) !important;
-        }
+    .btn-danger {
+        background: linear-gradient(135deg, #f5576c 0%, #d90429 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+    }
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const guestOption = document.getElementById('guestOption');
-        const adminOption = document.getElementById('adminOption');
-        const guestRegisterLink = document.getElementById('guestRegisterLink');
-
-        function updateRegisterLink() {
-            if (guestOption.checked) {
-                guestRegisterLink.style.opacity = '1';
-                guestRegisterLink.style.height = 'auto';
-                guestRegisterLink.style.display = 'block';
-            } else {
-                guestRegisterLink.style.opacity = '0';
-                guestRegisterLink.style.height = '0';
-                guestRegisterLink.style.display = 'none';
-            }
-        }
-
-        guestOption.addEventListener('change', updateRegisterLink);
-        adminOption.addEventListener('change', updateRegisterLink);
-        updateRegisterLink();
-    });
-</script>

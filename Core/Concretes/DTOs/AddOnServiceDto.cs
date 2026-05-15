@@ -18,6 +18,7 @@ namespace Core.Concretes.DTOs
         [Display(Name = "Fiyat")]
         public decimal Price { get; set; }
         public bool IsActive   { get; set; }
+        public string? Unit { get; set; }
 
 
         public class AddOnServiceDetailDto

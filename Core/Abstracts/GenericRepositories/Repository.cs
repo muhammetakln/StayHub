@@ -3,7 +3,7 @@ using Core.Abstracts.IRepositories;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Data.Repositories 
+namespace Data.Repositories
 {
     public class Repository<T> : IRepositories<T> where T : BaseEntity
     {
@@ -12,22 +12,43 @@ namespace Data.Repositories
 
         public Repository(DbContext db)
         {
-            _db = db; ;
+            _db = db;
             _dbSet = _db.Set<T>();
         }
 
+        // Doğrudan EF Core'un IQueryable mekanizmasını dışarı açıyoruz.
+        // Bu sayede Business katmanında çok daha özgür ve hızlı sorgular yazabileceksin!
+        public IQueryable<T> GetAll()
+        {
+            return _dbSet.AsQueryable();
+        }
 
         public async Task<IEnumerable<T>> GetAllAsync(params string[] includes)
         {
             IQueryable<T> query = _dbSet;
-            query = ApplyIncludes(query, includes);
+
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
             return await query.ToListAsync();
         }
 
         public async Task<T?> GetByIdAsync(int id, params string[] includes)
         {
             IQueryable<T> query = _dbSet;
-            query = ApplyIncludes(query, includes);
+
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
 
             return await query.FirstOrDefaultAsync(x => x.Id == id);
         }
@@ -39,7 +60,14 @@ namespace Data.Repositories
             if (filter != null)
                 query = query.Where(filter);
 
-            query = ApplyIncludes(query, includes);
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
             return await query.FirstOrDefaultAsync();
         }
 
@@ -50,7 +78,14 @@ namespace Data.Repositories
             if (filter != null)
                 query = query.Where(filter);
 
-            query = ApplyIncludes(query, includes);
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
             return await query.ToListAsync();
         }
 
@@ -62,12 +97,16 @@ namespace Data.Repositories
         {
             IQueryable<T> query = _dbSet;
 
-          
             if (filter != null)
                 query = query.Where(filter);
 
-            
-            query = ApplyIncludes(query, includes);
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
 
             int totalCount = await query.CountAsync();
 
@@ -79,7 +118,6 @@ namespace Data.Repositories
             return (items, totalCount);
         }
 
-        
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
@@ -87,7 +125,6 @@ namespace Data.Repositories
 
         public Task UpdateAsync(T entity)
         {
-           
             _dbSet.Update(entity);
             return Task.CompletedTask;
         }
@@ -95,7 +132,6 @@ namespace Data.Repositories
         public Task DeleteAsync(T entity)
         {
             _dbSet.Remove(entity);
-
             return Task.CompletedTask;
         }
 
@@ -107,12 +143,9 @@ namespace Data.Repositories
 
         public Task PermanentDeleteAsync(T entity)
         {
-           
             _dbSet.Remove(entity);
             return Task.CompletedTask;
         }
-
-       
 
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> filter)
         {
@@ -125,18 +158,6 @@ namespace Data.Repositories
                 return await _dbSet.CountAsync(filter);
 
             return await _dbSet.CountAsync();
-        }
-
-        private IQueryable<T> ApplyIncludes(IQueryable<T> query, string[] includes)
-        {
-            if (includes != null && includes.Length > 0)
-            {
-                foreach (var include in includes)
-                {
-                    query = query.Include(include);
-                }
-            }
-            return query;
         }
     }
 }

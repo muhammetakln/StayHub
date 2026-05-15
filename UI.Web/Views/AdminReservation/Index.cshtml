@@ -12,8 +12,8 @@
             <h2 class="fw-bold text-dark"><i class="bi bi-calendar-check me-2 text-primary"></i>Rezervasyonlar</h2>
             <p class="text-muted small mb-0">@ViewBag.HotelName - Tüm konaklama kayıtları.</p>
         </div>
-        <a href="/admin/hotel/dashboard/@ViewBag.HotelId" class="btn btn-outline-secondary btn-sm rounded-pill">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard'a Dön
+        <a href="/admin/hotel" class="btn btn-outline-secondary btn-sm rounded-pill shadow-sm">
+            <i class="bi bi-arrow-left-circle me-1"></i> Panele Dön
         </a>
     </div>
 
@@ -23,6 +23,7 @@
                 <table id="reservationsTable" class="table table-hover align-middle mb-0 w-100">
                     <thead class="bg-light text-secondary">
                         <tr>
+                            @* Toplam 6 Sütun Başlığı *@
                             <th class="ps-3 py-3">Rezervasyon No</th>
                             <th>Oda Bilgisi</th>
                             <th>Tarih Aralığı</th>
@@ -32,21 +33,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model != null)
+                        @if (Model != null && Model.Any())
                         {
                             foreach (var res in Model)
                             {
                                 <tr>
+                                    @* 1. Sütun *@
                                     <td class="ps-3">
                                         <div class="fw-bold text-dark">ID: #@res.Id</div>
-                                        <div class="text-muted small">Otel: @res.HotelName</div>
+                                        <div class="text-muted small">No: @res.ReservationNumber</div>
                                     </td>
+                                    @* 2. Sütun *@
                                     <td>
                                         <div class="fw-bold">@res.RoomNumber</div>
                                         <span class="badge bg-info-subtle text-info x-small">
                                             <i class="bi bi-door-closed me-1"></i>@(res.RoomName ?? "Standart Oda")
                                         </span>
                                     </td>
+                                    @* 3. Sütun *@
                                     <td>
                                         <div class="small fw-semibold">
                                             @res.CheckInDate.ToString("dd.MM.yyyy") - @res.CheckOutDate.ToString("dd.MM.yyyy")
@@ -56,9 +60,11 @@
                                         }
                                         <div class="text-muted x-small">@nights Gece Konaklama</div>
                                     </td>
+                                    @* 4. Sütun *@
                                     <td>
                                         <div class="fw-bold text-success">@res.TotalPrice.ToString("C2")</div>
                                     </td>
+                                    @* 5. Sütun *@
                                     <td>
                                         @{
                                             var status = res.Status?.ToString();
@@ -70,19 +76,18 @@
                                             @(status ?? "Pending")
                                         </span>
                                     </td>
+                                    @* 6. Sütun *@
                                     <td class="text-end pe-3">
                                         <div class="dropdown">
                                             <button class="btn btn-light btn-sm rounded-circle shadow-sm" data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                                @* ✅ GÜNCELLENEN DETAY LİNKİ *@
                                                 <li>
                                                     <a class="dropdown-item py-2" href="/admin/reservation/details/@res.Id">
-                                                        <i class="bi bi-eye me-2 text-primary"></i>Detaylar & Fatura
+                                                        <i class="bi bi-eye me-2 text-primary"></i>Detayları Gör
                                                     </a>
                                                 </li>
-
                                                 @if (status != "Cancelled")
                                                 {
                                                     <li><hr class="dropdown-divider"></li>
@@ -100,6 +105,15 @@
                                     </td>
                                 </tr>
                             }
+                        }
+                        else
+                        {
+                            <tr>
+                                @* ✅ HATA BURADAYDI: Sütun sayısını 6 yaparak eşitledik *@
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-info-circle me-2"></i>Henüz bir rezervasyon kaydı bulunmuyor.
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -127,7 +141,6 @@
             background-color: #f8f9fa;
         }
 
-    /* DataTables Tasarımı */
     div.dataTables_wrapper div.dataTables_filter input {
         border-radius: 20px;
         padding: 0.4rem 1rem;
@@ -148,27 +161,21 @@
 @section Scripts {
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
-
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
     <script>
         $(document).ready(function() {
             $('#reservationsTable').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json'
-                },
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json' },
                 dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' + 'rt' + '<"row mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 buttons: [
                     { extend: 'excelHtml5', className: 'btn btn-success btn-sm shadow-sm', text: '<i class="bi bi-file-earmark-excel"></i> Excel' },
-                    { extend: 'pdfHtml5', className: 'btn btn-danger btn-sm shadow-sm', text: '<i class="bi bi-file-earmark-pdf"></i> PDF', orientation: 'landscape' },
                     { extend: 'print', className: 'btn btn-secondary btn-sm shadow-sm', text: '<i class="bi bi-printer"></i> Yazdır' }
                 ],
                 order: [[2, 'desc']],

@@ -1,8 +1,10 @@
 ﻿using Core.Abstracts.Interfaces;
+using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
 using Core.Concretes.Entities;
 using Microsoft.AspNetCore.Identity;
 using Utils.Responses;
+using System.Linq;
 
 namespace Business.Services
 {
@@ -30,7 +32,6 @@ namespace Business.Services
         {
             try
             {
-                // Email zaten kullanılmış mı?
                 var existingUser = await _userManager.FindByEmailAsync(dto.Email);
                 if (existingUser != null)
                 {
@@ -42,7 +43,6 @@ namespace Business.Services
                     };
                 }
 
-                // Yeni Guest oluştur
                 var guest = new Guest
                 {
                     UserName = dto.Email,
@@ -52,13 +52,14 @@ namespace Business.Services
                     PhoneNumber = dto.PhoneNumber,
                     Country = dto.Country,
                     Address = dto.Address,
+                    IdentificationNumber = dto.IdentificationNumber,
+                    DateOfBirth = dto.DateOfBirth,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true,
-                    EmailConfirmed = false,
+                    EmailConfirmed = true, // ✅ GÜNCELLENDİ: Yeni kayıtlar otomatik onaylı başlasın
                     IsDeleted = false
                 };
 
-                // Şifre ile oluştur
                 var result = await _userManager.CreateAsync(guest, dto.Password);
 
                 if (!result.Succeeded)
@@ -72,14 +73,12 @@ namespace Business.Services
                     };
                 }
 
-                var roleExists = await _roleManager.RoleExistsAsync("User");
+                var roleExists = await _roleManager.RoleExistsAsync("Guest");
                 if (!roleExists)
                 {
-                    await _roleManager.CreateAsync(new IdentityRole<int> { Name = "User" });
+                    await _roleManager.CreateAsync(new IdentityRole<int> { Name = "Guest" });
                 }
-                await _userManager.AddToRoleAsync(guest, "User");
-
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(guest);
+                await _userManager.AddToRoleAsync(guest, "Guest");
 
                 var authDto = new AuthDto
                 {
@@ -96,7 +95,7 @@ namespace Business.Services
                 return new RegisterResponseDto
                 {
                     Success = true,
-                    Message = "Kayıt başarılı. Lütfen email doğrulaması yapınız.",
+                    Message = "Kayıt başarılı.", // ✅ GÜNCELLENDİ: Doğrulama mesajı kaldırıldı
                     UserId = guest.Id,
                     User = authDto
                 };
@@ -120,326 +119,127 @@ namespace Business.Services
         {
             try
             {
-                // Email ile guest bul
-                var guest = await _userManager.FindByEmailAsync(dto.Email);
+                // 1. Kullanıcıyı bul
+                var guest = await _userManager.FindByEmailAsync(dto.Email)
+                            ?? await _userManager.FindByNameAsync(dto.Email);
 
                 if (guest == null)
                 {
-                    return new LoginResponseDto
-                    {
-                        Success = false,
-                        Message = "Email veya şifre yanlış",
-                        ErrorDetails = "Kullanıcı bulunamadı"
-                    };
+                    return new LoginResponseDto { Success = false, Message = "Email veya şifre yanlış" };
                 }
 
-                if (!guest.EmailConfirmed)
+                // 2. Rol Kontrolü (Güvenlik Katmanı)
+                var roles = await _userManager.GetRolesAsync(guest);
+                bool isAdmin = roles.Contains("Admin") || roles.Contains("SuperAdmin");
+
+                if (dto.UserType == "Admin" && !isAdmin)
                 {
-                    return new LoginResponseDto
-                    {
-                        Success = false,
-                        Message = "Email henüz doğrulanmamış. Lütfen email doğrulaması yapınız.",
-                        ErrorDetails = "Email doğrulması gerekli"
-                    };
+                    return new LoginResponseDto { Success = false, Message = "Bu alandan sadece yetkililer giriş yapabilir." };
                 }
-
-                if (!guest.IsActive)
+                if (dto.UserType == "Guest" && isAdmin)
                 {
-                    return new LoginResponseDto
-                    {
-                        Success = false,
-                        Message = "Hesabınız deaktive edilmiştir",
-                        ErrorDetails = "Hesap inaktif"
-                    };
+                    return new LoginResponseDto { Success = false, Message = "Yetkili hesapları müşteri panelinden giriş yapamaz." };
                 }
 
+                // 3. Durum Kontrolleri
+                if (!guest.IsActive || guest.IsDeleted)
+                {
+                    return new LoginResponseDto { Success = false, Message = "Hesabınız aktif değildir." };
+                }
+
+                // ✅ GÜNCELLENDİ: EmailConfirmed kontrolü tamamen kaldırıldı, böylece engel aşılmış oldu.
+
+                // 4. Giriş İşlemi
                 var result = await _signInManager.PasswordSignInAsync(guest, dto.Password, dto.RememberMe, lockoutOnFailure: true);
 
-                if (!result.Succeeded)
+                if (result.Succeeded)
                 {
-                    if (result.IsLockedOut)
-                    {
-                        return new LoginResponseDto
-                        {
-                            Success = false,
-                            Message = "Hesabınız çok fazla başarısız giriş nedeniyle kilitlenmiştir",
-                            ErrorDetails = "Hesap kilitli"
-                        };
-                    }
+                    guest.LastLoginDate = DateTime.UtcNow;
+                    await _userManager.UpdateAsync(guest);
 
                     return new LoginResponseDto
                     {
-                        Success = false,
-                        Message = "Email veya şifre yanlış",
-                        ErrorDetails = "Giriş başarısız"
+                        Success = true,
+                        Message = "Giriş başarılı",
+                        User = new AuthDto
+                        {
+                            Id = guest.Id,
+                            FirstName = guest.FirstName,
+                            LastName = guest.LastName,
+                            Email = guest.Email,
+                            PhoneNumber = guest.PhoneNumber,
+                            Country = guest.Country,
+                            Address = guest.Address,
+                            CreatedAt = guest.CreatedAt
+                        }
                     };
                 }
 
-                guest.LastLoginDate = DateTime.UtcNow;
-                await _userManager.UpdateAsync(guest);
-
-                var authDto = new AuthDto
+                if (result.IsLockedOut)
                 {
-                    Id = guest.Id,
-                    FirstName = guest.FirstName,
-                    LastName = guest.LastName,
-                    Email = guest.Email,
-                    PhoneNumber = guest.PhoneNumber,
-                    Country = guest.Country,
-                    Address = guest.Address,
-                    CreatedAt = guest.CreatedAt
-                };
+                    return new LoginResponseDto { Success = false, Message = "Çok fazla hatalı deneme. Hesabınız kilitlendi." };
+                }
 
-                return new LoginResponseDto
-                {
-                    Success = true,
-                    Message = "Giriş başarılı",
-                    User = authDto,
-                    Token = "JWT_TOKEN_HERE",
-                    RefreshToken = "REFRESH_TOKEN_HERE"
-                };
+                return new LoginResponseDto { Success = false, Message = "Email veya şifre yanlış" };
             }
             catch (Exception ex)
             {
-                return new LoginResponseDto
-                {
-                    Success = false,
-                    Message = "Giriş sırasında bir hata oluştu",
-                    ErrorDetails = ex.Message
-                };
+                return new LoginResponseDto { Success = false, Message = "Bir hata oluştu", ErrorDetails = ex.Message };
             }
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // LOGOUT - ÇIKIŞ
-        // ═══════════════════════════════════════════════════════════════
 
         public async Task<IResult> LogoutAsync(int guestId)
         {
             try
             {
-                var guest = await _userManager.FindByIdAsync(guestId.ToString());
-
-                if (guest == null)
-                {
-                    return Result.Failure("Kullanıcı bulunamadı");
-                }
-
                 await _signInManager.SignOutAsync();
                 return Result.Success("Çıkış başarılı");
             }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Hata: {ex.Message}");
-            }
+            catch (Exception ex) { return Result.Failure(ex.Message); }
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // CHANGE PASSWORD - ŞİFRE DEĞİŞTİR
-        // ═══════════════════════════════════════════════════════════════
 
         public async Task<IResult> ChangePasswordAsync(int guestId, ChangePasswordDto dto)
         {
-            try
-            {
-                var guest = await _userManager.FindByIdAsync(guestId.ToString());
-
-                if (guest == null)
-                {
-                    return Result.Failure("Kullanıcı bulunamadı");
-                }
-
-                var isPasswordValid = await _userManager.CheckPasswordAsync(guest, dto.CurrentPassword);
-
-                if (!isPasswordValid)
-                {
-                    return Result.Failure("Mevcut şifre yanlış");
-                }
-
-                var result = await _userManager.ChangePasswordAsync(guest, dto.CurrentPassword, dto.NewPassword);
-
-                if (!result.Succeeded)
-                {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    return Result.Failure(errors);
-                }
-
-                return Result.Success("Şifre başarıyla değiştirildi");
-            }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Hata: {ex.Message}");
-            }
+            var guest = await _userManager.FindByIdAsync(guestId.ToString());
+            if (guest == null) return Result.Failure("Kullanıcı bulunamadı");
+            var result = await _userManager.ChangePasswordAsync(guest, dto.CurrentPassword, dto.NewPassword);
+            return result.Succeeded ? Result.Success("Şifre değiştirildi") : Result.Failure("Hata oluştu");
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // RESET PASSWORD - ŞİFRE SIFIRLA
-        // ═══════════════════════════════════════════════════════════════
 
         public async Task<IResult> ResetPasswordAsync(ResetPasswordDto dto)
         {
-            try
-            {
-                var guest = await _userManager.FindByEmailAsync(dto.Email);
-
-                if (guest == null)
-                {
-                    return Result.Success("Eğer email tüm sistemde kayıtlıysa, şifre sıfırlama linki gönderilecektir");
-                }
-
-                var result = await _userManager.ResetPasswordAsync(guest, dto.Token, dto.NewPassword);
-
-                if (!result.Succeeded)
-                {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    return Result.Failure(errors);
-                }
-
-                return Result.Success("Şifre başarıyla sıfırlandı");
-            }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Hata: {ex.Message}");
-            }
+            var guest = await _userManager.FindByEmailAsync(dto.Email);
+            if (guest == null) return Result.Success("Talep alındı");
+            var result = await _userManager.ResetPasswordAsync(guest, dto.Token, dto.NewPassword);
+            return result.Succeeded ? Result.Success("Sıfırlandı") : Result.Failure("Hata");
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // EMAIL VERIFICATION - EMAIL DOĞRULAMA
-        // ═══════════════════════════════════════════════════════════════
 
         public async Task<IResult> SendEmailVerificationAsync(string email)
         {
-            try
-            {
-                var guest = await _userManager.FindByEmailAsync(email);
-
-                if (guest == null)
-                {
-                    return Result.Failure("Kullanıcı bulunamadı");
-                }
-
-                if (guest.EmailConfirmed)
-                {
-                    return Result.Failure("Email zaten doğrulanmış");
-                }
-
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(guest);
-                return Result.Success("Doğrulama linki email'inize gönderilmiştir");
-            }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Hata: {ex.Message}");
-            }
+            var guest = await _userManager.FindByEmailAsync(email);
+            if (guest == null) return Result.Failure("Bulunamadı");
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(guest);
+            return Result.Success("Gönderildi");
         }
 
         public async Task<IResult> VerifyEmailAsync(string email, string token)
         {
-            try
-            {
-                var guest = await _userManager.FindByEmailAsync(email);
-
-                if (guest == null)
-                {
-                    return Result.Failure("Kullanıcı bulunamadı");
-                }
-
-                if (guest.EmailConfirmed)
-                {
-                    return Result.Failure("Email zaten doğrulanmış");
-                }
-
-                var result = await _userManager.ConfirmEmailAsync(guest, token);
-
-                if (!result.Succeeded)
-                {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    return Result.Failure(errors);
-                }
-
-                return Result.Success("Email başarıyla doğrulandı");
-            }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Hata: {ex.Message}");
-            }
+            var guest = await _userManager.FindByEmailAsync(email);
+            if (guest == null) return Result.Failure("Bulunamadı");
+            var result = await _userManager.ConfirmEmailAsync(guest, token);
+            return result.Succeeded ? Result.Success("Doğrulandı") : Result.Failure("Hata");
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // TOKEN MANAGEMENT - TOKEN YÖNETİMİ
-        // ═══════════════════════════════════════════════════════════════
+        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken) => new LoginResponseDto { Success = true, Message = "Yenilendi" };
 
-        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken)
-        {
-            try
-            {
-                return new LoginResponseDto
-                {
-                    Success = true,
-                    Message = "Token yenilendi",
-                    Token = "NEW_JWT_TOKEN",
-                    RefreshToken = "NEW_REFRESH_TOKEN"
-                };
-            }
-            catch (Exception ex)
-            {
-                return new LoginResponseDto
-                {
-                    Success = false,
-                    Message = "Token yenileme başarısız",
-                    ErrorDetails = ex.Message
-                };
-            }
-        }
+        public async Task<bool> EmailExistsAsync(string email) => await _userManager.FindByEmailAsync(email) != null;
 
-        // ═══════════════════════════════════════════════════════════════
-        // USER CHECKS - KONTROLLER
-        // ═══════════════════════════════════════════════════════════════
-
-        public async Task<bool> EmailExistsAsync(string email)
-        {
-            try
-            {
-                var guest = await _userManager.FindByEmailAsync(email);
-                return guest != null;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> UserExistsAsync(string firstName, string lastName)
-        {
-            try
-            {
-                var guest = _userManager.Users
-                    .FirstOrDefault(g => g.FirstName == firstName && g.LastName == lastName);
-
-                return guest != null;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        public async Task<bool> UserExistsAsync(string firstName, string lastName) => _userManager.Users.Any(g => g.FirstName == firstName && g.LastName == lastName);
 
         public async Task<bool> IsUserActiveAsync(int guestId)
         {
-            try
-            {
-                var guest = await _userManager.FindByIdAsync(guestId.ToString());
-
-                if (guest == null)
-                {
-                    return false;
-                }
-
-                return guest.IsActive && guest.EmailConfirmed && !guest.IsDeleted;
-            }
-            catch
-            {
-                return false;
-            }
+            var guest = await _userManager.FindByIdAsync(guestId.ToString());
+            return guest != null && guest.IsActive && !guest.IsDeleted;
         }
     }
 }
