@@ -12,6 +12,7 @@ namespace Core.Concretes.Enum
         Completed = 1,   
         Failed = 2,       
         Refunded = 3,    
-        Cancelled = 4     
+        Cancelled = 4,
+        Success = 5
     }
 }

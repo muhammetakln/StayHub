@@ -73,8 +73,10 @@ namespace Core.Concretes.DTOs
         [Compare("Password", ErrorMessage = "Şifreler eşleşmiyor")]
         public string ConfirmPassword { get; set; } = null!;
 
-        [Required(ErrorMessage = "T.C. Kimlik Numarası gereklidir")]
-        [StringLength(11, MinimumLength = 11, ErrorMessage = "T.C. Kimlik Numarası 11 hane olmalıdır")]
+        [Required(ErrorMessage = "T.C. Kimlik Numarası gereklidir.")]
+        [StringLength(11, MinimumLength = 11, ErrorMessage = "T.C. Kimlik Numarası 11 hane olmalıdır.")]
+
+        [RegularExpression(@"^[1-9]{1}[0-9]{10}$", ErrorMessage = "Geçerli bir T.C. Kimlik No giriniz.")]
         [Display(Name = "T.C. Kimlik No")]
         public string IdentificationNumber { get; set; } = null!;
 
@@ -120,39 +122,36 @@ namespace Core.Concretes.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
-    /// <summary>
-    /// Profil güncelleme için kullanılan DTO
-    /// </summary>
+
     public class UpdateDto
     {
         [Required(ErrorMessage = "Ad gereklidir")]
-        [StringLength(50, MinimumLength = 2, ErrorMessage = "Ad 2-50 karakter arasında olmalıdır")]
-        [Display(Name = "Ad")]
         public string FirstName { get; set; } = null!;
 
         [Required(ErrorMessage = "Soyad gereklidir")]
-        [StringLength(50, MinimumLength = 2, ErrorMessage = "Soyad 2-50 karakter arasında olmalıdır")]
-        [Display(Name = "Soyad")]
         public string LastName { get; set; } = null!;
 
+        [Required(ErrorMessage = "Kullanıcı adı gereklidir")]
+        public string UserName { get; set; } = null!;
+
+        [Required(ErrorMessage = "Email adresi gereklidir")]
+        [EmailAddress(ErrorMessage = "Geçerli bir email adresi giriniz")]
+        public string Email { get; set; } = null!;
+
         [Required(ErrorMessage = "Telefon numarası gereklidir")]
-        [Phone(ErrorMessage = "Geçerli bir telefon numarası giriniz")]
-        [Display(Name = "Telefon Numarası")]
-        [StringLength(20)]
         public string PhoneNumber { get; set; } = null!;
 
-        [Required(ErrorMessage = "Ülke seçimi gereklidir")]
-        [StringLength(50, MinimumLength = 2, ErrorMessage = "Ülke adı geçerli olmalıdır")]
-        [Display(Name = "Ülke")]
-        public string Country { get; set; } = null!;
+        [DataType(DataType.Password)]
+        [Display(Name = "Mevcut Şifre")]
+        public string? CurrentPassword { get; set; }
 
-        [Required(ErrorMessage = "Adres gereklidir")]
-        [StringLength(200, MinimumLength = 5, ErrorMessage = "Adres 5-200 karakter arasında olmalıdır")]
-        [Display(Name = "Adres")]
-        public string Address { get; set; } = null!;
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Yeni şifre en az 8 karakter olmalıdır")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Yeni Şifre")]
+        public string? NewPassword { get; set; }
     }
 
-   
+
     public class LoginResponseDto
     {
         [Display(Name = "Başarı Durumu")]

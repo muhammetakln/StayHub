@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 public partial class RoleDto
 {
-    /// <summary>
-    /// Permission DTO (List)
-    /// </summary>
+   
     public class PermissionDto
     {
         [Display(Name = "ID")]

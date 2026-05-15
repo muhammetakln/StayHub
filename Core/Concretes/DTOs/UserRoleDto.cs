@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 public partial class RoleDto
 {
-    /// <summary>
-    /// User Role DTO
-    /// </summary>
+    
     public class UserRoleDto
     {
         [Display(Name = "ID")]

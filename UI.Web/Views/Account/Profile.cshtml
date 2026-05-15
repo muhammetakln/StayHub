@@ -1,8 +1,8 @@
-﻿@using UI.Web.Models
+﻿@using Core.Concretes.DTOs
 @model ProfileViewModel
 
 @{
-    // 🔥 SİHİRLİ KISIM BURASI: Giriş yapanın rolüne göre doğru şablonu (Layout) seçer
+    // 🔥 Giriş yapanın rolüne göre doğru şablonu (Layout) seçer
     if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
     {
         Layout = "~/Views/Shared/_AdminLayout.cshtml";
@@ -17,11 +17,11 @@
 
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-md-10 col-lg-8">
             <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-header bg-primary text-white p-4 rounded-top-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">
                     <h3 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i> Profil Bilgilerim</h3>
-                    <p class="mb-0 text-white-50 small">Kişisel bilgilerinizi ve hesap güvenliğinizi buradan yönetebilirsiniz.</p>
+                    <p class="mb-0 text-white-50 small">Kişisel bilgilerinizi ve yasal bildirim gerekliliklerini buradan yönetebilirsiniz.</p>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
@@ -38,7 +38,7 @@
                     <form asp-action="Profile" asp-controller="Account" method="post">
                         @Html.AntiForgeryToken()
 
-                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark">Kişisel Bilgiler</h5>
+                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark">Kişisel ve Yasal Bilgiler</h5>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
@@ -53,42 +53,60 @@
                             </div>
                         </div>
 
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">T.C. Kimlik No</label>
+                                @* DTO'dan gelen yasal zorunluluk alanı *@
+                                <input name="IdentificationNumber" class="form-control bg-light" placeholder="11 haneli kimlik no" />
+                                <small class="text-muted" style="font-size: 0.75rem;">* Yasal bildirim zorunluluğu nedeniyle istenir.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Telefon Numarası</label>
+                                <input name="PhoneNumber" class="form-control bg-light" placeholder="05XX XXX XX XX" />
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="UserName" class="form-label fw-semibold text-muted">Kullanıcı Adı</label>
+                                <input asp-for="UserName" class="form-control bg-light" />
+                                <span asp-validation-for="UserName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-semibold text-muted">E-Posta Adresi</label>
+                                <input asp-for="Email" type="email" class="form-control bg-light" />
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
-                            <label asp-for="UserName" class="form-label fw-semibold text-muted">Kullanıcı Adı</label>
-                            <input asp-for="UserName" class="form-control bg-light" />
-                            <span asp-validation-for="UserName" class="text-danger small"></span>
+                            <label class="form-label fw-semibold text-muted">Adres</label>
+                            <textarea name="Address" class="form-control bg-light" rows="2"></textarea>
                         </div>
 
-                        <div class="mb-5">
-                            <label asp-for="Email" class="form-label fw-semibold text-muted">E-Posta Adresi</label>
-                            <input asp-for="Email" type="email" class="form-control bg-light" />
-                            <span asp-validation-for="Email" class="text-danger small"></span>
-                        </div>
-
-                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark"><i class="bi bi-shield-lock me-2 text-warning"></i>Şifre Güncelleme (Opsiyonel)</h5>
+                        <h5 class="fw-bold mt-5 mb-3 border-bottom pb-2 text-dark">
+                            <i class="bi bi-shield-lock me-2 text-warning"></i>Güvenlik Ayarları
+                        </h5>
                         <p class="text-muted small mb-4">Şifrenizi değiştirmek istemiyorsanız bu alanları boş bırakın.</p>
 
                         <div class="mb-3">
-                            <label asp-for="CurrentPassword" class="form-label fw-semibold text-muted">Mevcut Şifreniz</label>
-                            <input asp-for="CurrentPassword" type="password" class="form-control bg-light" placeholder="Şu anki şifrenizi girin" />
-                            <span asp-validation-for="CurrentPassword" class="text-danger small"></span>
+                            <label name="CurrentPassword" class="form-label fw-semibold text-muted">Mevcut Şifreniz</label>
+                            <input name="CurrentPassword" type="password" class="form-control bg-light" placeholder="Şu anki şifreniz" />
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="NewPassword" class="form-label fw-semibold text-muted">Yeni Şifreniz</label>
-                            <input asp-for="NewPassword" type="password" class="form-control bg-light" placeholder="Yeni şifre belirleyin" />
-                            <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                            <label name="NewPassword" class="form-label fw-semibold text-muted">Yeni Şifreniz</label>
+                            <input name="NewPassword" type="password" class="form-control bg-light" placeholder="En az 8 karakter, büyük/küçük harf ve rakam" />
                         </div>
 
                         <hr class="my-4">
 
                         <div class="d-grid gap-3 d-md-flex justify-content-md-end">
-                            @* YÖNLENDİRME BUTONU DA AKILLI HALE GETİRİLDİ *@
                             <a href="@(User.IsInRole("Admin") ? "/admin/hotel" : "/hotel")" class="btn btn-light border btn-lg px-4 text-dark shadow-sm">
-                                <i class="bi bi-arrow-left me-2"></i> Geri Dön
+                                <i class="bi bi-arrow-left me-2"></i> İptal
                             </a>
                             <button type="submit" class="btn btn-primary btn-lg px-4 shadow">
-                                <i class="bi bi-save me-2"></i> Değişiklikleri Kaydet
+                                <i class="bi bi-save me-2"></i> Profilimi Güncelle
                             </button>
                         </div>
                     </form>
@@ -102,6 +120,10 @@
     .form-control:focus {
         border-color: #764ba2;
         box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
+    }
+
+    .card {
+        transition: all 0.3s ease;
     }
 </style>
 

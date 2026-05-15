@@ -44,6 +44,7 @@ namespace UI.Web.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
 
+            // Sayfa yüklenirken verileri ViewModel'e eşliyoruz
             var model = new ProfileViewModel
             {
                 UserName = user.UserName ?? "",
@@ -58,43 +59,57 @@ namespace UI.Web.Controllers
         [HttpPost("profile")]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Profile(ProfileViewModel model)
+        public async Task<IActionResult> Profile(UpdateDto dto) 
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+            {
+                var errorModel = new ProfileViewModel
+                {
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    UserName = dto.UserName,
+                    Email = dto.Email
+                };
+                return View(errorModel);
+            }
 
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
 
-            user.UserName = model.UserName;
-            user.FirstName = model.FirstName;
-            user.LastName = model.LastName;
-            user.Email = model.Email;
+            user.UserName = dto.UserName;
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
+            user.Email = dto.Email;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {
-                foreach (var error in updateResult.Errors) ModelState.AddModelError("", error.Description);
-                return View(model);
+                foreach (var error in updateResult.Errors)
+                    ModelState.AddModelError("", error.Description);
+                return View(new ProfileViewModel { FirstName = dto.FirstName, LastName = dto.LastName, UserName = dto.UserName, Email = dto.Email });
             }
 
-            if (!string.IsNullOrEmpty(model.NewPassword))
+            if (!string.IsNullOrEmpty(dto.NewPassword))
             {
-                if (string.IsNullOrEmpty(model.CurrentPassword))
+                if (string.IsNullOrEmpty(dto.CurrentPassword))
                 {
                     ModelState.AddModelError("CurrentPassword", "Şifre değiştirmek için mevcut şifrenizi girmelisiniz.");
-                    return View(model);
+                    return View(new ProfileViewModel { FirstName = dto.FirstName, LastName = dto.LastName, UserName = dto.UserName, Email = dto.Email });
                 }
 
-                var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+                var changePasswordResult = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
                 if (!changePasswordResult.Succeeded)
                 {
-                    foreach (var error in changePasswordResult.Errors) ModelState.AddModelError("", error.Description);
-                    return View(model);
+                    foreach (var error in changePasswordResult.Errors)
+                        ModelState.AddModelError("", error.Description);
+                    return View(new ProfileViewModel { FirstName = dto.FirstName, LastName = dto.LastName, UserName = dto.UserName, Email = dto.Email });
                 }
             }
 
             TempData["SuccessMessage"] = "Profil ve güvenlik bilgileriniz başarıyla güncellendi.";
+
             await _signInManager.RefreshSignInAsync(user);
+
             return RedirectToAction(nameof(Profile));
         }
 
@@ -118,31 +133,26 @@ namespace UI.Web.Controllers
         {
             if (!ModelState.IsValid) return View(dto);
 
-            // ÖNCE e-posta ile kullanıcıyı bulmaya çalışıyoruz
             var user = await _userManager.FindByEmailAsync(dto.Email);
 
-            // Eğer e-posta ile bulamazsak, girilen değeri KULLANICI ADI (UserName) olarak arıyoruz
             if (user == null)
             {
                 user = await _userManager.FindByNameAsync(dto.Email);
             }
 
-            // İki türlü de bulunamadıysa hata dönüyoruz
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "E-posta/Kullanıcı Adı veya şifre hatalı.");
                 return View(dto);
             }
 
-            // Kullanıcı bulundu, e-posta onay durumunu kontrol ediyoruz
             if (!await _userManager.IsEmailConfirmedAsync(user))
             {
                 ModelState.AddModelError(string.Empty, "Lütfen giriş yapmadan önce e-posta adresinizi onaylayın.");
                 return View(dto);
             }
 
-            // DTO içindeki 'Email' alanını, veritabanındaki asıl e-posta ile eziyoruz. 
-            // Böylece Auth Service, kullanıcı adıyla girilmiş olsa bile doğru e-posta üzerinden giriş işlemini yapabilir.
+            
             dto.Email = user.Email!;
 
             var response = await _authService.LoginAsync(dto);
@@ -188,10 +198,8 @@ namespace UI.Web.Controllers
             {
                 var user = await _userManager.FindByIdAsync(response.UserId.Value.ToString());
 
-                // ✅ 18 Yaş kontrolü politikası için doğum tarihini Claim olarak ekliyoruz
                 await _userManager.AddClaimAsync(user!, new Claim("DateOfBirth", dto.DateOfBirth.ToString("yyyy-MM-dd")));
 
-                // ✅ E-posta onay token'ı oluşturma ve gönderme
                 var code = await _userManager.GenerateEmailConfirmationTokenAsync(user!);
                 var callbackUrl = Url.Action(
                   "ConfirmEmail",
