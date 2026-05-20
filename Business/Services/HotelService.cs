@@ -131,7 +131,6 @@ namespace Business.Services
                     .Include(h => h.Reviews).ThenInclude(r => r.Guest)
                     .FirstOrDefaultAsync(h => h.Id == id && !h.IsDeleted);
 
-                // ✅ Amenities ve AddOnServices ayrı sorguda yükle (Cartesian Product sorunu önle)
                 if (hotel != null)
                 {
                     hotel.Amenities = await _context.Amenities
@@ -139,10 +138,10 @@ namespace Business.Services
                         .Where(a => a.HotelId == hotel.Id && !a.IsDeleted)
                         .ToListAsync();
 
-                    hotel.AddOnServices = await _context.AddOnServices
-                        .AsNoTracking()
-                        .Where(s => s.HotelId == hotel.Id && !s.IsDeleted)
-                        .ToListAsync();
+                boxOnServices: hotel.AddOnServices = await _context.AddOnServices
+                    .AsNoTracking()
+                    .Where(s => s.HotelId == hotel.Id && !s.IsDeleted)
+                    .ToListAsync();
                 }
 
                 if (hotel == null) return null;
@@ -198,6 +197,9 @@ namespace Business.Services
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // ✅ GÜNCELLENEN VE HARF DUYARLILIĞI KALDIRILMIŞ SORGULAMA METODU
+        // ═══════════════════════════════════════════════════════════════
         public async Task<List<HotelDto>> FilterHotelsAsync(HotelSearchFilterDto dto)
         {
             try
@@ -207,15 +209,26 @@ namespace Business.Services
                     .AsSplitQuery()
                     .Include(h => h.Rooms)
                     .Include(h => h.Reviews)
-                    .Where(h => !h.IsDeleted);
+                    .Where(h => !h.IsDeleted); // Filtre kuralına takılmamak için IsActive view üzerinden veya serbest bırakıldı
 
+                // Arama terimi harf duyarsız (Case-Insensitive) hale getirildi
                 if (!string.IsNullOrEmpty(dto.SearchKeyword))
                 {
-                    query = query.Where(h => h.Name.Contains(dto.SearchKeyword) || h.City.Contains(dto.SearchKeyword));
+                    var keyword = dto.SearchKeyword.Trim().ToLower();
+                    query = query.Where(h => h.Name.ToLower().Contains(keyword) || h.City.ToLower().Contains(keyword));
                 }
 
-                if (!string.IsNullOrEmpty(dto.City)) query = query.Where(h => h.City == dto.City);
-                if (dto.MinStarRating.HasValue) query = query.Where(h => h.StarRating >= dto.MinStarRating.Value);
+                // Şehir karşılaştırması '==' yerine harf duyarsız Contains yapılarak sivas/Sİvas uyuşmazlığı çözüldü
+                if (!string.IsNullOrEmpty(dto.City))
+                {
+                    var cityParam = dto.City.Trim().ToLower();
+                    query = query.Where(h => h.City.ToLower().Contains(cityParam));
+                }
+
+                if (dto.MinStarRating.HasValue)
+                {
+                    query = query.Where(h => h.StarRating >= dto.MinStarRating.Value);
+                }
 
                 var hotels = await query
                     .Skip((dto.PageNumber - 1) * dto.PageSize)
@@ -260,7 +273,6 @@ namespace Business.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                // ✅ DÜZELTME: ChangeTracker.Clear() KALDIR
                 var hotel = await _context.Hotels
                     .Include(h => h.Amenities)
                     .Include(h => h.AddOnServices)
@@ -289,12 +301,10 @@ namespace Business.Services
 
                 hotel.UpdatedAt = DateTime.UtcNow;
 
-                // 🚨 OLANAKLAR (AMENITIES) İÇİN AKILLI BİRLEŞTİRME (DÜZELTILMIŞ) 🚨
                 if (hotel.Amenities == null) hotel.Amenities = new List<Amenity>();
 
                 var incomingAmenityIds = dto.Amenities?.Where(a => a.Id > 0).Select(a => a.Id).ToList() ?? new List<int>();
 
-                // 1. Ekrandan silinenleri bul ve IsDeleted = true yap (Soft Delete)
                 var amenitiesToRemove = hotel.Amenities.Where(a => !incomingAmenityIds.Contains(a.Id) && !a.IsDeleted).ToList();
                 foreach (var item in amenitiesToRemove)
                 {
@@ -302,7 +312,6 @@ namespace Business.Services
                     item.UpdatedAt = DateTime.UtcNow;
                 }
 
-                // 2. Mevcutları güncelle, silinmiş olanları geri al, yenileri ekle
                 if (dto.Amenities != null)
                 {
                     foreach (var amenityDto in dto.Amenities)
@@ -316,15 +325,13 @@ namespace Business.Services
                                 existing.IconUrl = amenityDto.IconUrl;
                                 existing.Description = amenityDto.Description;
                                 existing.UpdatedAt = DateTime.UtcNow;
-                                existing.IsDeleted = false; // ✅ Silinmiş olanı geri al
+                                existing.IsDeleted = false;
                             }
                         }
                         else
                         {
-                            // ✅ DÜZELTME: Boş satırları ekleme! Sadece gerçek veri ekleme
                             if (!string.IsNullOrWhiteSpace(amenityDto.Name))
                             {
-                                // ✅ DÜZELTME 2: DbContext'e doğrudan Add et
                                 _context.Amenities.Add(new Amenity
                                 {
                                     Name = amenityDto.Name,
@@ -339,12 +346,10 @@ namespace Business.Services
                     }
                 }
 
-                // 🚨 EK HİZMETLER (ADD-ON SERVICES) İÇİN AKILLI BİRLEŞTİRME (DÜZELTILMIŞ) 🚨
                 if (hotel.AddOnServices == null) hotel.AddOnServices = new List<AddOnService>();
 
                 var incomingServiceIds = dto.AddOnServices?.Where(s => s.Id > 0).Select(s => s.Id).ToList() ?? new List<int>();
 
-                // 1. Ekrandan silinenleri bul ve IsDeleted = true yap
                 var servicesToRemove = hotel.AddOnServices.Where(s => !incomingServiceIds.Contains(s.Id) && !s.IsDeleted).ToList();
                 foreach (var item in servicesToRemove)
                 {
@@ -352,7 +357,6 @@ namespace Business.Services
                     item.UpdatedAt = DateTime.UtcNow;
                 }
 
-                // 2. Mevcutları güncelle, silinmiş olanları geri al, yenileri ekle
                 if (dto.AddOnServices != null)
                 {
                     foreach (var serviceDto in dto.AddOnServices)
@@ -366,15 +370,13 @@ namespace Business.Services
                                 existing.Price = serviceDto.Price;
                                 existing.Unit = string.IsNullOrEmpty(serviceDto.Unit) ? "Adet" : serviceDto.Unit;
                                 existing.UpdatedAt = DateTime.UtcNow;
-                                existing.IsDeleted = false; // ✅ Silinmiş olanı geri al
+                                existing.IsDeleted = false;
                             }
                         }
                         else
                         {
-                            // ✅ DÜZELTME: Boş satırları ekleme! Sadece gerçek veri ekleme
                             if (!string.IsNullOrWhiteSpace(serviceDto.Name) && serviceDto.Price > 0)
                             {
-                                // ✅ DÜZELTME 2: DbContext'e doğrudan Add et
                                 _context.AddOnServices.Add(new AddOnService
                                 {
                                     Name = serviceDto.Name,

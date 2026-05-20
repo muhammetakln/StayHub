@@ -50,12 +50,13 @@ namespace Business.Services
                 if (dto.CheckInDate.Date >= dto.CheckOutDate.Date)
                     return Result<List<ReservationDto>>.Failure("Çıkış tarihi giriş tarihinden sonra olmalıdır.");
 
-                // 3. Çakışan Rezervasyon Kontrolü (Overlapping Check)
+                // 3. Çakışan Rezervasyon Kontrolü (Overlapping Check) - SQLite & Evrensel Uyumlu Versiyon
+                var newCheckIn = dto.CheckInDate.Date;
+                var newCheckOut = dto.CheckOutDate.Date;
+
                 var isOccupied = await _context.Reservations.AsNoTracking().AnyAsync(r =>
                     r.RoomId == dto.RoomId && !r.IsDeleted && r.Status != ReservationStatus.Cancelled &&
-                    ((dto.CheckInDate.Date >= r.CheckInDate.Date && dto.CheckInDate.Date < r.CheckOutDate.Date) ||
-                     (dto.CheckOutDate.Date > r.CheckInDate.Date && dto.CheckOutDate.Date <= r.CheckOutDate.Date) ||
-                     (r.CheckInDate.Date >= dto.CheckInDate.Date && r.CheckInDate.Date < dto.CheckOutDate.Date)));
+                    (newCheckIn < r.CheckOutDate && newCheckOut > r.CheckInDate));
 
                 if (isOccupied) return Result<List<ReservationDto>>.Failure("Seçilen oda bu tarihler arasında doludur.");
 

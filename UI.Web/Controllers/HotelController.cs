@@ -44,7 +44,7 @@ namespace UI.Web.Controllers
                 City = city,
                 SearchKeyword = searchTerm,
                 PageNumber = 1,
-                PageSize = 50
+                PageSize=200
             };
 
             var hotels = await _hotelService.FilterHotelsAsync(filter);

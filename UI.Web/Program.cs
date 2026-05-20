@@ -21,9 +21,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 {
     options.User.RequireUniqueEmail = true;
 
-    // ✅ BU AYARLAR SAHTE MAİLLERİ ENGELLER:
-    // Kullanıcı kayıt olsa bile, veritabanındaki "EmailConfirmed" alanı true 
-    // yapılmadan giriş (Login) işlemi başarılı sonuçlanmaz.
+    // Sahte mailleri engelleme politikası
     options.SignIn.RequireConfirmedEmail = true;
     options.SignIn.RequireConfirmedAccount = true;
     options.SignIn.RequireConfirmedPhoneNumber = false;
@@ -72,25 +70,56 @@ var turkishCulture = new CultureInfo("tr-TR");
 CultureInfo.DefaultThreadCurrentCulture = turkishCulture;
 CultureInfo.DefaultThreadCurrentUICulture = turkishCulture;
 
+// ═══════════════════════════════════════════════════════════════
+// ✅ DOCKER VE YEREL ORTAM İÇİN GÜVENLİ VERİTABANI YÖNETİM BLOĞU
+// ═══════════════════════════════════════════════════════════════
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<StayHubContext>();
+
+        // 🚀 GÜNCELLEME: Eğer Docker (Linux) ortamındaysak mutlak veritabanı yolunu zorunlu kılıyoruz
+        if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+        {
+            context.Database.GetDbConnection().ConnectionString = "Data Source=/app/database/StayHub.db;";
+        }
+
+        // 1. Veritabanı klasör dizini yoksa oluşturuyoruz
+        var connectionString = context.Database.GetDbConnection().ConnectionString;
+        var dbPath = Path.GetDirectoryName(connectionString.Replace("Data Source=", "").Replace(";", ""));
+        if (!string.IsNullOrEmpty(dbPath) && !Directory.Exists(dbPath) && (dbPath.Contains("/") || dbPath.Contains("\\")))
+        {
+            Directory.CreateDirectory(dbPath);
+        }
+
+        // 2. Tabloları doğrular ve bekleyen tüm göçleri (Migration) sırayla basar
+        context.Database.Migrate();
+
+        // 3. Identity Servislerini Getiriyoruz
         var userManager = services.GetRequiredService<UserManager<Guest>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
-        context.Database.Migrate();
-        await RoleSeeder.SeedRolesAsync(userManager, roleManager, context);
-        HotelSeeder.SeedHotels(context);
+        // 4. Asenkron kilitlenmeleri önleyerek Seeder'ları senkronize tetikliyoruz
+        Task.Run(async () =>
+        {
+            // Orijinal adı: SeedRolesAsync (İçerisinde SuperAdmin ve Test Müşterisi barındırır)
+            await RoleSeeder.SeedRolesAsync(userManager, roleManager, context);
+
+            // Orijinal adı: SeedHotels (İçerisinde Hilton, Cappadocia Boutique ve odaları barındırır)
+            HotelSeeder.SeedHotels(context);
+        }).GetAwaiter().GetResult();
+
+        Console.WriteLine(">>>> [StayHub Engine] Veritabanı başarıyla doğrulandı ve veriler işlendi.");
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Veritabanına başlangıç verileri (Seed) eklenirken bir hata oluştu.");
+        logger.LogError(ex, "StayHub veritabanı yapılandırılırken veya tohumlanırken hata oluştu!");
     }
 }
+// ═══════════════════════════════════════════════════════════════
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

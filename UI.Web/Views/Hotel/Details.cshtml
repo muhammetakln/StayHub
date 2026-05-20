@@ -206,17 +206,28 @@
                 <div class="card border-0 shadow-lg p-4 rounded-4 position-sticky" style="top: 20px;">
                     <h3 class="fw-bold mb-4 text-center border-bottom pb-3">🛏️ Rezervasyon Yap</h3>
 
+                    @* ✅ GÜNCELLENEN BÖLÜM: BOOTSTRAP UYARI KUTULARI *@
                     @if (TempData["ErrorMessage"] != null)
                     {
-                        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
-                            <strong><i class="bi bi-exclamation-triangle-fill"></i> Hata:</strong> @TempData["ErrorMessage"]
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 border-start border-4 border-danger" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                                <div>
+                                    <strong>Rezervasyon Başarısız:</strong> @TempData["ErrorMessage"]
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
                     @if (TempData["SuccessMessage"] != null)
                     {
-                        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
-                            <strong><i class="bi bi-check-circle-fill"></i> Başarılı:</strong> @TempData["SuccessMessage"]
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 border-start border-4 border-success" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                <div>
+                                    <strong>Başarılı:</strong> @TempData["SuccessMessage"]
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }

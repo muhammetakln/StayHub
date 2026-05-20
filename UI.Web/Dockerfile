@@ -1,12 +1,17 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+﻿# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
+# ═══════════════════════════════════════════════════════════════
+# ✅ BASE KATMANI: VS FAST MODE İÇİN VERİ TABANI ALANINI BURADA HAZIRLIYORUZ
+# ═══════════════════════════════════════════════════════════════
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Linux ortamında SQLite dosya oluşturma ve kilitleme yetki sorunlarını root ile aşıyoruz
+USER root
+RUN mkdir -p /app/database && chmod -R 777 /app/database
+# ═══════════════════════════════════════════════════════════════
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -22,13 +27,27 @@ COPY . .
 WORKDIR "/src/UI.Web"
 RUN dotnet build "./UI.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
+# Publish katmanı (Projenin derlenmiş çıktılarını toplar)
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./UI.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
+# ═══════════════════════════════════════════════════════════════
+# ✅ FINAL KATMANI: CANLIYA ÇIKARKEN KULLANILACAK SON SÜRÜM
+# ═══════════════════════════════════════════════════════════════
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+USER root
+
+# Yerelde tıkır tıkır çalışan, içi 107 otel dolu StayHub.db dosyanı production imajına paketliyoruz
+COPY ["UI.Web/StayHub.db", "/app/database/StayHub.db"]
+RUN chmod -R 777 /app/database
+
+# Uygulamanın ayağa kalkacağı portu ve bağlantı dizesini sisteme fısıldıyoruz
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ConnectionStrings__DefaultConnection="Data Source=/app/database/StayHub.db;"
+
+USER root
 ENTRYPOINT ["dotnet", "UI.Web.dll"]
