@@ -103,13 +103,15 @@ namespace Business.Services
                     await _context.SaveChangesAsync();
                 }
 
-                await SendInvoiceEmail(guest, reservation, room);
+                // 🎯 DÜZENLENDİ: Ödeme yapılmadan fatura maili gitmemesi için buradaki SendInvoiceEmail çağrısı kaldırıldı.
+                // Fatura maili, ödeme servisinde (PaymentService vb.) ödeme başarılı (Success) tetiklendiğinde çağrılmalıdır.
 
                 var reservations = await GetReservationsByIdAsync(guestId);
                 return Result<List<ReservationDto>>.Success(reservations, "Rezervasyonunuz başarıyla oluşturuldu.");
             }
             catch (Exception ex)
             {
+                _context.ChangeTracker.Clear(); // Hata durumunda context state'ini temizle
                 _logger.LogError(ex, "CreateReservationAsync Hatası");
                 return Result<List<ReservationDto>>.Failure("İşlem sırasında teknik bir hata oluştu.");
             }
@@ -212,7 +214,8 @@ namespace Business.Services
                 _context.Reservations.Update(res);
                 await _context.SaveChangesAsync();
 
-                // Mail gönderimi
+                // 🎯 DÜZENLENDİ: İptal maili tetikleyicisi eklendi
+                await SendCancellationEmail(res.Id);
 
                 return Result.Success($"Rezervasyon başarıyla iptal edildi.{refundMessage}");
             }

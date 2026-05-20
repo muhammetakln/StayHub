@@ -155,7 +155,7 @@
                     <div id="reviewsList">
                         @if (Model.Reviews != null && Model.Reviews.Any())
                         {
-                            @foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
+                            foreach (var review in Model.Reviews.OrderByDescending(r => r.CreatedAt))
                             {
                                 <div class="border-bottom pb-4 mb-4">
                                     <div class="d-flex justify-content-between align-items-start">
@@ -249,8 +249,10 @@
                                             <option value="@room.Id"
                                                     data-price="@room.Price.ToString(CultureInfo.InvariantCulture)"
                                                     data-images='@Html.Raw(roomImagesJson)'
-                                                    data-name="@room.Name">
-                                                @room.Name (@room.Price.ToString("N0") TL / Gece)
+                                                    data-name="@room.Name"
+                                                    data-capacity="@room.Capacity">
+                                                @* 👈 data-capacity eklendi *@
+                                                @room.Name (@room.Price.ToString("N0") TL / Gece - Maks: @room.Capacity Kişi)
                                             </option>
                                         }
                                     }
@@ -338,7 +340,7 @@
         if (!title || !content) {
             alert("Lütfen tüm alanları doldurun.");
             return;
-        }
+            }
 
         $.ajax({
             url: '/hotel/add-review',
@@ -366,12 +368,23 @@
         const roomSelect = document.getElementById("RoomSelect");
         const carouselInner = document.getElementById("mainCarouselInner");
         const hotelPrimaryItem = document.getElementById("hotelPrimaryItem");
+        const guestInput = document.getElementById("NumberOf"); // 👈 Kişi sayısı seçimi yakalandı
         const selectedOption = roomSelect.options[roomSelect.selectedIndex];
 
         const extraItems = carouselInner.querySelectorAll('.carousel-item:not(#hotelPrimaryItem)');
         extraItems.forEach(item => item.remove());
 
         if (roomSelect.selectedIndex > 0) {
+            // --- 🔑 DINAMIK MIN/MAX KAPASITE AYARI ---
+            const maxCapacity = parseInt(selectedOption.getAttribute("data-capacity") || "10");
+            if (guestInput) {
+                guestInput.max = maxCapacity;
+                if (parseInt(guestInput.value) > maxCapacity) {
+                    guestInput.value = maxCapacity;
+                }
+            }
+            // ----------------------------------------
+
             let images = [];
             try {
                 const data = selectedOption.getAttribute("data-images");
@@ -406,6 +419,7 @@
             }
         } else {
             hotelPrimaryItem.classList.add('active');
+            if (guestInput) guestInput.max = 10;
         }
 
         updatePrice();
@@ -415,11 +429,23 @@
         const roomSelect = document.getElementById("RoomSelect");
         const checkIn = document.getElementById("CheckInDate")?.value;
         const checkOut = document.getElementById("CheckOutDate")?.value;
-        const guestInput = document.getElementById("NumberOf")?.value;
+        const guestInput = document.getElementById("NumberOf");
         const priceDisplay = document.getElementById("totalPriceDisplay");
         const submitBtn = document.getElementById("submitBtn");
 
         if(!priceDisplay) return;
+
+        // --- 🛡️ MANUEL KLAVYE GIRISINI ENGELLEME VALILASYONU ---
+        if (roomSelect.selectedIndex > 0 && guestInput) {
+            const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+            const maxCapacity = parseInt(selectedOption.getAttribute("data-capacity") || "10");
+            if (parseInt(guestInput.value) > maxCapacity) {
+                guestInput.value = maxCapacity;
+            }
+        }
+        // ----------------------------------------
+
+        const guestCount = guestInput ? guestInput.value : 1;
 
         let addonTotal = 0;
         document.querySelectorAll(".addon-checkbox:checked").forEach(cb => {
@@ -436,7 +462,7 @@
         const nights = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
 
         if (nights > 0) {
-            const extraCharge = (parseInt(guestInput) > 1) ? (parseInt(guestInput) - 1) * 150 : 0;
+            const extraCharge = (parseInt(guestCount) > 1) ? (parseInt(guestCount) - 1) * 150 : 0;
             const total = (nights * roomPrice) + extraCharge + addonTotal;
             priceDisplay.innerText = total.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
             if(submitBtn) submitBtn.disabled = false;

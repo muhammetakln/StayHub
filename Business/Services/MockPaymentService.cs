@@ -17,13 +17,16 @@ namespace Business.Services
     {
         private readonly StayHubContext _context;
         private readonly ILogger<MockPaymentService> _logger;
+        private readonly IReservationService _reservationService; // 👈 1. Rezervasyon servisi bağımlılığı eklendi
 
         private static readonly Dictionary<string, PaymentStatus> MockDatabase = new();
 
-        public MockPaymentService(StayHubContext context, ILogger<MockPaymentService> logger)
+        // Constructor güncellenerek IReservationService enjekte edildi
+        public MockPaymentService(StayHubContext context, ILogger<MockPaymentService> logger, IReservationService reservationService)
         {
             _context = context;
             _logger = logger;
+            _reservationService = reservationService; // 👈 2. Ataması yapıldı
         }
 
         public async Task<IResult> CreatePaymentAsync(int reservationId, PaymentProcessDto dto)
@@ -32,7 +35,12 @@ namespace Business.Services
             {
                 _logger.LogInformation($"[MOCK PAYMENT] Ödeme oluşturuluyor: Reservation={reservationId}");
 
+                // 🎯 GÜNCELLENDİ: Nesne kilitlenmesini engellemek için .AsNoTracking() eklendi
                 var reservation = await _context.Reservations
+                    .AsNoTracking()
+                    .Include(r => r.Guest)
+                    .Include(r => r.Room)
+                        .ThenInclude(rm => rm.Hotel)
                     .FirstOrDefaultAsync(r => r.Id == reservationId && !r.IsDeleted);
 
                 if (reservation == null)
@@ -65,6 +73,24 @@ namespace Business.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"[MOCK PAYMENT] Ödeme oluşturuldu: ID={payment.Id}, Status={payment.Status}");
+
+                // 🎯 3. FATURA MAİLİ BURADA TETİKLENİYOR
+                if (payment.Status == PaymentStatus.Completed && reservation.Guest != null && reservation.Room != null)
+                {
+                    // 🎯 GÜNCELLENDİ: AsNoTracking kullandığımız için rezervasyon durumunu veritabanından bulup temiz bir şekilde güncelliyoruz
+                    var trackableReservation = await _context.Reservations.FindAsync(reservationId);
+                    if (trackableReservation != null)
+                    {
+                        trackableReservation.Status = ReservationStatus.Confirmed;
+                        _context.Reservations.Update(trackableReservation);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    _logger.LogInformation($"[MOCK PAYMENT] Ödeme başarılı. Fatura maili gönderiliyor: Reservation={reservationId}");
+
+                    // Önceki adımda ReservationService içinde bıraktığımız fatura metodunu çağırıyoruz
+                    await _reservationService.SendInvoiceEmail(reservation.Guest, reservation, reservation.Room);
+                }
 
                 return Result.Success($"Ödeme {(bankStatus == "Completed" ? "başarılı" : "başarısız")}");
             }
@@ -186,9 +212,9 @@ namespace Business.Services
         {
             return bank.ToLower() switch
             {
-                "garanti" => amount < 50000 ? "Completed" : "Failed",      
-                "akbank" => amount < 100000 ? "Completed" : "Failed",      
-                "isbank" => amount < 75000 ? "Completed" : "Failed",       
+                "garanti" => amount < 50000 ? "Completed" : "Failed",
+                "akbank" => amount < 100000 ? "Completed" : "Failed",
+                "isbank" => amount < 75000 ? "Completed" : "Failed",
                 _ => "Failed"
             };
         }

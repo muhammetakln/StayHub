@@ -1,15 +1,10 @@
-﻿using Business.Services;
-using Core.Abstracts.Interfaces;
-using Core.Abstracts.IServices;
+﻿using Core.Abstracts.Interfaces;
 using Core.Concretes.DTOs;
-using Core.Concretes.Entities;
 using Core.Concretes.Enum;
 using Data.Contexts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 
 namespace UI.Web.Controllers
 {
