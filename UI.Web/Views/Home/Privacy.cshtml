@@ -1,6 +1,160 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Gizlilik Politikası";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container py-5">
+    <!-- Başlık Alanı -->
+    <div class="text-center mb-5">
+        <div class="display-4 text-primary mb-2">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h1 class="fw-bold text-dark">@ViewData["Title"]</h1>
+        <p class="text-muted mx-auto" style="max-width: 600px;">
+            <strong>StayHub Hotel</strong> olarak verilerinizin güvenliği ve gizliliği bizim için en yüksek önceliktir. Aşağıda, uygulamamızda verilerinizin nasıl işlendiğine dair şeffaf bilgileri bulabilirsiniz.
+        </p>
+        <hr class="w-25 mx-auto text-primary" style="height: 3px;">
+    </div>
+
+    <div class="row g-5">
+        <!-- Sol Menü: Hızlı Navigasyon -->
+        <div class="col-lg-4 d-none d-lg-block">
+            <div class="sticky-top" style="top: 2rem;">
+                <h5 class="fw-bold mb-3 text-secondary">Bölümler</h5>
+                <div class="list-group list-group-flush shadow-sm rounded-3">
+                    <a href="#toplanan-veriler" class="list-group-item list-group-item-action py-3">
+                        <i class="bi bi-collection-fill text-primary me-2"></i> Hangi Verileri Topluyoruz?
+                    </a>
+                    <a href="#kullanim-amaci" class="list-group-item list-group-item-action py-3">
+                        <i class="bi bi-gear-fill text-primary me-2"></i> Verileri Nasıl Kullanıyoruz?
+                    </a>
+                    <a href="#veri-guvenligi" class="list-group-item list-group-item-action py-3">
+                        <i class="bi bi-lock-fill text-primary me-2"></i> Veri Güvenliği Önlemleri
+                    </a>
+                    <a href="#ucuncu-taraflar" class="list-group-item list-group-item-action py-3">
+                        <i class="bi bi-share-fill text-primary me-2"></i> Üçüncü Taraf Paylaşımları
+                    </a>
+                    <a href="#iletisim" class="list-group-item list-group-item-action py-3">
+                        <i class="bi bi-envelope-fill text-primary me-2"></i> İletişim ve Destek
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Alan: İçerik Kartları -->
+        <div class="col-lg-8">
+            <div class="d-flex flex-column gap-4">
+
+                <!-- Kart 1: Toplanan Veriler -->
+                <div id="toplanan-veriler" class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-collection-fill fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold m-0 text-dark">Hangi Verileri Topluyoruz?</h4>
+                    </div>
+                    <p class="text-muted">Uygulamamızı kullanırken, size daha iyi bir hizmet sunabilmek adına belirli kişisel verileri topluyoruz:</p>
+                    <ul class="list-group list-group-flush text-muted">
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-check2 text-success me-2"></i> <strong>Kişisel Bilgiler:</strong> Ad, soyad, e-posta adresi ve iletişim bilgileri.</li>
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-check2 text-success me-2"></i> <strong>Sistem Logları:</strong> Uygulama içi işlemleriniz, IP adresiniz ve tarayıcı bilgileriniz sistem performansını optimize etmek adına otomatik olarak loglanır.</li>
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-check2 text-success me-2"></i> <strong>Çerezler (Cookies):</strong> Oturumunuzu açık tutmak ve tercihlerinizi hatırlamak için zorunlu çerezler kullanılır.</li>
+                    </ul>
+                </div>
+
+                <!-- Kart 2: Kullanım Amacı -->
+                <div id="kullanim-amaci" class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-gear-fill fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold m-0 text-dark">Verileri Nasıl Kullanıyoruz?</h4>
+                    </div>
+                    <p class="text-muted">Topladığımız veriler yalnızca aşağıdaki yasal ve operasyonel amaçlar doğrultusunda işlenir:</p>
+                    <ul class="list-group list-group-flush text-muted">
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-arrow-right text-primary me-2"></i> Kullanıcı hesaplarının oluşturulması ve kimlik doğrulama süreçleri.</li>
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-arrow-right text-primary me-2"></i> Sipariş, rezervasyon veya taleplerinizin hatasız bir şekilde yönetilmesi.</li>
+                        <li class="list-group-item border-0 px-0"><i class="bi bi-arrow-right text-primary me-2"></i> Sistem hatalarının tespiti ve backend optimizasyonlarının yapılması.</li>
+                    </ul>
+                </div>
+
+                <!-- Kart 3: Veri Güvenliği -->
+                <div id="veri-guvenligi" class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-lock-fill fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold m-0 text-dark">Veri Güvenliği Önlemleri</h4>
+                    </div>
+                    <p class="text-muted">
+                        Verilerinizin güvenliği için endüstri standardı şifreleme ve backend koruma yöntemleri uyguluyoruz:
+                    </p>
+                    <div class="alert alert-secondary border-0 rounded-3 mb-0">
+                        <i class="bi bi-shield-check text-success me-2 fw-bold"></i>
+                        Tüm hassas veriler veritabanımızda güçlü kriptografik algoritmalar (Hashing) kullanılarak saklanır. Veri transferleri ise tamamen <strong>SSL/HTTPS</strong> protokolü üzerinden şifreli olarak gerçekleştirilir.
+                    </div>
+                </div>
+
+                <!-- Kart 4: Üçüncü Taraflar -->
+                <div id="ucuncu-taraflar" class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-share-fill fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold m-0 text-dark">Üçüncü Taraf Paylaşımları</h4>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Kullanıcı verileriniz izniniz olmadan asla üçüncü şahıslarla paylaşılmaz veya satılmaz. Ancak, ödeme altyapıları (Stripe/iyzico vb.) veya analiz araçları (Google Analytics) gibi entegrasyonlarda, yalnızca servislerin çalışması için zorunlu olan veriler güvenli API'ler aracılığıyla iletilir.
+                    </p>
+                </div>
+
+                <!-- Kart 5: İletişim -->
+                <div id="iletisim" class="card border-0 shadow-sm rounded-3 p-4 bg-white border-start border-4 border-primary">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3">
+                            <i class="bi bi-envelope-fill fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold m-0 text-dark">İletişim ve Veri Talepleri</h4>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Kişisel verilerinizin silinmesini, güncellenmesini talep etmek veya gizlilik politikamız hakkında soru sormak için <strong>StayHub Hotel</strong> destek ekibimizle doğrudan iletişime geçebilirsiniz:
+                    </p>
+                    <div class="mt-3">
+                        <i class="bi bi-arrow-right-short text-primary fs-5"></i>
+                        <a href="mailto:storiesinteresting63@gmail.com" class="text-primary fw-semibold text-decoration-none border-bottom border-primary border-opacity-25 pb-1">
+                            StayHub Destek Ekibine E-posta Gönder
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap İkonları için CDN (Eğer projedeki layout alanında yoksa diye eklenmiştir) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+    /* Tasarımı canlandırmak için hafif arka plan rengi ve hover efektleri */
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;
+        }
+
+    .list-group-item-action:hover {
+        background-color: #f0f7ff;
+        color: #0d6efd;
+        font-weight: 500;
+    }
+
+    .bg-primary-subtle {
+        background-color: #e7f1ff;
+    }
+</style>

@@ -3,11 +3,7 @@ using Core.Abstracts.IServices;
 using Core.Concretes.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace UI.Web.Controllers
 {
@@ -34,9 +30,7 @@ namespace UI.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(string? city, string? searchTerm)
         {
-            // ✅ PROFESYONEL DOKUNUŞ: Tarayıcı ve sunucu tarafındaki form geçmişi çakışmalarını
-            // engellemek için ModelState temizlenir. Bu sayede farklı hesap girişlerinde
-            // eski filtre değerleri kutucuklarda asılı kalmaz.
+           
             ModelState.Clear();
 
             var filter = new HotelSearchFilterDto
@@ -101,39 +95,6 @@ namespace UI.Web.Controllers
             }
         }
 
-        [HttpPost("delete-review/{id}")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> DeleteReview(int id)
-        {
-            var result = await _reviewService.DeleteReviewAsync(id);
-            if (!result.IsSuccess) return NotFound();
-
-            return Ok(new { success = true });
-        }
-
-        [HttpPost("reply-review")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> ReplyReview(int reviewId, string replyText)
-        {
-            var result = await _reviewService.ReplyReviewAsync(reviewId, replyText);
-            if (!result.IsSuccess) return NotFound();
-
-            return Ok(new { success = true });
-        }
-
-        [HttpGet("get-revenue/{hotelId}")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> GetRevenue(int hotelId)
-        {
-            var revenue = await _reservationService.GetMonthlyRevenueByHotelIdAsync(hotelId);
-            return Ok(new { hotelId, monthlyRevenue = revenue });
-        }
-
-        [HttpPost("book/{hotelId}")]
-        [Authorize(Roles = "Guest")]
-        public async Task<IActionResult> Book(int hotelId, [FromForm] CreateReservationDto dto)
-        {
-            return RedirectToAction("Create", "Reservation", new { hotelId = hotelId, dto = dto });
-        }
+       
     }
 }
