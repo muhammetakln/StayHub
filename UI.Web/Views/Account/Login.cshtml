@@ -11,92 +11,94 @@
 
 @model LoginDto
 
-<div class="container mt-5 mb-5">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-                @* ✅ Başlık ve Renk Dinamik Yapıldı *@
-                <div class="card-header text-white p-4 text-center"
-                     style="background: @(currentUserType == "Admin" ? "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)") !important;">
-                    <h3 class="mb-0 fw-bold">
-                        @(currentUserType == "Admin" ? "👨‍💼 Otel Yönetimi" : "🔐 Giriş Yap")
-                    </h3>
-                </div>
-                <div class="card-body p-4 p-sm-5">
-
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
-                            <strong>✨ Bilgi:</strong> @TempData["SuccessMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="login-wrapper py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card">
+                    <div class="auth-header text-center">
+                        <div class="auth-logo-icon"
+                             style="background: @(currentUserType == "Admin" ? "linear-gradient(135deg, #0d47a1, #1a237e)" : "linear-gradient(135deg, #1976d2, #0d47a1)") !important;">
+                            <i class="bi @(currentUserType == "Admin" ? "bi-shield-lock-fill" : "bi-door-open-fill")"></i>
                         </div>
-                    }
+                        <h2>@(currentUserType == "Admin" ? "Yönetim Paneli" : "Hoş Geldiniz")</h2>
+                        <p>@(currentUserType == "Admin" ? "StayHub Otel yönetim sistemine güvenli erişim." : "StayHub hesabınıza giriş yapın ve tatilinizi planlayın.")</p>
+                    </div>
 
-                    @if (!ViewData.ModelState.IsValid)
-                    {
-                        <div class="alert alert-danger rounded-3 shadow-sm">
-                            <div asp-validation-summary="All" class="text-danger mb-0"></div>
-                        </div>
-                    }
-
-                    <form method="post" action="/account/login">
-                        @Html.AntiForgeryToken()
-
-                        @* ✅ Kullanıcı Türü Seçimi (Hidden olarak tutuluyor ve Radio butonlar kaldırıldı) *@
-                        <input type="hidden" asp-for="UserType" value="@currentUserType" />
-
-                        @* Eğer yanlış sayfadaysa geçiş yapabilmesi için küçük bir link *@
-                        <div class="text-end mb-3">
-                            <a href="/account/login?userType=@(currentUserType == "Admin" ? "Guest" : "Admin")" class="small text-decoration-none text-muted">
-                                <i class="bi bi-arrow-left-right me-1"></i> @(currentUserType == "Admin" ? "Müşteri Girişine Geç" : "Otel Yönetimine Geç")
-                            </a>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: #2c3e50;">👤 Kullanıcı Adı veya Email *</label>
-                            <input type="text"
-                                   class="form-control bg-light"
-                                   asp-for="Email"
-                                   placeholder="Kullanıcı adınızı veya e-postanızı girin"
-                                   required>
-                            <span asp-validation-for="Email" class="text-danger d-block small mt-1"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: #2c3e50;">🔑 Şifre *</label>
-                            <input type="password"
-                                   class="form-control bg-light"
-                                   asp-for="Password"
-                                   placeholder="Şifrenizi girin"
-                                   required>
-                            <span asp-validation-for="Password" class="text-danger d-block small mt-1"></span>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="rememberMe" asp-for="RememberMe">
-                                <label class="form-check-label text-muted user-select-none" for="rememberMe">Beni Hatırla</label>
-                            </div>
-                            <a href="/account/forgot-password" class="text-decoration-none fw-semibold" style="color: #764ba2;">Şifremi Unuttum?</a>
-                        </div>
-
-                        <div class="d-grid gap-2 mb-4">
-                            <button type="submit" class="btn @(currentUserType == "Admin" ? "btn-danger" : "btn-primary") btn-lg fw-bold rounded-pill shadow-sm">
-                                🔓 Giriş Yap
-                            </button>
-                        </div>
-
-                        @if (currentUserType == "Guest")
+                    <div class="auth-body">
+                        @if (TempData["SuccessMessage"] != null)
                         {
-                            <hr class="my-4 text-muted">
-                            <div class="text-center" id="guestRegisterLink">
-                                <p class="mb-0 text-muted">
-                                    Hesabınız yok mu?
-                                    <a href="/account/register" class="text-decoration-none fw-bold ms-1" style="color: #0a58ca;">Hemen Kaydol</a>
-                                </p>
+                            <div class="alert alert-custom-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                <div>@TempData["SuccessMessage"]</div>
+                                <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         }
-                    </form>
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-custom-danger mb-4">
+                                <div asp-validation-summary="All" class="text-danger-custom mb-0 d-flex flex-column gap-1"></div>
+                            </div>
+                        }
+
+                        <form method="post" action="/account/login">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" asp-for="UserType" value="@currentUserType" />
+
+                            <div class="text-end mb-4">
+                                <a href="/account/login?userType=@(currentUserType == "Admin" ? "Guest" : "Admin")" class="link-switch-mode">
+                                    <i class="bi bi-arrow-left-right me-1"></i> @(currentUserType == "Admin" ? "Müşteri Girişine Geç" : "Otel Yönetimine Geç")
+                                </a>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Kullanıcı Adı veya E-posta *</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-envelope input-icon"></i>
+                                    <input type="text" class="form-control" asp-for="Email" placeholder="Kullanıcı adı veya e-posta" required>
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger-custom"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Şifre *</label>
+                                <div class="input-group-custom">
+                                    <i class="bi bi-lock input-icon"></i>
+                                    <input type="password" class="form-control" asp-for="Password" placeholder="••••••••" required>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger-custom"></span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                                <div class="form-check-custom">
+                                    <input class="form-check-input-custom" type="checkbox" id="rememberMe" asp-for="RememberMe">
+                                    <label class="form-check-label-custom user-select-none" for="rememberMe">Beni Hatırla</label>
+                                </div>
+                                <a href="/account/forgot-password" class="link-forgot-password"
+                                   style="color: @(currentUserType == "Admin" ? "#1a237e" : "#1976d2");">Şifremi Unuttum?</a>
+                            </div>
+
+                            <div class="d-grid mb-4">
+                                <button type="submit"
+                                        class="btn btn-auth-submit"
+                                        style="background: @(currentUserType == "Admin" ? "linear-gradient(135deg, #0d47a1, #1a237e)" : "linear-gradient(135deg, #1976d2, #0d47a1)") !important;">
+                                    <span>Giriş Yap</span> <i class="bi bi-box-arrow-in-right ms-1 fs-5"></i>
+                                </button>
+                            </div>
+
+                            @if (currentUserType == "Guest")
+                            {
+                                <div class="auth-footer text-center mt-4 pt-3 border-top" id="guestRegisterLink">
+                                    <p class="mb-0 text-muted">
+                                        Hesabınız yok mu?
+                                        <a href="/account/register" class="link-auth-redirect">Hemen Kaydol</a>
+                                    </p>
+                                </div>
+                            }
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,32 +106,229 @@
 </div>
 
 <style>
-    .form-control {
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
+    /* Kayıt Ol Sayfasıyla Uyumlu Soft Mavi-Beyaz Geçişli Arka Plan */
+    .login-wrapper {
+        background: linear-gradient(135deg, #f4f7f6 0%, #e9f0f8 50%, #dbe7f5 100%);
+        min-height: calc(100vh - 60px);
+        display: flex;
+        align-items: center;
     }
 
-        .form-control:focus {
-            border-color: #764ba2;
-            box-shadow: 0 0 0 0.25rem rgba(118, 75, 162, 0.25);
-            background-color: #fff !important;
+    /* Pürüzsüz Beyaz Cam Kart Yapısı (Yumuşak Gölgeli) */
+    .auth-card {
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(25, 118, 210, 0.12);
+        border-radius: 24px;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        box-shadow: 0 15px 35px rgba(25, 118, 210, 0.08), 0 5px 15px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+
+    /* Üst Başlık ve İkon Düzeni */
+    .auth-header {
+        padding: 40px 40px 10px 40px;
+    }
+
+    .auth-logo-icon {
+        width: 60px;
+        height: 60px;
+        color: #ffffff;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 20px rgba(25, 118, 210, 0.25);
+    }
+
+    .auth-header h2 {
+        color: #0d47a1;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+    }
+
+    .auth-header p {
+        color: #546e7a;
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+
+    .auth-body {
+        padding: 20px 40px 40px 40px;
+    }
+
+    /* Giriş Kutuları ve Form Etiketleri */
+    .form-label {
+        color: #37474f;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .input-group-custom {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+        .input-group-custom .input-icon {
+            position: absolute;
+            left: 16px;
+            color: #90a4ae;
+            font-size: 1.1rem;
+            pointer-events: none;
+            transition: color 0.3s ease;
         }
 
-    .btn-primary {
-        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        .input-group-custom .form-control {
+            width: 100%;
+            padding: 12px 16px 12px 46px;
+            background: #ffffff;
+            border: 1px solid #cfd8dc;
+            border-radius: 12px;
+            color: #263238;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+            .input-group-custom .form-control::placeholder {
+                color: #b0bec5;
+            }
+
+            /* Fokus Aura Efekti (Mavi) */
+            .input-group-custom .form-control:focus {
+                background: #ffffff;
+                border-color: #1976d2;
+                box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.12);
+                outline: none;
+            }
+
+                .input-group-custom .form-control:focus + .input-icon {
+                    color: #1976d2;
+                }
+
+    /* Mod Değiştirme ve Şifremi Unuttum Linkleri */
+    .link-switch-mode {
+        font-size: 0.82rem;
+        color: #607d8b;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+        .link-switch-mode:hover {
+            color: #1976d2;
+        }
+
+    .link-forgot-password {
+        font-size: 0.88rem;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+    }
+
+        .link-forgot-password:hover {
+            text-decoration: underline;
+            opacity: 0.85;
+        }
+
+    /* Özelleştirilmiş Checkbox (Beni Hatırla) */
+    .form-check-custom {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-check-input-custom {
+        width: 18px;
+        height: 18px;
+        border: 1px solid #cfd8dc;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .form-check-input-custom:checked {
+            background-color: #1976d2;
+            border-color: #1976d2;
+        }
+
+    .form-check-label-custom {
+        color: #546e7a;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    /* Mesaj Kutuları Tasarımları */
+    .alert-custom-success {
+        background: #e8f5e9;
+        border: 1px solid #c8e6c9;
+        color: #2e7d32;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+
+    .alert-custom-danger {
+        background: #ffebee;
+        border: 1px solid #ffcdd2;
+        color: #c62828;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+
+    .text-danger-custom {
+        font-size: 0.82rem;
+        color: #d32f2f;
+        margin-top: 4px;
+        display: block;
+        font-weight: 500;
+    }
+
+    /* Premium Giriş Butonu */
+    .btn-auth-submit {
         border: none;
+        border-radius: 12px;
+        color: #ffffff;
+        padding: 14px;
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 20px rgba(25, 118, 210, 0.2);
         transition: all 0.3s ease;
     }
 
-    .btn-danger {
-        background: linear-gradient(135deg, #f5576c 0%, #d90429 100%);
-        border: none;
-        transition: all 0.3s ease;
+        .btn-auth-submit:hover {
+            box-shadow: 0 8px 25px rgba(25, 118, 210, 0.35);
+            transform: translateY(-1px);
+            color: #ffffff;
+            opacity: 0.95;
+        }
+
+    /* Alt Yönlendirme Linki */
+    .link-auth-redirect {
+        color: #1976d2;
+        text-decoration: none;
+        font-weight: 600;
+        margin-left: 4px;
+        transition: color 0.2s ease;
     }
 
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+        .link-auth-redirect:hover {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+
+    .border-top {
+        border-top: 1px solid #eceff1 !important;
     }
 </style>
