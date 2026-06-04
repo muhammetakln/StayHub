@@ -105,27 +105,6 @@ StayHub, ASP.NET Core MVC ile geliştirilmiş full stack bir otel rezervasyon y�
 | Mimari | MVC Pattern, Repository Pattern |
 | Araçlar | Visual Studio, Git |
 
----
-
-## 📸 Ekran Görüntüleri
-
-### Ana Sayfa
-![Ana Sayfa](screenshots/homepage.png)
-
-### Otel Listeleme & Arama
-![Otel Listeleme](screenshots/hotels.png)
-
-### Giriş Yap
-![Giriş](screenshots/login.png)
-
-### Kayıt Ol
-![Kayıt](screenshots/register.png)
-
-### Rezervasyonlarım
-![Rezervasyonlar](screenshots/reservations.png)
-
----
-
 ## 📁 Proje Yapısı
 
 ```
